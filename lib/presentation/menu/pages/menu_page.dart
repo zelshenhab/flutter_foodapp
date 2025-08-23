@@ -3,7 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/menu_bloc.dart';
 import '../bloc/menu_event.dart';
 import '../bloc/menu_state.dart';
-import '../widgets/category_chip_list.dart';
+import '../widgets/menu_header.dart';
+import '../widgets/menu_search_bar.dart';
+import '../widgets/promo_banner.dart';
+import '../widgets/category_icon_strip.dart';
 import '../widgets/menu_item_tile.dart';
 
 class MenuPage extends StatelessWidget {
@@ -14,7 +17,6 @@ class MenuPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => MenuBloc()..add(MenuStarted()),
       child: Scaffold(
-        appBar: AppBar(title: const Text("Адам и Ева")),
         body: SafeArea(
           child: RefreshIndicator(
             onRefresh: () async {
@@ -25,55 +27,91 @@ class MenuPage extends StatelessWidget {
                 if (state.loading && state.items.isEmpty) {
                   return const _MenuLoadingSkeleton();
                 }
+
                 if (state.error != null) {
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text("حدث خطأ في تحميل المنيو"),
+                        const Text("Ошибка при загрузке меню"),
                         const SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () =>
                               context.read<MenuBloc>().add(MenuStarted()),
-                          child: const Text("إعادة المحاولة"),
+                          child: const Text("Повторить"),
                         ),
                       ],
                     ),
                   );
                 }
-                if (state.categories.isEmpty) {
-                  return const Center(child: Text("لا توجد أقسام حالياً"));
-                }
+
+                // خريطة أيقونات الأقسام (مهم تكون IDs مطابقة للـ MockMenuRepo)
+                final iconMap = <String, String>{
+                  'shawarma': 'assets/images/Chicken-Shawarma-8.jpg',
+                  'box':
+                      'assets/images/Chicken-Shawarma-8.jpg', // БОКС С ШАУРМОЙ
+                  'roll': 'assets/images/Chicken-Shawarma-8.jpg', // РОЛЛ
+                  'eurobox':
+                      'assets/images/Chicken-Shawarma-8.jpg', // ЕВРО-БОКС
+                  'pizza': 'assets/images/Chicken-Shawarma-8.jpg',
+                  'salads': 'assets/images/Chicken-Shawarma-8.jpg',
+                  'main': 'assets/images/Chicken-Shawarma-8.jpg',
+                  'breakfast': 'assets/images/Chicken-Shawarma-8.jpg',
+                  'sauces': 'assets/images/Chicken-Shawarma-8.jpg',
+                };
 
                 return ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
-                    CategoryChipList(
-                      categories: state.categories,
-                      selectedId: state.selectedCategoryId,
-                      onSelected: (id) => context.read<MenuBloc>().add(
-                        MenuCategorySelected(id),
+                    const MenuHeader(),
+                    const SizedBox(height: 8),
+                    const MenuSearchBar(),
+                    const PromoBanner(),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: Text(
+                        'Категории',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
+                    if (state.categories.isNotEmpty)
+                      CategoryIconStrip(
+                        categories: state.categories,
+                        selectedId: state.selectedCategoryId,
+                        iconAssetByCategoryId: iconMap,
+                        onSelected: (id) => context.read<MenuBloc>().add(
+                          MenuCategorySelected(id),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
                     const Divider(height: 1, color: Color(0xFF2A2A2A)),
+
+                    // قائمة الأصناف باستخدام ListView.builder لأداء أفضل
                     Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         children: [
-                          for (final item in state.items)
-                            MenuItemTile(
-                              item: item,
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: state.items.length,
+                            itemBuilder: (_, i) => MenuItemTile(
+                              item: state.items[i],
                               onAdd: () {
-                                // context.read<CartBloc>().add(CartItemAdded(item));
+                                // هنوصل لاحقًا بـ CartBloc
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      "${item.name} добавлено в корзину",
+                                      "${state.items[i].name} добавлено в корзину",
                                     ),
                                   ),
                                 );
                               },
                             ),
+                          ),
                           if (state.loading) ...[
                             const SizedBox(height: 16),
                             const Center(child: CircularProgressIndicator()),
