@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/utils/money.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_state.dart';
 
@@ -24,7 +25,7 @@ class CheckoutBar extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Итого: ${state.grandTotal.toStringAsFixed(0)} ₽',
+                    'Итого: ${money(state.grandTotal)}',
                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                 ),

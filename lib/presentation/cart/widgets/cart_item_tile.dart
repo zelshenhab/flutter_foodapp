@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../menu/models/menu_item.dart';
+import 'package:flutter_foodapp/core/utils/money.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../models/cart_item.dart';
@@ -38,46 +39,47 @@ class CartItemTile extends StatelessWidget {
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text("${item.price.toStringAsFixed(0)} ₽",
+                Text('${money(item.price)} × ${cartItem.qty}',
                     style: const TextStyle(color: Color(0xFFA7A7A7), fontSize: 12)),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          // كمية
           Row(
             children: [
               _qtyBtn(
                 icon: Icons.remove,
-                onTap: () => context.read<CartBloc>()
-                    .add(CartItemQtyDecreased(item.id)),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.read<CartBloc>().add(CartItemQtyDecreased(item.id));
+                },
                 bg: const Color(0xFF1E1E1E),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text("${cartItem.qty}",
+                child: Text('${cartItem.qty}',
                     style: const TextStyle(fontWeight: FontWeight.w700)),
               ),
               _qtyBtn(
                 icon: Icons.add,
-                onTap: () => context.read<CartBloc>()
-                    .add(CartItemQtyIncreased(item.id)),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.read<CartBloc>().add(CartItemQtyIncreased(item.id));
+                },
                 bg: accent,
                 iconColor: Colors.white,
               ),
             ],
           ),
           const SizedBox(width: 12),
-          // المجموع الفرعي + حذف
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text("${cartItem.subtotal.toStringAsFixed(0)} ₽",
+              Text(money(cartItem.subtotal),
                   style: const TextStyle(fontWeight: FontWeight.w800)),
               IconButton(
                 tooltip: "Удалить",
-                onPressed: () => context.read<CartBloc>()
-                    .add(CartItemRemoved(item.id)),
+                onPressed: () => context.read<CartBloc>().add(CartItemRemoved(item.id)),
                 icon: const Icon(Icons.delete_outline, color: Color(0xFFA7A7A7)),
               ),
             ],
@@ -95,10 +97,10 @@ class CartItemTile extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
         child: Icon(icon, size: 18, color: iconColor),
       ),
