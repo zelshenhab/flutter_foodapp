@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
           displayColor: text,
         ),
       ),
-      home: const AppShell(), // فيها الـ BottomNav + الصفحات
+      home: const AppShell(),
     );
   }
 }
