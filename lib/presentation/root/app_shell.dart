@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../menu/pages/menu_page.dart';
 import '../cart/pages/cart_page.dart';
+import '../profile/pages/profile_page.dart';
 
 import '../cart/bloc/cart_bloc.dart';
 import '../cart/bloc/cart_state.dart';
@@ -22,11 +23,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    _pages = const [
-      MenuPage(),
-      CartPage(),
-      // ProfilePage(),
-    ];
+    _pages = const [MenuPage(), CartPage(), ProfilePage()];
   }
 
   @override
@@ -35,10 +32,7 @@ class _AppShellState extends State<AppShell> {
       // CartBloc متاح لكل الصفحات (Menu/Cart/Profile)
       create: (_) => CartBloc(),
       child: Scaffold(
-        body: IndexedStack(
-          index: _index,
-          children: _pages,
-        ),
+        body: IndexedStack(index: _index, children: _pages),
         bottomNavigationBar: BlocBuilder<CartBloc, CartState>(
           buildWhen: (p, n) => p.items.length != n.items.length,
           builder: (context, state) {
@@ -62,7 +56,10 @@ class _AppShellState extends State<AppShell> {
                           right: -6,
                           top: -4,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Theme.of(context).colorScheme.primary,
                               borderRadius: BorderRadius.circular(10),
