@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/utils/money.dart';
 import '../bloc/cart_state.dart';
 import '../bloc/cart_bloc.dart';
+
+const _minOrder = 500.0; // حد أدنى تجريبي
 
 class SummaryPanel extends StatelessWidget {
   const SummaryPanel({super.key});
@@ -28,22 +31,29 @@ class SummaryPanel extends StatelessWidget {
           );
         }
 
-        final discount = state.discount;
-        final hasDiscount = discount > 0;
+        final hasDiscount = state.discount > 0;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              row('Сумма заказа', '${state.itemsTotal.toStringAsFixed(0)} ₽'),
-              row('Доставка', '${state.deliveryFee.toStringAsFixed(0)} ₽'),
+              row('Сумма заказа', money(state.itemsTotal)),
+              row('Доставка', money(state.deliveryFee)),
               if (hasDiscount)
-                row(
-                  'Скидка${state.promoCode != null ? ' (${state.promoCode})' : ''}',
-                  '-${discount.toStringAsFixed(0)} ₽',
-                ),
+                row('Скидка${state.promoCode != null ? ' (${state.promoCode})' : ''}',
+                    '-${money(state.discount)}'),
               const Divider(color: Color(0xFF2A2A2A)),
-              row('Итого', '${state.grandTotal.toStringAsFixed(0)} ₽', bold: true),
+              row('Итого', money(state.grandTotal), bold: true),
+
+              if (state.itemsTotal < _minOrder)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Text(
+                    'Минимальная сумма заказа ${money(_minOrder)}',
+                    style: const TextStyle(color: Colors.orangeAccent),
+                  ),
+                ),
             ],
           ),
         );

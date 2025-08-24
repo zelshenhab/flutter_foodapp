@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
-import '../bloc/cart_state.dart';
 
 class PromoField extends StatefulWidget {
   const PromoField({super.key});
@@ -13,11 +12,28 @@ class PromoField extends StatefulWidget {
 
 class _PromoFieldState extends State<PromoField> {
   final _ctrl = TextEditingController();
+  bool _enabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl.addListener(() {
+      final has = _ctrl.text.trim().isNotEmpty;
+      if (has != _enabled) setState(() => _enabled = has);
+    });
+  }
 
   @override
   void dispose() {
     _ctrl.dispose();
     super.dispose();
+  }
+
+  void _apply() {
+    final code = _ctrl.text.trim();
+    if (code.isEmpty) return;
+    context.read<CartBloc>().add(CartPromoApplied(code));
+    FocusScope.of(context).unfocus();
   }
 
   @override
@@ -54,17 +70,7 @@ class _PromoFieldState extends State<PromoField> {
           SizedBox(
             height: 44,
             child: ElevatedButton(
-              onPressed: () {
-                final code = _ctrl.text.trim();
-                if (code.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Введите промокод')),
-                  );
-                  return;
-                }
-                context.read<CartBloc>().add(CartPromoApplied(code));
-                FocusScope.of(context).unfocus();
-              },
+              onPressed: _enabled ? _apply : null,
               child: const Text('Применить'),
             ),
           ),
