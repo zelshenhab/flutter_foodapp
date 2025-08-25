@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'presentation/root/app_shell.dart';
+import 'presentation/auth/pages/login_info_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,7 +10,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // دارك ثيم مستوحى من Dodo (accent برتقالي)
     const bg = Color(0xFF121212);
     const surface = Color(0xFF1E1E1E);
     const text = Color(0xFFEDEDED);
@@ -50,7 +49,7 @@ class MyApp extends StatelessWidget {
           displayColor: text,
         ),
       ),
-      home: const AppShell(),
+      home: const LoginInfoPage(), // ✅ ابدأ بتسجيل الدخول
     );
   }
 }

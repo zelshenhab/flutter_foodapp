@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_foodapp/presentation/profile/widgets/bonuses_card.dart';
-import 'package:flutter_foodapp/presentation/promos/pages/promotions_page.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:flutter_foodapp/presentation/auth/pages/login_info_page.dart';
+import 'package:flutter_foodapp/presentation/profile/widgets/bonuses_card.dart';
+import 'package:flutter_foodapp/presentation/promos/pages/promotions_page.dart';
 import 'package:flutter_foodapp/presentation/orders/pages/orders_page.dart';
 import 'package:flutter_foodapp/presentation/support/pages/support_page.dart';
 
@@ -22,16 +23,30 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ProfileBloc()..add(ProfileStarted()),
+    // ✅ مفيش BlocProvider هنا — AppShell هو اللي موفّر ProfileBloc
+    return BlocListener<ProfileBloc, ProfileState>(
+      listenWhen: (prev, next) =>
+          prev.profile != next.profile || prev.loading != next.loading,
+      listener: (context, state) {
+        // لما يحصل تسجيل خروج (profile == null) نرجّع لصفحة تسجيل الدخول
+        if (!state.loading && state.profile == null) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginInfoPage()),
+            (route) => false,
+          );
+        }
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Профиль'),
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
-              onPressed: () =>
-                  context.read<ProfileBloc>().add(ProfileLogoutRequested()),
+              onPressed: () {
+                // لو حابب تعمل تأكيد قبل الخروج، قدر تضيف Dialog هنا
+                context.read<ProfileBloc>().add(ProfileLogoutRequested());
+              },
             ),
           ],
         ),
@@ -41,7 +56,8 @@ class ProfilePage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
             if (state.profile == null) {
-              return const Center(child: Text("Не авторизован"));
+              // الحالة المؤقتة بين الضغط على الخروج والتنقل (هيتلقطها الـ Listener فوق)
+              return const SizedBox.shrink();
             }
             final profile = state.profile!;
 
@@ -54,8 +70,10 @@ class ProfilePage extends StatelessWidget {
                       _showEditDataSheet(context, profile.name, profile.phone),
                   onChangeAvatar: () => _pickAvatar(context),
                 ),
+
+                // ===== Bonuses + Promotions
                 BonusesCard(
-                  balance: 150, // هنا قيمة مبدئية؛ لاحقًا نجيبها من الباك-энд
+                  balance: 150, // مبدئيًا — بعدين من الباك-энд
                   onViewPromos: () {
                     Navigator.push(
                       context,
@@ -340,7 +358,6 @@ class ProfilePage extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) {
-        // استخدم sheetCtx لو حبيت
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
