@@ -21,3 +21,17 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
   }
 }
 
+export function optionalAuth(req: AuthRequest, _res: Response, next: NextFunction) {
+  const header = req.headers["authorization"];
+  if (header && typeof header === "string" && header.toLowerCase().startsWith("bearer ")) {
+    const token = header.slice(7).trim();
+    try {
+      const payload = verifyAuthToken(token);
+      req.user = payload;
+    } catch {
+      // ignore invalid token in optional mode
+    }
+  }
+  next();
+}
+
