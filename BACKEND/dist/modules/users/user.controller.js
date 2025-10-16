@@ -3,17 +3,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMe = getMe;
 exports.patchMe = patchMe;
 const user_service_1 = require("./user.service");
-function getMe(req, res) {
+async function getMe(req, res) {
     const userId = req.user.userId;
-    const profile = (0, user_service_1.getUserProfile)(userId);
+    const profile = await (0, user_service_1.getUserProfile)(userId);
     if (!profile)
         return res.status(404).json({ message: "User not found" });
     return res.json(profile);
 }
-function patchMe(req, res) {
+async function patchMe(req, res) {
     const userId = req.user.userId;
     const body = req.body;
-    const updated = (0, user_service_1.updateUserProfile)(userId, body);
+    const updated = await (0, user_service_1.updateUserProfile)(userId, body);
     if (!updated)
         return res.status(404).json({ message: "User not found" });
     return res.json(updated);

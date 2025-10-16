@@ -9,12 +9,12 @@ export function postSendOtp(req: Request, res: Response) {
   return res.json({ success: ok });
 }
 
-export function postVerifyOtp(req: Request, res: Response) {
+export async function postVerifyOtp(req: Request, res: Response) {
   const body = req.body as VerifyOtpRequest;
   if (!body?.phone || !body?.code) {
     return res.status(400).json({ message: "phone and code are required" });
   }
-  const result = verifyOtp(body.phone, body.code);
+  const result = await verifyOtp(body.phone, body.code);
   if (!result) return res.status(401).json({ message: "Invalid code" });
   return res.json(result);
 }
