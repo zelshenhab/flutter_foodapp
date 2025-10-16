@@ -1,0 +1,85 @@
+-- Seed for menu_items based on Flutter mock data
+-- Run after categories exist (see supabase_schema.sql)
+
+insert into menu_items (id, name, price, image, category_id, desc) values
+  ('sh1','Шаурма «Арабская» с курицей',269,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh2','Шаурма «Турецкая» с курицей и овощами',299,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh3','Шаурма «Классическая»',299,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh4','Шаурма «Адам и Ева» с курицей, грибами и сыром',350,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh5','Шаурма с мясом',350,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh6','Шаурма «Экстра» (с картофелем фри)',400,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh7','Шаурма «Экстра» с картофелем фри и сыром «Моцарелла»',450,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh8','Мини-шаурма с курицей',175,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+  ('sh9','Мини-шаурма с говядиной',225,'assets/images/Chicken-Shawarma-8.jpg','shawarma',null),
+
+  ('bx1','Бокс с арабской шаурмой (курица)',485,'assets/images/Chicken-Shawarma-8.jpg','box',null),
+  ('bx2','Бокс с арабской шаурмой (курица) двойной',649,'assets/images/Chicken-Shawarma-8.jpg','box',null),
+  ('bx3','Бокс с арабской шаурмой (говядина)',599,'assets/images/Chicken-Shawarma-8.jpg','box',null),
+  ('bx4','Бокс «Mix» с шаурмой (курица)',629,'assets/images/Chicken-Shawarma-8.jpg','box',null),
+  ('bx5','Бокс с шаурмой куриной',525,'assets/images/Chicken-Shawarma-8.jpg','box',null),
+  ('bx6','Фатта шаурма с говядиной',599,'assets/images/Chicken-Shawarma-8.jpg','box',null),
+
+  ('rl1','Ролл «Зингер»',349,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+  ('rl2','Ролл «Криспи»',349,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+  ('rl3','Ролл «Мексикано»',349,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+  ('rl4','Ролл «Фахита»',319,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+  ('rl5','Ролл «Шиш Тавук»',295,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+  ('rl6','Ролл с картофелем фри и моцареллой',290,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+  ('rl7','Ролл с картофелем фри',220,'assets/images/Chicken-Shawarma-8.jpg','roll',null),
+
+  ('eb1','Бокс с бургером «Криспи»',479,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb2','Бокс с говяжьим бургером',599,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb3','Бокс с куриным бургером',549,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb4','Бокс с куриным мини-бургером',399,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb5','Бокс с говяжьим мини-бургером',599,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb6','Бокс «Криспи»',399,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb7','Бокс «Фахита»',420,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb8','Бокс «Шиш Тавук»',450,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+  ('eb9','Бокс «Кебаб»',469,'assets/images/Chicken-Shawarma-8.jpg','eurobox',null),
+
+  ('pz1','Пицца «Адам и Ева»',575,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz2','Пицца «Криспи»',595,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz3','Пицца «Мексикано»',595,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz4','Пицца с шаурмой (курица)',675,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz5','Пицца с шаурмой (говядина)',675,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz6','Пицца «Фахита»',595,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz7','Пицца «Вегетарианская»',485,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz8','Мини-пицца «Маргарита»',325,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz9','Лахмаджун',230,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz10','Пиде с сыром',350,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+  ('pz11','Пиде с мясом',450,'assets/images/Chicken-Shawarma-8.jpg','pizza',null),
+
+  ('sl1','Салат «Греческий» с сыром Фета',349,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+  ('sl2','Салат «Цезарь» с курицей',299,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+  ('sl3','Салат «Коул Слоу»',209,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+  ('sl4','Запечённый бейби-картофель',199,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+  ('sl5','Сирийская бебе',149,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+  ('sl6','Самса с курицей',200,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+  ('sl7','Узбекская самса с сыром',200,'assets/images/Chicken-Shawarma-8.jpg','salads',null),
+
+  ('mn1','Рис «Манди»',445,'assets/images/Chicken-Shawarma-8.jpg','main',null),
+  ('mn2','Рис «Кабса»',385,'assets/images/Chicken-Shawarma-8.jpg','main',null),
+  ('mn3','Шиш Тавук (филе куриной грудки на углях)',399,'assets/images/Chicken-Shawarma-8.jpg','main',null),
+  ('mn4','Чечевичный суп',185,'assets/images/Chicken-Shawarma-8.jpg','main',null),
+
+  ('bf1','Турецкий завтрак',589,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf2','Турецкий завтрак двойной',789,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf3','Кебаб с сыром',349,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf4','Манакіш с орегано',139,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf5','Манакіш с сыром',159,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf6','Мини-манакіш с сыром',120,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf7','Мини-манакіш с орегано',110,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+  ('bf8','Мини-манакіш острый',120,'assets/images/Chicken-Shawarma-8.jpg','breakfast',null),
+
+  ('sc1','Соус «Чесночный»',50,'assets/images/Chicken-Shawarma-8.jpg','sauces',null),
+  ('sc2','Соус «Сырный»',50,'assets/images/Chicken-Shawarma-8.jpg','sauces',null),
+  ('sc3','Соус «Барбекю»',50,'assets/images/Chicken-Shawarma-8.jpg','sauces',null),
+  ('sc4','Соус «Фирменный»',50,'assets/images/Chicken-Shawarma-8.jpg','sauces',null),
+  ('sc5','Кетчуп',50,'assets/images/Chicken-Shawarma-8.jpg','sauces',null)
+
+on conflict (id) do update set
+  name = excluded.name,
+  price = excluded.price,
+  image = excluded.image,
+  category_id = excluded.category_id,
+  desc = excluded.desc;
