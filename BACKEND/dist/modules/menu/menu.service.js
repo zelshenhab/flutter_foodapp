@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.items = exports.categories = void 0;
+exports.itemsFallback = exports.categoriesFallback = void 0;
 exports.getCategories = getCategories;
 exports.getItemsByCategory = getItemsByCategory;
 exports.getMenuItem = getMenuItem;
-// Seed with mock data from Flutter
-exports.categories = [
+const supabase_1 = require("../../core/config/supabase");
+// Seed with mock data from Flutter (fallback when Supabase not configured)
+exports.categoriesFallback = [
     { id: "shawarma", title: "Шаурма" },
     { id: "box", title: "Бокс с шаурмой" },
     { id: "roll", title: "Ролл" },
@@ -16,7 +17,7 @@ exports.categories = [
     { id: "breakfast", title: "Завтрак" },
     { id: "sauces", title: "Соусы" },
 ];
-exports.items = [
+exports.itemsFallback = [
     { id: "sh1", name: "Шаурма «Арабская» с курицей", price: 269, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "shawarma" },
     { id: "sh2", name: "Шаурма «Турецкая» с курицей и овощами", price: 299, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "shawarma" },
     { id: "sh3", name: "Шаурма «Классическая»", price: 299, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "shawarma" },
@@ -84,13 +85,50 @@ exports.items = [
     { id: "sc4", name: "Соус «Фирменный»", price: 50, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "sauces" },
     { id: "sc5", name: "Кетчуп", price: 50, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "sauces" },
 ];
-function getCategories() {
-    return exports.categories;
+async function getCategories() {
+    if (!supabase_1.supabase)
+        return exports.categoriesFallback;
+    const { data, error } = await supabase_1.supabase.from("categories").select("id,title").order("id");
+    if (error || !data)
+        return exports.categoriesFallback;
+    return data;
 }
-function getItemsByCategory(categoryId) {
-    return exports.items.filter((i) => i.categoryId === categoryId);
+async function getItemsByCategory(categoryId) {
+    if (!supabase_1.supabase)
+        return exports.itemsFallback.filter((i) => i.categoryId === categoryId);
+    const { data, error } = await supabase_1.supabase
+        .from("menu_items")
+        .select("id,name,price,image,category_id,desc")
+        .eq("category_id", categoryId)
+        .order("id");
+    if (error || !data)
+        return exports.itemsFallback.filter((i) => i.categoryId === categoryId);
+    return data.map((r) => ({
+        id: r.id,
+        name: r.name,
+        price: Number(r.price),
+        image: r.image,
+        categoryId: r.category_id,
+        desc: r.desc ?? undefined,
+    }));
 }
-function getMenuItem(itemId) {
-    return exports.items.find((i) => i.id === itemId);
+async function getMenuItem(itemId) {
+    if (!supabase_1.supabase)
+        return exports.itemsFallback.find((i) => i.id === itemId);
+    const { data, error } = await supabase_1.supabase
+        .from("menu_items")
+        .select("id,name,price,image,category_id,desc")
+        .eq("id", itemId)
+        .maybeSingle();
+    if (error || !data)
+        return exports.itemsFallback.find((i) => i.id === itemId);
+    return {
+        id: data.id,
+        name: data.name,
+        price: Number(data.price),
+        image: data.image,
+        categoryId: data.category_id,
+        desc: data.desc ?? undefined,
+    };
 }
 //# sourceMappingURL=menu.service.js.map

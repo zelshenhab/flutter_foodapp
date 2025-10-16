@@ -1,7 +1,8 @@
+import { supabase } from "../../core/config/supabase";
 import { CategoryDto, MenuItemDto } from "./menu.types";
 
-// Seed with mock data from Flutter
-export const categories: CategoryDto[] = [
+// Seed with mock data from Flutter (fallback when Supabase not configured)
+export const categoriesFallback: CategoryDto[] = [
   { id: "shawarma", title: "Шаурма" },
   { id: "box", title: "Бокс с шаурмой" },
   { id: "roll", title: "Ролл" },
@@ -13,7 +14,7 @@ export const categories: CategoryDto[] = [
   { id: "sauces", title: "Соусы" },
 ];
 
-export const items: MenuItemDto[] = [
+export const itemsFallback: MenuItemDto[] = [
   { id: "sh1", name: "Шаурма «Арабская» с курицей", price: 269, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "shawarma" },
   { id: "sh2", name: "Шаурма «Турецкая» с курицей и овощами", price: 299, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "shawarma" },
   { id: "sh3", name: "Шаурма «Классическая»", price: 299, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "shawarma" },
@@ -82,15 +83,46 @@ export const items: MenuItemDto[] = [
   { id: "sc5", name: "Кетчуп", price: 50, image: "assets/images/Chicken-Shawarma-8.jpg", categoryId: "sauces" },
 ];
 
-export function getCategories(): CategoryDto[] {
-  return categories;
+export async function getCategories(): Promise<CategoryDto[]> {
+  if (!supabase) return categoriesFallback;
+  const { data, error } = await supabase.from("categories").select("id,title").order("id");
+  if (error || !data) return categoriesFallback;
+  return data as CategoryDto[];
 }
 
-export function getItemsByCategory(categoryId: string): MenuItemDto[] {
-  return items.filter((i) => i.categoryId === categoryId);
+export async function getItemsByCategory(categoryId: string): Promise<MenuItemDto[]> {
+  if (!supabase) return itemsFallback.filter((i) => i.categoryId === categoryId);
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("id,name,price,image,category_id,desc")
+    .eq("category_id", categoryId)
+    .order("id");
+  if (error || !data) return itemsFallback.filter((i) => i.categoryId === categoryId);
+  return data.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    price: Number(r.price),
+    image: r.image,
+    categoryId: r.category_id,
+    desc: r.desc ?? undefined,
+  }));
 }
 
-export function getMenuItem(itemId: string): MenuItemDto | undefined {
-  return items.find((i) => i.id === itemId);
+export async function getMenuItem(itemId: string): Promise<MenuItemDto | undefined> {
+  if (!supabase) return itemsFallback.find((i) => i.id === itemId);
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("id,name,price,image,category_id,desc")
+    .eq("id", itemId)
+    .maybeSingle();
+  if (error || !data) return itemsFallback.find((i) => i.id === itemId);
+  return {
+    id: data.id,
+    name: data.name,
+    price: Number(data.price),
+    image: data.image,
+    categoryId: data.category_id,
+    desc: data.desc ?? undefined,
+  };
 }
 
