@@ -43,3 +43,7 @@ class AuthVerifyPressed extends AuthEvent {}
 class AuthResendCode extends AuthEvent {}
 
 class AuthEditPhone extends AuthEvent {}
+
+class AuthResendTick extends AuthEvent {
+  const AuthResendTick();
+}

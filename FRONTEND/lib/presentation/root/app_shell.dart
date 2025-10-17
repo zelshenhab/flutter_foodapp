@@ -7,7 +7,8 @@ import '../profile/pages/profile_page.dart';
 
 import '../cart/bloc/cart_bloc.dart';
 import '../cart/bloc/cart_state.dart';
-
+import '../menu/bloc/menu_bloc.dart';
+import '../menu/bloc/menu_event.dart';
 import '../profile/bloc/profile_bloc.dart';
 import '../profile/bloc/profile_event.dart';
 
@@ -37,6 +38,7 @@ class _AppShellState extends State<AppShell> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CartBloc>(create: (_) => CartBloc()),
+        BlocProvider<MenuBloc>(create: (_) => MenuBloc()..add(MenuStarted())),
         BlocProvider<ProfileBloc>(
           create: (_) => ProfileBloc()..add(ProfileStarted()),
         ),
@@ -52,10 +54,7 @@ class _AppShellState extends State<AppShell> {
               final phone = widget.initialPhone;
               if (name != null || phone != null) {
                 context.read<ProfileBloc>().add(
-                  ProfileInfoUpdated(
-                    name: name ?? '',
-                    phone: phone ?? '',
-                  ),
+                  ProfileInfoUpdated(name: name ?? '', phone: phone ?? ''),
                 );
               }
             });

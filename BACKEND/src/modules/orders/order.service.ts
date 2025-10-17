@@ -62,7 +62,7 @@ export async function createOrder(
           orderId: created.id,
           menuItemId: ci.menuItemId,
           titleSnap: ci.menuItem.title,
-          optionsSnap: ci.optionsJson,
+          optionsSnap: (ci.optionsJson as Prisma.InputJsonValue) ?? Prisma.JsonNull,
           unitPrice: ci.unitPriceSnapshot,
           quantity: ci.quantity,
           lineTotal: ci.lineTotal,
