@@ -1,1 +1,1 @@
-﻿export type OtpRequest = { phone: string; code: string };
+﻿export type JwtUser = { id: number; phone: string };
