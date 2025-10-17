@@ -1,5 +1,7 @@
 ﻿import { Request, Response } from "express";
+import * as svc from "./promo.service";
 
-export async function listPromos(req: Request, res: Response) {
-  res.json([{ id: 1, code: "WELCOME10", discount: 10 }]);
+export async function listPromos(_req: Request, res: Response) {
+  const data = await svc.fetchPromos();
+  res.json({ data });
 }
