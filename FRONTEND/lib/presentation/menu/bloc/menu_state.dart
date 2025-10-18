@@ -7,7 +7,7 @@ class MenuState extends Equatable {
   final String? error;
   final List<Category> categories;
   final String? selectedCategoryId;
-  final List<MenuItemEntity> items;
+  final List<MenuItemModel> items;
 
   const MenuState({
     this.loading = false,
@@ -22,7 +22,7 @@ class MenuState extends Equatable {
     String? error,
     List<Category>? categories,
     String? selectedCategoryId,
-    List<MenuItemEntity>? items,
+    List<MenuItemModel>? items,
   }) {
     return MenuState(
       loading: loading ?? this.loading,

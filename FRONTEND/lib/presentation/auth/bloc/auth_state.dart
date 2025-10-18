@@ -16,6 +16,10 @@ class AuthState extends Equatable {
   final int resendIn; // ثواني حتى إعادة الإرسال
   final bool codeSent;
 
+  // 🆕 added for backend OTP flow
+  final String? requestId;
+  final String? devCode;
+
   const AuthState({
     this.name = '',
     this.surname = '',
@@ -26,13 +30,14 @@ class AuthState extends Equatable {
     this.error,
     this.resendIn = 0,
     this.codeSent = false,
+    this.requestId,
+    this.devCode,
   });
 
   bool get canGetCode =>
       name.trim().isNotEmpty && phone.trim().isNotEmpty && !loading;
 
-  bool get canVerify =>
-      otp.trim().length >= 4 && !loading;
+  bool get canVerify => otp.trim().length >= 6 && !loading;
 
   AuthState copyWith({
     String? name,
@@ -44,6 +49,8 @@ class AuthState extends Equatable {
     String? error,
     int? resendIn,
     bool? codeSent,
+    String? requestId,
+    String? devCode,
   }) {
     return AuthState(
       name: name ?? this.name,
@@ -55,10 +62,23 @@ class AuthState extends Equatable {
       error: error,
       resendIn: resendIn ?? this.resendIn,
       codeSent: codeSent ?? this.codeSent,
+      requestId: requestId ?? this.requestId,
+      devCode: devCode ?? this.devCode,
     );
   }
 
   @override
-  List<Object?> get props =>
-      [name, surname, phone, otp, step, loading, error, resendIn, codeSent];
+  List<Object?> get props => [
+        name,
+        surname,
+        phone,
+        otp,
+        step,
+        loading,
+        error,
+        resendIn,
+        codeSent,
+        requestId,
+        devCode,
+      ];
 }

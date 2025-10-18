@@ -98,8 +98,9 @@ class MenuPage extends StatelessWidget {
                         categories: state.categories,
                         selectedId: state.selectedCategoryId,
                         iconAssetByCategoryId: iconMap,
-                        onSelected: (id) =>
-                            context.read<MenuBloc>().add(MenuCategorySelected(id)),
+                        onSelected: (id) => context
+                            .read<MenuBloc>()
+                            .add(MenuCategorySelected(id)),
                       ),
                     ),
 
@@ -116,12 +117,19 @@ class MenuPage extends StatelessWidget {
                         return MenuItemTile(
                           item: item,
                           onAdd: () {
-                            context.read<CartBloc>().add(CartItemAdded(item));
+                            // ✅ SAFE: delegate id resolution to CartBloc
+                            context
+                                .read<CartBloc>()
+                                .add(CartItemAdded(item, quantity: 1));
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Добавлено в корзину')),
+                            );
                           },
                         );
                       },
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 6),
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
                       itemCount: state.items.length,
                     ),
                   ),
