@@ -1,15 +1,16 @@
-﻿import { createApp } from "./core/app";
-import dotenv from "dotenv";
-import express from "express"; // at top if not already
-
+﻿import dotenv from "dotenv";
 dotenv.config();
+
+import { createApp } from "./core/app";
+
 const app = createApp();
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT || 4000);
+
+// Optional root message
+app.get("/", (_req, res) => {
+  res.send("FoodApp API is running. Try /health or /api/health");
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-});
-
-(app as express.Express).get("/", (_req, res) => {
-  res.send("FoodApp API is running. Try /api/health");
 });
