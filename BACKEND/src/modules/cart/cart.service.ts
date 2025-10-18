@@ -1,5 +1,4 @@
-﻿import { Prisma, PrismaClient } from "@prisma/client";
-import { prisma } from "../../core/config/db";
+﻿import { supabase } from "../../core/config/supabase";
 
 type Pricing = {
   items: Array<{
@@ -17,36 +16,64 @@ type Pricing = {
   promoCode?: string | null;
 };
 
-function toNum(d: Prisma.Decimal | number | null | undefined) {
-  return Number(d || 0);
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
 }
 
 async function getOrCreateCart(userId: number) {
-  const existing = await prisma.cart.findUnique({ where: { userId } });
-  if (existing) return existing;
-  return prisma.cart.create({ data: { userId } });
+  // Try to get existing cart
+  const { data: existing, error: fetchError } = await supabase
+    .from('Cart')
+    .select('*')
+    .eq('userId', userId)
+    .single();
+
+  if (existing && !fetchError) {
+    return existing;
+  }
+
+  // Create new cart if doesn't exist
+  const { data: newCart, error: createError } = await supabase
+    .from('Cart')
+    .insert({ userId })
+    .select()
+    .single();
+
+  if (createError) {
+    throw { status: 500, message: "Failed to create cart" };
+  }
+
+  return newCart;
 }
 
 export async function getCart(userId: number): Promise<Pricing> {
   const cart = await getOrCreateCart(userId);
-  const items = await prisma.cartItem.findMany({
-    where: { cartId: cart.id },
-    include: { menuItem: true },
-    orderBy: { id: "asc" },
-  });
+  
+  const { data: items, error } = await supabase
+    .from('CartItem')
+    .select(`
+      *,
+      MenuItem!inner(*)
+    `)
+    .eq('cartId', cart.id)
+    .order('id', { ascending: true });
 
-  const mapped = items.map((ci) => {
-    const unitPrice = toNum(ci.unitPriceSnapshot);
-    const lineTotal = toNum(ci.lineTotal);
+  if (error) {
+    throw { status: 500, message: "Failed to fetch cart items" };
+  }
+
+  const mapped = items?.map((ci) => {
+    const unitPrice = Number(ci.unitPriceSnapshot);
+    const lineTotal = Number(ci.lineTotal);
     return {
       id: ci.id,
-      title: ci.menuItem.title,
+      title: ci.MenuItem.title,
       quantity: ci.quantity,
       unitPrice,
       lineTotal,
       optionIds: (ci.optionsJson as any)?.optionIds || [],
     };
-  });
+  }) || [];
 
   const subtotal = mapped.reduce((s, it) => s + it.lineTotal, 0);
   // simple delivery rule for now:
@@ -68,19 +95,30 @@ export async function getCart(userId: number): Promise<Pricing> {
   };
 }
 
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}
-
 async function computeUnitPrice(menuItemId: number, optionIds: number[]) {
-  const item = await prisma.menuItem.findUnique({ where: { id: menuItemId } });
-  if (!item) throw { status: 404, message: "Menu item not found" };
-  let price = toNum(item.basePrice);
+  const { data: item, error } = await supabase
+    .from('MenuItem')
+    .select('*')
+    .eq('id', menuItemId)
+    .single();
+
+  if (error || !item) {
+    throw { status: 404, message: "Menu item not found" };
+  }
+
+  let price = Number(item.basePrice);
 
   if (optionIds.length) {
-    const opts = await prisma.menuOption.findMany({ where: { id: { in: optionIds } } });
-    price += opts.reduce((s, o) => s + toNum(o.priceDelta), 0);
+    const { data: opts, error: optsError } = await supabase
+      .from('MenuOption')
+      .select('priceDelta')
+      .in('id', optionIds);
+
+    if (!optsError && opts) {
+      price += opts.reduce((s, o) => s + Number(o.priceDelta), 0);
+    }
   }
+  
   return { price, title: item.title };
 }
 
@@ -92,57 +130,107 @@ export async function addItem(userId: number, input: { itemId: number; quantity:
   const cart = await getOrCreateCart(userId);
   const { price } = await computeUnitPrice(itemId, optionIds);
 
-  const unit = new Prisma.Decimal(price);
-  const line = new Prisma.Decimal(round2(price * quantity));
+  const unitPrice = round2(price);
+  const lineTotal = round2(price * quantity);
 
-  const created = await prisma.cartItem.create({
-    data: {
+  const { data: created, error } = await supabase
+    .from('CartItem')
+    .insert({
       cartId: cart.id,
       menuItemId: itemId,
       quantity,
-      unitPriceSnapshot: unit,
+      unitPriceSnapshot: unitPrice,
       optionsJson: { optionIds },
-      lineTotal: line,
-    },
-  });
+      lineTotal: lineTotal,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw { status: 500, message: "Failed to add item to cart" };
+  }
 
   // update cart timestamp
-  await prisma.cart.update({ where: { id: cart.id }, data: { updatedAt: new Date() } });
+  await supabase
+    .from('Cart')
+    .update({ updatedAt: new Date().toISOString() })
+    .eq('id', cart.id);
+
   return created.id;
 }
 
 export async function removeItem(userId: number, cartItemId: number) {
   const cart = await getOrCreateCart(userId);
-  const item = await prisma.cartItem.findUnique({ where: { id: cartItemId } });
-  if (!item || item.cartId !== cart.id) throw { status: 404, message: "Cart item not found" };
-  await prisma.cartItem.delete({ where: { id: cartItemId } });
+  
+  const { data: item, error: fetchError } = await supabase
+    .from('CartItem')
+    .select('*')
+    .eq('id', cartItemId)
+    .single();
+
+  if (fetchError || !item || item.cartId !== cart.id) {
+    throw { status: 404, message: "Cart item not found" };
+  }
+
+  const { error } = await supabase
+    .from('CartItem')
+    .delete()
+    .eq('id', cartItemId);
+
+  if (error) {
+    throw { status: 500, message: "Failed to remove item from cart" };
+  }
 }
 
 export async function applyPromo(userId: number, code: string) {
   const cart = await getOrCreateCart(userId);
+  
   // Validate promo exists & active
-  const promo = await prisma.promo.findUnique({ where: { code } });
-  if (!promo || !promo.active) throw { status: 400, message: "Invalid promo" };
+  const { data: promo, error } = await supabase
+    .from('Promo')
+    .select('*')
+    .eq('code', code)
+    .eq('active', true)
+    .single();
+
+  if (error || !promo) {
+    throw { status: 400, message: "Invalid promo" };
+  }
+
   // Save on cart
-  await prisma.cart.update({ where: { id: cart.id }, data: { promoCode: code } });
+  const { error: updateError } = await supabase
+    .from('Cart')
+    .update({ promoCode: code })
+    .eq('id', cart.id);
+
+  if (updateError) {
+    throw { status: 500, message: "Failed to apply promo" };
+  }
+
   return getCart(userId);
 }
 
 async function computePromoDiscount(code: string, subtotal: number) {
-  const promo = await prisma.promo.findUnique({ where: { code } });
-  if (!promo || !promo.active) return 0;
+  const { data: promo, error } = await supabase
+    .from('Promo')
+    .select('*')
+    .eq('code', code)
+    .eq('active', true)
+    .single();
+
+  if (error || !promo) return 0;
 
   // date window check
   const now = new Date();
-  // if validFrom/validTo set, ensure now in range
-  if ((promo.validFrom && promo.validFrom > now) || (promo.validTo && promo.validTo < now)) {
+  if ((promo.validFrom && new Date(promo.validFrom) > now) || 
+      (promo.validTo && new Date(promo.validTo) < now)) {
     return 0;
   }
 
-  if (promo.minSubtotal && toNum(promo.minSubtotal) > subtotal) return 0;
+  if (promo.minSubtotal && Number(promo.minSubtotal) > subtotal) return 0;
 
   const type = promo.type;
-  const value = toNum(promo.value);
+  const value = Number(promo.value);
   if (type === "percent") {
     return round2((value / 100) * subtotal);
   }
@@ -153,8 +241,15 @@ async function computePromoDiscount(code: string, subtotal: number) {
 }
 
 export async function clearCart(cartId: number) {
-  await prisma.cartItem.deleteMany({ where: { cartId } });
-  await prisma.cart.update({ where: { id: cartId }, data: { promoCode: null } });
+  await supabase
+    .from('CartItem')
+    .delete()
+    .eq('cartId', cartId);
+
+  await supabase
+    .from('Cart')
+    .update({ promoCode: null })
+    .eq('id', cartId);
 }
 
 export async function getCartRecord(userId: number) {

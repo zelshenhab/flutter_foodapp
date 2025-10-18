@@ -8,6 +8,6 @@ export async function getCategories(_req: Request, res: Response) {
 
 export async function getItems(req: Request, res: Response) {
   const { category, search } = req.query as { category?: string; search?: string };
-  const data = await svc.listItems({ categorySlug: category, search });
+  const data = await svc.listItems({ category, search });
   res.json({ data });
 }
