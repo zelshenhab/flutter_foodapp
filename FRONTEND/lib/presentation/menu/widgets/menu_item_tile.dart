@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/menu_item.dart';
 
 class MenuItemTile extends StatelessWidget {
-  final MenuItemEntity item;
+  final MenuItemModel item;
   final VoidCallback onAdd;
   final VoidCallback? onTap;
 
@@ -65,11 +65,11 @@ class MenuItemTile extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (item.desc != null && item.desc!.trim().isNotEmpty)
+                        if (item.description != null && item.description!.trim().isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0),
                             child: Text(
-                              item.desc!,
+                              item.description!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(

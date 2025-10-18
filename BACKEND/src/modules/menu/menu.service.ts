@@ -46,12 +46,13 @@ export async function listItems(params: { category?: string; search?: string }) 
   }
 
   // Transform to match frontend expectations
-  return data?.map(item => ({
-    id: item.slug, // Use slug as ID for frontend compatibility
-    name: item.title,
-    price: Number(item.basePrice),
-    image: item.imageUrl || "assets/images/Chicken-Shawarma-8.jpg",
-    categoryId: item.Category.slug,
-    description: item.description,
+  return (data || []).map((row) => ({
+    id: row.slug, // Use slug as ID for frontend compatibility
+    name: row.title,
+    price: Number(row.basePrice),
+    image: row.imageUrl || "assets/images/Chicken-Shawarma-8.jpg",
+    categoryId: row.Category.slug,
+    description: row.description,
+    serverId: row.id,
   })) || [];
 }
