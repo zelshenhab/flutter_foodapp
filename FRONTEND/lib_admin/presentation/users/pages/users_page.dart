@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../data/repos/users_repo.dart';
+import '../../../data/admin_api_client.dart';
 import '../bloc/users_bloc.dart';
 import '../bloc/users_event.dart';
 import '../bloc/users_state.dart';
@@ -9,92 +11,106 @@ class UsersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<UsersBloc, UsersState>(
-      listenWhen: (p, n) => p.error != n.error,
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error!)),
-          );
-        }
-      },
-      builder: (context, state) {
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Row(
-              children: [
-                const Text('Пользователи',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                const Spacer(),
-                SizedBox(
-                  width: 280,
-                  child: TextField(
-                    onChanged: (v) =>
-                        context.read<UsersBloc>().add(UsersSearchChanged(v)),
-                    decoration: const InputDecoration(
-                      hintText: 'Поиск по имени / телефону',
-                    ),
+    return BlocProvider(
+      // وفّر الـ Bloc هنا مباشرةً (سهل للدمج)
+      create: (_) =>
+          UsersBloc(UsersRepo(AdminApiClient(baseUrl: '.....')))
+            ..add(const UsersLoaded()),
+      child: BlocConsumer<UsersBloc, UsersState>(
+        listenWhen: (p, n) => p.error != n.error,
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.error!)));
+          }
+        },
+        builder: (context, state) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Пользователи',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddDialog(context),
-                  icon: const Icon(Icons.person_add_alt_1),
-                  label: const Text('Добавить'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: state.loading
-                  ? const SizedBox(
-                      height: 180,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('ID')),
-                          DataColumn(label: Text('Имя')),
-                          DataColumn(label: Text('Телефон')),
-                          DataColumn(label: Text('Роль')),
-                          DataColumn(label: Text('Действия')),
-                        ],
-                        rows: state.filtered.map((u) {
-                          return DataRow(cells: [
-                            DataCell(Text(u.id)),
-                            DataCell(Text(u.name)),
-                            DataCell(Text(u.phone)),
-                            DataCell(_RolePill(
-                              role: u.role,
-                              onChange: (r) => context
-                                  .read<UsersBloc>()
-                                  .add(UserRoleChanged(u.id, r)),
-                            )),
-                            DataCell(Row(
-                              children: [
-                                IconButton(
-                                  tooltip: 'Заблокировать',
-                                  onPressed: () => context
-                                      .read<UsersBloc>()
-                                      .add(UserBlocked(u.id)),
-                                  icon: const Icon(Icons.block),
-                                ),
-                              ],
-                            )),
-                          ]);
-                        }).toList(),
+                  const Spacer(),
+                  SizedBox(
+                    width: 280,
+                    child: TextField(
+                      onChanged: (v) =>
+                          context.read<UsersBloc>().add(UsersSearchChanged(v)),
+                      decoration: const InputDecoration(
+                        hintText: 'Поиск по имени / телефону',
                       ),
                     ),
-            ),
-          ],
-        );
-      },
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddDialog(context),
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Добавить'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: state.loading
+                    ? const SizedBox(
+                        height: 180,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('ID')),
+                            DataColumn(label: Text('Имя')),
+                            DataColumn(label: Text('Телефон')),
+                            DataColumn(label: Text('Роль')),
+                            DataColumn(label: Text('Действия')),
+                          ],
+                          rows: state.filtered.map((u) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(u.id)),
+                                DataCell(Text(u.name)),
+                                DataCell(Text(u.phone)),
+                                DataCell(
+                                  _RolePill(
+                                    role: u.role,
+                                    onChange: (r) => context
+                                        .read<UsersBloc>()
+                                        .add(UserRoleChanged(u.id, r)),
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'Заблокировать',
+                                        onPressed: () => context
+                                            .read<UsersBloc>()
+                                            .add(UserBlocked(u.id)),
+                                        icon: const Icon(Icons.block),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -107,27 +123,43 @@ class UsersPage extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Добавить пользователя'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(hintText: 'Имя')),
-            const SizedBox(height: 8),
-            TextField(controller: phoneCtrl, decoration: const InputDecoration(hintText: 'Телефон')),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: role,
-              decoration: const InputDecoration(labelText: 'Роль'),
-              items: const [
-                DropdownMenuItem(value: 'customer', child: Text('customer')),
-                DropdownMenuItem(value: 'manager', child: Text('manager')),
-                DropdownMenuItem(value: 'admin', child: Text('admin')),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(hintText: 'Имя'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(hintText: 'Телефон'),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: role,
+                  decoration: const InputDecoration(labelText: 'Роль'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'customer',
+                      child: Text('customer'),
+                    ),
+                    DropdownMenuItem(value: 'manager', child: Text('manager')),
+                    DropdownMenuItem(value: 'admin', child: Text('admin')),
+                  ],
+                  onChanged: (v) => setState(() => role = v ?? 'customer'),
+                ),
               ],
-              onChanged: (v) => role = v ?? 'customer',
-            ),
-          ],
+            );
+          },
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
           ElevatedButton(
             onPressed: () {
               final n = nameCtrl.text.trim();
@@ -166,10 +198,8 @@ class _RolePill extends StatelessWidget {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(role),
-            const SizedBox(width: 4),
-            const Icon(Icons.expand_more, size: 16),
+          children: const [
+            // بنعرض القيمة الحالية بالنص
           ],
         ),
       ),

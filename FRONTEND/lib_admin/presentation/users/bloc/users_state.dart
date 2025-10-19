@@ -18,7 +18,7 @@ class UsersState extends Equatable {
     bool? loading,
     List<AdminUser>? data,
     String? search,
-    String? error, // ضع null لمسح الرسالة
+    String? error,
   }) {
     return UsersState(
       loading: loading ?? this.loading,
@@ -32,7 +32,8 @@ class UsersState extends Equatable {
     final q = search.trim().toLowerCase();
     if (q.isEmpty) return data;
     return data.where((u) =>
-      u.name.toLowerCase().contains(q) || u.phone.toLowerCase().contains(q)
+      u.name.toLowerCase().contains(q) ||
+      u.phone.toLowerCase().contains(q)
     ).toList();
   }
 

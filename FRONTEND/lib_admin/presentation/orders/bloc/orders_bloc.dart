@@ -12,7 +12,6 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     on<OrderStatusChanged>(_onStatus);
   }
 
-  // تحميل الطلبات
   Future<void> _onLoaded(OrdersLoaded e, Emitter<OrdersState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
@@ -23,7 +22,6 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     }
   }
 
-  // تغيير الفلتر
   Future<void> _onFilter(
     OrdersFilterChanged e,
     Emitter<OrdersState> emit,
@@ -31,38 +29,30 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     emit(state.copyWith(filter: e.filter));
   }
 
-  // تغيير حالة الطلب (مع Optimistic Update + Rollback عند الفشل)
   Future<void> _onStatus(
     OrderStatusChanged e,
     Emitter<OrdersState> emit,
   ) async {
-    // لو الحالة الجديدة هي نفسها الحالية — لا تعمل شيء
-    final current = state.data.firstWhere(
-      (o) => o.id == e.orderId,
-      orElse: () => state.data.isNotEmpty ? state.data.first : null as dynamic,
-    );
-    if (current != null && current.status == e.status) return;
+    // ابحث بأمان (من غير null-cast)
+    final currentIndex = state.data.indexWhere((o) => o.id == e.orderId);
+    if (currentIndex == -1) return;
+    final current = state.data[currentIndex];
+    if (current.status == e.status) return;
 
-    // احتفظ بنسخة قبل التعديل (للـ rollback)
-    final prevData = state.data;
+    // خزّن نسخة قبل التحديث (rollback)
+    final prevData = List<AdminOrder>.from(state.data);
 
     // تحديث متفائل
-    final optimistic = state.data
-        .map((o) => o.id == e.orderId ? o.copyWith(status: e.status) : o)
-        .toList();
-
+    final optimistic = List<AdminOrder>.from(state.data);
+    optimistic[currentIndex] = current.copyWith(status: e.status);
     emit(state.copyWith(data: optimistic, error: null));
 
     try {
       final ok = await repo.updateOrderStatus(e.orderId, e.status);
       if (!ok) {
-        // رجّع الحالة القديمة لو السيرفر رفض
-        emit(
-          state.copyWith(data: prevData, error: 'Не удалось обновить статус'),
-        );
+        emit(state.copyWith(data: prevData, error: 'Не удалось обновить статус'));
       }
     } catch (_) {
-      // في حال الاستثناء — Rollback + رسالة
       emit(state.copyWith(data: prevData, error: 'Не удалось обновить статус'));
     }
   }

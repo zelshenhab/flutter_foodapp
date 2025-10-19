@@ -6,7 +6,6 @@ class AnalyticsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // لو عندك أرقام حقيقية من BLoC، بدّل القيم هنا
     return Padding(
       padding: const EdgeInsets.all(16),
       child: LayoutBuilder(
@@ -34,9 +33,9 @@ class AnalyticsPage extends StatelessWidget {
                 icon: Icons.people,
               ),
               StatCard(
-                title: 'Доставлено (за 7 дней)',
+                title: 'Самовывоз (7 дней)',
                 value: '392',
-                icon: Icons.local_shipping,
+                icon: Icons.store_mall_directory,
               ),
             ],
           );

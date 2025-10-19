@@ -45,7 +45,12 @@ class _AdminShellState extends State<AdminShell> {
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              child: _pages[_index],
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: KeyedSubtree( // يمنع احتفاظ الحالة بين الصفحات
+                key: ValueKey(_index),
+                child: _pages[_index],
+              ),
             ),
           ),
         ],

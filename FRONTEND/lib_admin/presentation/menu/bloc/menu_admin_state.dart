@@ -33,5 +33,6 @@ class MenuAdminState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [loading, categories, selectedCategoryId, items, error];
+  List<Object?> get props =>
+      [loading, categories, selectedCategoryId, items, error];
 }

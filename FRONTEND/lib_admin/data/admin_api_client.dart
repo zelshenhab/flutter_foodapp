@@ -1,10 +1,15 @@
+// lib_admin/data/admin_api_client.dart
 import 'dart:async';
 
 /// عميل بسيط (Mock) بيعمل تأخير صناعي لتقليد الاتصال بالسيرفر.
 class AdminApiClient {
   final String baseUrl;
   final String? token;
+
   const AdminApiClient({required this.baseUrl, this.token});
+
+  /// ✅ Factory مريحة للموك
+  factory AdminApiClient.mock() => const AdminApiClient(baseUrl: 'mock');
 
   Future<List<Map<String, dynamic>>> getList(String path) async {
     await Future.delayed(const Duration(milliseconds: 400));
