@@ -6,7 +6,6 @@ import '../cart/pages/cart_page.dart';
 import '../profile/pages/profile_page.dart';
 
 import '../cart/bloc/cart_bloc.dart';
-import '../cart/bloc/cart_state.dart';
 import '../menu/bloc/menu_bloc.dart';
 import '../menu/bloc/menu_event.dart';
 import '../profile/bloc/profile_bloc.dart';
