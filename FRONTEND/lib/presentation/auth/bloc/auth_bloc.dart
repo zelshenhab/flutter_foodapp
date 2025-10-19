@@ -19,7 +19,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthVerifyPressed>(_onVerify);
     on<AuthResendCode>(_onResend);
 
-    // ✅ تيك من التايمر بدل emit داخل التايمر
     on<AuthResendTick>(_onResendTick);
 
     on<AuthEditPhone>(_onEditPhone);

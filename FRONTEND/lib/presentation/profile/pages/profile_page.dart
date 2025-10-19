@@ -23,12 +23,10 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ مفيش BlocProvider هنا — AppShell هو اللي موفّر ProfileBloc
     return BlocListener<ProfileBloc, ProfileState>(
       listenWhen: (prev, next) =>
           prev.profile != next.profile || prev.loading != next.loading,
       listener: (context, state) {
-        // لما يحصل تسجيل خروج (profile == null) نرجّع لصفحة تسجيل الدخول
         if (!state.loading && state.profile == null) {
           Navigator.pushAndRemoveUntil(
             context,
@@ -44,7 +42,6 @@ class ProfilePage extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () {
-                // لو حابب تعمل تأكيد قبل الخروج، قدر تضيف Dialog هنا
                 context.read<ProfileBloc>().add(ProfileLogoutRequested());
               },
             ),
