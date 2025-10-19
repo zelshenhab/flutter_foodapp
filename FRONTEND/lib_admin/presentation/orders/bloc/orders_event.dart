@@ -11,7 +11,7 @@ class OrdersLoaded extends OrdersEvent {
 }
 
 class OrdersFilterChanged extends OrdersEvent {
-  final String filter; // all/preparing/on_the_way/delivered/cancelled
+  final String filter; // all/pending/preparing/ready/completed/cancelled
   const OrdersFilterChanged(this.filter);
   @override
   List<Object?> get props => [filter];

@@ -1,51 +1,43 @@
-import '../admin_api_client.dart';
+// lib_admin/data/repos/orders_repo.dart
+import 'package:equatable/equatable.dart';
 
-class AdminOrder {
+class AdminOrder extends Equatable {
   final String id;
   final String customer;
-  final num total;
-  final String status; // pending | preparing | ready | completed | cancelled
-  final String type; // pickup
+  final double total;
+  /// pending / preparing / ready / completed / cancelled
+  final String status;
+  final DateTime createdAt;
 
   const AdminOrder({
     required this.id,
     required this.customer,
     required this.total,
     required this.status,
-    required this.type,
+    required this.createdAt,
   });
 
-  AdminOrder copyWith({String? status}) => AdminOrder(
-    id: id,
-    customer: customer,
-    total: total,
-    status: status ?? this.status,
-    type: type,
-  );
+  AdminOrder copyWith({
+    String? id,
+    String? customer,
+    double? total,
+    String? status,
+    DateTime? createdAt,
+  }) {
+    return AdminOrder(
+      id: id ?? this.id,
+      customer: customer ?? this.customer,
+      total: total ?? this.total,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 
-  factory AdminOrder.fromJson(Map<String, dynamic> j) => AdminOrder(
-    id: j['id'],
-    customer: j['customer'],
-    total: j['total'],
-    status: j['status'],
-    type: (j['type'] ?? 'pickup'),
-  );
+  @override
+  List<Object?> get props => [id, customer, total, status, createdAt];
 }
 
-class OrdersRepo {
-  final AdminApiClient api;
-  OrdersRepo(this.api);
-
-  Future<List<AdminOrder>> fetchOrders() async {
-    final data = await api.getList('/orders');
-    // ✅ في الـ mock نتأكد إن type = pickup
-    return data.map((e) {
-      e['type'] ??= 'pickup';
-      return AdminOrder.fromJson(e);
-    }).toList();
-  }
-
-  Future<bool> updateOrderStatus(String id, String status) {
-    return api.patch('/orders/$id', {'status': status});
-  }
+abstract class OrdersRepo {
+  Future<List<AdminOrder>> fetchOrders();
+  Future<bool> updateOrderStatus(String orderId, String status);
 }

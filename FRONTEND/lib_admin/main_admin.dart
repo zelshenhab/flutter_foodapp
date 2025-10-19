@@ -12,7 +12,6 @@ import 'presentation/root/admin_shell.dart';
 import 'data/admin_api_client.dart';
 import 'data/repos/users_repo.dart';
 
-
 // BLOCS
 import 'presentation/users/bloc/users_bloc.dart';
 import 'presentation/users/bloc/users_event.dart';
@@ -45,7 +44,12 @@ class AdminApp extends StatelessWidget {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<UsersRepo>(create: (_) => UsersRepo(api)),
-        RepositoryProvider<OrdersRepo>(create: (_) => OrdersRepo(api)),
+        // OrdersRepo is abstract; replace the throw with a concrete implementation, e.g. OrdersRepoImpl(api)
+        RepositoryProvider<OrdersRepo>(
+          create: (_) => throw UnimplementedError(
+            'Provide a concrete OrdersRepo implementation (e.g. OrdersRepoImpl)',
+          ),
+        ),
         RepositoryProvider<MenuRepo>(create: (_) => MenuRepo(api)),
         RepositoryProvider<PromosRepo>(create: (_) => PromosRepo(api)),
         RepositoryProvider<TicketsRepo>(create: (_) => TicketsRepo(api)),
@@ -53,23 +57,28 @@ class AdminApp extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<UsersBloc>(
-            create: (ctx) => UsersBloc(ctx.read<UsersRepo>())..add(const UsersLoaded()),
+            create: (ctx) =>
+                UsersBloc(ctx.read<UsersRepo>())..add(const UsersLoaded()),
           ),
           BlocProvider<OrdersBloc>(
-            create: (ctx) => OrdersBloc(ctx.read<OrdersRepo>())..add(const OrdersLoaded()),
+            create: (ctx) =>
+                OrdersBloc(ctx.read<OrdersRepo>())..add(const OrdersLoaded()),
           ),
           BlocProvider<MenuAdminBloc>(
-            create: (ctx) => MenuAdminBloc(ctx.read<MenuRepo>())..add(const MenuAdminLoaded()),
+            create: (ctx) =>
+                MenuAdminBloc(ctx.read<MenuRepo>())
+                  ..add(const MenuAdminLoaded()),
           ),
           BlocProvider<PromosBloc>(
-            create: (ctx) => PromosBloc(ctx.read<PromosRepo>())..add(const PromosLoaded()),
+            create: (ctx) =>
+                PromosBloc(ctx.read<PromosRepo>())..add(const PromosLoaded()),
           ),
           BlocProvider<TicketsBloc>(
-            create: (ctx) => TicketsBloc(ctx.read<TicketsRepo>())..add(const TicketsLoaded()),
+            create: (ctx) =>
+                TicketsBloc(ctx.read<TicketsRepo>())
+                  ..add(const TicketsLoaded()),
           ),
-          BlocProvider<SettingsCubit>(
-            create: (_) => SettingsCubit(),
-          ),
+          BlocProvider<SettingsCubit>(create: (_) => SettingsCubit()),
         ],
         child: MaterialApp(
           title: 'Admin • Адам и Ева',

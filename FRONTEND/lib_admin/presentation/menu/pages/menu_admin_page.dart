@@ -1,123 +1,165 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../data/repos/menu_repo.dart';
+
 import '../bloc/menu_admin_bloc.dart';
 import '../bloc/menu_admin_event.dart';
 import '../bloc/menu_admin_state.dart';
+
+// ✅ الريبو والـ API Client (موك/حقيقي)
+import '../../../data/repos/menu_repo.dart';
+import '../../../data/admin_api_client.dart';
 
 class MenuAdminPage extends StatelessWidget {
   const MenuAdminPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<MenuAdminBloc, MenuAdminState>(
-      listenWhen: (p, n) => p.error != n.error,
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.error!)));
-        }
-      },
-      builder: (context, state) {
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Row(
-              children: [
-                const Text('Меню',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                const Spacer(),
-                if (state.categories.isNotEmpty)
-                  SizedBox(
-                    width: 280,
-                    child: DropdownButtonFormField<String>(
-                      value: state.selectedCategoryId.isEmpty
-                          ? state.categories.first.id
-                          : state.selectedCategoryId,
-                      items: state.categories
-                          .map((c) => DropdownMenuItem(
+    return BlocProvider<MenuAdminBloc>(
+      // ✅ استخدم الموك الآن. لما تربط باك-энд حقيقي:
+      // MenuRepo(AdminApiClient(baseUrl: 'https://api.your-backend.com'))
+      create: (_) =>
+          MenuAdminBloc(MenuRepo(AdminApiClient.mock()))..add(const MenuAdminLoaded()),
+      child: BlocConsumer<MenuAdminBloc, MenuAdminState>(
+        listenWhen: (p, n) => p.error != n.error,
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error!)),
+            );
+          }
+        },
+        builder: (context, state) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Меню',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const Spacer(),
+                  if (state.categories.isNotEmpty)
+                    SizedBox(
+                      width: 280,
+                      child: DropdownButtonFormField<String>(
+                        value: state.selectedCategoryId.isEmpty
+                            ? state.categories.first.id
+                            : state.selectedCategoryId,
+                        items: state.categories
+                            .map(
+                              (c) => DropdownMenuItem(
                                 value: c.id,
                                 child: Text(c.name),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) {
-                          context.read<MenuAdminBloc>().add(MenuCategoryChanged(v));
-                        }
-                      },
-                      decoration: const InputDecoration(labelText: 'Категория'),
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: state.selectedCategoryId.isEmpty
-                      ? null
-                      : () => _showDishDialog(context, state.selectedCategoryId),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Добавить блюдо'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              child: state.loading
-                  ? const SizedBox(height: 180, child: Center(child: CircularProgressIndicator()))
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('ID')),
-                          DataColumn(label: Text('Название')),
-                          DataColumn(label: Text('Цена')),
-                          DataColumn(label: Text('Доступно')),
-                          DataColumn(label: Text('Действия')),
-                        ],
-                        rows: state.items.map((d) {
-                          return DataRow(cells: [
-                            DataCell(Text(d.id)),
-                            DataCell(Text(d.name)),
-                            DataCell(Text('${d.price} ₽')),
-                            DataCell(Switch(
-                              value: d.available,
-                              onChanged: (_) => context
-                                  .read<MenuAdminBloc>()
-                                  .add(MenuItemUpdated(d.copyWith(available: !d.available))),
-                            )),
-                            DataCell(Row(
-                              children: [
-                                IconButton(
-                                  tooltip: 'Редактировать',
-                                  onPressed: () => _showDishDialog(
-                                    context,
-                                    state.selectedCategoryId,
-                                    dish: d,
-                                  ),
-                                  icon: const Icon(Icons.edit),
-                                ),
-                                IconButton(
-                                  tooltip: 'Удалить',
-                                  onPressed: () => context
-                                      .read<MenuAdminBloc>()
-                                      .add(MenuItemDeleted(d.id)),
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                              ],
-                            )),
-                          ]);
-                        }).toList(),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) {
+                            context
+                                .read<MenuAdminBloc>()
+                                .add(MenuCategoryChanged(v));
+                          }
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Категория',
+                        ),
                       ),
                     ),
-            ),
-          ],
-        );
-      },
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: state.selectedCategoryId.isEmpty
+                        ? null
+                        : () => _showDishDialog(
+                              context,
+                              state.selectedCategoryId,
+                            ),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Добавить блюдо'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: state.loading
+                    ? const SizedBox(
+                        height: 180,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('ID')),
+                            DataColumn(label: Text('Название')),
+                            DataColumn(label: Text('Цена')),
+                            DataColumn(label: Text('Доступно')),
+                            DataColumn(label: Text('Действия')),
+                          ],
+                          rows: state.items.map((d) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(d.id)),
+                                DataCell(Text(d.name)),
+                                DataCell(Text('${d.price} ₽')),
+                                DataCell(
+                                  Switch(
+                                    value: d.available,
+                                    onChanged: (_) => context
+                                        .read<MenuAdminBloc>()
+                                        .add(MenuItemUpdated(
+                                          d.copyWith(available: !d.available),
+                                        )),
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'Редактировать',
+                                        onPressed: () => _showDishDialog(
+                                          context,
+                                          state.selectedCategoryId,
+                                          dish: d,
+                                        ),
+                                        icon: const Icon(Icons.edit),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Удалить',
+                                        onPressed: () => context
+                                            .read<MenuAdminBloc>()
+                                            .add(MenuItemDeleted(d.id)),
+                                        icon: const Icon(Icons.delete_outline),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  void _showDishDialog(BuildContext context, String categoryId, {AdminDish? dish}) {
+  void _showDishDialog(
+    BuildContext context,
+    String categoryId, {
+    AdminDish? dish,
+  }) {
     final nameCtrl = TextEditingController(text: dish?.name ?? '');
     final priceCtrl = TextEditingController(
-        text: dish == null ? '' : dish!.price.toStringAsFixed(0));
+      text: dish == null ? '' : dish.price.toString(),
+    );
     final imageCtrl = TextEditingController(text: dish?.imageUrl ?? '');
     bool available = dish?.available ?? true;
 
@@ -129,7 +171,10 @@ class MenuAdminPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Название')),
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Название'),
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: priceCtrl,
@@ -137,7 +182,12 @@ class MenuAdminPage extends StatelessWidget {
                 decoration: const InputDecoration(labelText: 'Цена (₽)'),
               ),
               const SizedBox(height: 8),
-              TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Изображение (URL)')),
+              TextField(
+                controller: imageCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Изображение (URL)',
+                ),
+              ),
               const SizedBox(height: 8),
               SwitchListTile(
                 value: available,
@@ -148,7 +198,10 @@ class MenuAdminPage extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
           ElevatedButton(
             onPressed: () {
               final name = nameCtrl.text.trim();

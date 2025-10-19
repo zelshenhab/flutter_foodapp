@@ -5,6 +5,7 @@ import 'users_state.dart';
 
 class UsersBloc extends Bloc<UsersEvent, UsersState> {
   final UsersRepo repo;
+
   UsersBloc(this.repo) : super(const UsersState()) {
     on<UsersLoaded>(_onLoaded);
     on<UsersSearchChanged>(_onSearch);
@@ -30,19 +31,28 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   Future<void> _onAdd(UserAdded e, Emitter<UsersState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     final ok = await repo.addUser(e.name, e.phone, role: e.role);
-    if (!ok) return emit(state.copyWith(loading: false, error: 'Ошибка при добавлении'));
+    if (!ok) {
+      emit(state.copyWith(loading: false, error: 'Ошибка при добавлении'));
+      return;
+    }
     add(const UsersLoaded());
   }
 
   Future<void> _onRole(UserRoleChanged e, Emitter<UsersState> emit) async {
     final ok = await repo.updateUserRole(e.userId, e.role);
-    if (!ok) return emit(state.copyWith(error: 'Ошибка при смене роли'));
+    if (!ok) {
+      emit(state.copyWith(error: 'Ошибка при смене роли'));
+      return;
+    }
     add(const UsersLoaded());
   }
 
   Future<void> _onBlock(UserBlocked e, Emitter<UsersState> emit) async {
     final ok = await repo.blockUser(e.userId);
-    if (!ok) return emit(state.copyWith(error: 'Ошибка при блокировке'));
+    if (!ok) {
+      emit(state.copyWith(error: 'Ошибка при блокировке'));
+      return;
+    }
     add(const UsersLoaded());
   }
 }

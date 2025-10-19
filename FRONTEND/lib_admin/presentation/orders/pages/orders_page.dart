@@ -1,136 +1,144 @@
+// lib_admin/presentation/orders/pages/orders_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/orders_bloc.dart';
-import '../bloc/orders_event.dart';
-import '../bloc/orders_state.dart';
+
+import '../../orders/bloc/orders_bloc.dart';
+import '../../orders/bloc/orders_event.dart';
+import '../../orders/bloc/orders_state.dart';
+
+import '../../../data/repos/mock_orders_repo.dart'; // ← ده الصح
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<OrdersBloc, OrdersState>(
-      listenWhen: (p, n) => p.error != n.error,
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.error!)));
-        }
-      },
-      builder: (context, state) {
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Row(
-              children: [
-                const Text(
-                  'Заказы (Самовывоз)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const Spacer(),
-                _StatusFilter(
-                  value: state.filter,
-                  onChanged: (f) =>
-                      context.read<OrdersBloc>().add(OrdersFilterChanged(f)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+    return BlocProvider<OrdersBloc>(
+      create: (_) => OrdersBloc(MockOrdersRepo())..add(const OrdersLoaded()),
+      child: BlocConsumer<OrdersBloc, OrdersState>(
+        listenWhen: (p, n) => p.error != n.error,
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.error!)));
+          }
+        },
+        builder: (context, state) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Заказы (Самовывоз)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                  const Spacer(),
+                  _StatusFilter(
+                    value: state.filter,
+                    onChanged: (f) =>
+                        context.read<OrdersBloc>().add(OrdersFilterChanged(f)),
+                  ),
+                ],
               ),
-              child: state.loading
-                  ? const SizedBox(
-                      height: 180,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('ID')),
-                          DataColumn(label: Text('Клиент')),
-                          DataColumn(label: Text('Тип')),
-                          DataColumn(label: Text('Сумма')),
-                          DataColumn(label: Text('Статус')),
-                          DataColumn(label: Text('Действия')),
-                        ],
-                        rows: state.filtered.map((o) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text(o.id)),
-                              DataCell(Text(o.customer)),
-                              const DataCell(Text('Самовывоз')),
-                              DataCell(Text('${o.total} ₽')),
-                              DataCell(
-                                _OrderStatusPill(
-                                  status: o.status,
-                                  onChange: (s) => context
-                                      .read<OrdersBloc>()
-                                      .add(OrderStatusChanged(o.id, s)),
+              const SizedBox(height: 12),
+
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: state.loading
+                    ? const SizedBox(
+                        height: 180,
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(label: Text('ID')),
+                            DataColumn(label: Text('Клиент')),
+                            DataColumn(label: Text('Тип')),
+                            DataColumn(label: Text('Сумма')),
+                            DataColumn(label: Text('Статус')),
+                            DataColumn(label: Text('Действия')),
+                          ],
+                          rows: state.filtered.map((o) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(o.id)),
+                                DataCell(Text(o.customer)),
+                                const DataCell(Text('Самовывоз')),
+                                DataCell(Text('${o.total} ₽')),
+                                DataCell(
+                                  _OrderStatusPill(
+                                    status: o.status,
+                                    onChange: (s) => context
+                                        .read<OrdersBloc>()
+                                        .add(OrderStatusChanged(o.id, s)),
+                                  ),
                                 ),
-                              ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    // إرسال إلى التحضير
-                                    IconButton(
-                                      tooltip: 'В готовку',
-                                      onPressed: o.status == 'pending'
-                                          ? () =>
-                                                context.read<OrdersBloc>().add(
-                                                  OrderStatusChanged(
-                                                    o.id,
-                                                    'preparing',
-                                                  ),
-                                                )
-                                          : null,
-                                      icon: const Icon(Icons.restaurant),
-                                    ),
-                                    // جاهز للاستلام
-                                    IconButton(
-                                      tooltip: 'Готов к выдаче',
-                                      onPressed:
-                                          (o.status == 'pending' ||
-                                              o.status == 'preparing')
-                                          ? () =>
-                                                context.read<OrdersBloc>().add(
-                                                  OrderStatusChanged(
-                                                    o.id,
-                                                    'ready',
-                                                  ),
-                                                )
-                                          : null,
-                                      icon: const Icon(Icons.checklist_rtl),
-                                    ),
-                                    // تم الاستلام
-                                    IconButton(
-                                      tooltip: 'Завершён',
-                                      onPressed: (o.status == 'ready')
-                                          ? () =>
-                                                context.read<OrdersBloc>().add(
-                                                  OrderStatusChanged(
-                                                    o.id,
-                                                    'completed',
-                                                  ),
-                                                )
-                                          : null,
-                                      icon: const Icon(Icons.check_circle),
-                                    ),
-                                  ],
+                                DataCell(
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'В готовку',
+                                        onPressed: o.status == 'pending'
+                                            ? () => context
+                                                  .read<OrdersBloc>()
+                                                  .add(
+                                                    OrderStatusChanged(
+                                                      o.id,
+                                                      'preparing',
+                                                    ),
+                                                  )
+                                            : null,
+                                        icon: const Icon(Icons.restaurant),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Готов к выдаче',
+                                        onPressed:
+                                            (o.status == 'pending' ||
+                                                o.status == 'preparing')
+                                            ? () => context
+                                                  .read<OrdersBloc>()
+                                                  .add(
+                                                    OrderStatusChanged(
+                                                      o.id,
+                                                      'ready',
+                                                    ),
+                                                  )
+                                            : null,
+                                        icon: const Icon(Icons.checklist_rtl),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Завершён',
+                                        onPressed: (o.status == 'ready')
+                                            ? () => context
+                                                  .read<OrdersBloc>()
+                                                  .add(
+                                                    OrderStatusChanged(
+                                                      o.id,
+                                                      'completed',
+                                                    ),
+                                                  )
+                                            : null,
+                                        icon: const Icon(Icons.check_circle),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
-                    ),
-            ),
-          ],
-        );
-      },
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
