@@ -73,7 +73,7 @@ class LoginOtpPage extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     Pinput(
-                      length: 4,
+                      length: 6,
                       onChanged: (v) =>
                           context.read<AuthBloc>().add(AuthOtpChanged(v)),
                       defaultPinTheme: PinTheme(

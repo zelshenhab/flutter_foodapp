@@ -1,19 +1,16 @@
-import express, { Request, Response } from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-
+﻿import dotenv from "dotenv";
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 4000;
+import { createApp } from "./core/app";
 
-app.use(cors());
-app.use(express.json());
+const app = createApp();
+const PORT = Number(process.env.PORT || 4000);
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Backend is running 🚀");
+// Optional root message
+app.get("/", (_req, res) => {
+  res.send("FoodApp API is running. Try /health or /api/health");
 });
 
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
