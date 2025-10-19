@@ -1,63 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/core/utils/money.dart';
-import '../bloc/cart_state.dart';
 import '../bloc/cart_bloc.dart';
-
-const _minOrder = 500.0; // حد أدنى تجريبي
+import '../bloc/cart_state.dart';
 
 class SummaryPanel extends StatelessWidget {
-  const SummaryPanel({super.key});
+  final bool pickup; // ✅ نحدّد إن ده ملخص Pickup
+  final String? pickupAddress;
+
+  const SummaryPanel({super.key, this.pickup = false, this.pickupAddress});
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
+      buildWhen: (p, n) =>
+          p.subtotal != n.subtotal ||
+          p.discount != n.discount ||
+          p.total != n.total ||
+          p.promoCode != n.promoCode,
       builder: (context, state) {
-        Widget row(String label, String value, {bool bold = false}) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(child: Text(label,
-                    style: TextStyle(
-                      fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                    ))),
-                Text(value,
-                    style: TextStyle(
-                      fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                    )),
-              ],
-            ),
-          );
-        }
-
-        final hasDiscount = state.discount > 0;
-
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              row('Сумма заказа', money(state.itemsTotal)),
-              row('Доставка', money(state.deliveryFee)),
-              if (hasDiscount)
-                row('Скидка${state.promoCode != null ? ' (${state.promoCode})' : ''}',
-                    '-${money(state.discount)}'),
-              const Divider(color: Color(0xFF2A2A2A)),
-              row('Итого', money(state.grandTotal), bold: true),
+              if (pickup && pickupAddress != null) ...[
+                _infoChip('Самовывоз — $pickupAddress'),
+                const SizedBox(height: 8),
+              ],
 
-              if (state.itemsTotal < _minOrder)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: Text(
-                    'Минимальная сумма заказа ${money(_minOrder)}',
-                    style: const TextStyle(color: Colors.orangeAccent),
-                  ),
-                ),
+              _row('Сумма заказа', money(state.itemsTotal)),
+              if (state.discount > 0)
+                _row('Скидка', '-${money(state.discount)}'),
+
+              const Divider(color: Color(0xFF2A2A2A)),
+              _row('Итого', money(state.grandTotal), bold: true),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _row(String l, String v, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(child: Text(l, style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w500))),
+          Text(v, style: TextStyle(fontWeight: bold ? FontWeight.w800 : FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
+        ),
+        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+      ),
     );
   }
 }

@@ -1,1 +1,1 @@
-enum PaymentMethod { card, cash }
+enum PaymentMethod { online, defaultMethod, cash }

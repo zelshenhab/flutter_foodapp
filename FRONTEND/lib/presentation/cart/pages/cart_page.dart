@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/payments/pages/online_payment_page.dart';
+
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
+
 import '../widgets/restaurant_header.dart';
 import '../widgets/cart_item_tile.dart';
 import '../widgets/payment_method_selector.dart';
-import '../widgets/address_box.dart';
 import '../widgets/summary_panel.dart';
 import '../widgets/checkout_bar.dart';
 import '../widgets/promo_field.dart';
@@ -39,7 +41,12 @@ class CartPage extends StatelessWidget {
 
           return ListView(
             children: [
-              const RestaurantHeader(showName: true),
+              // ✅ هيدر يوضّح إن الطلب Самовывоз + العنوان
+              const RestaurantHeader(
+                showName: true,
+                showPickupBadge: true,
+                pickupAddress: 'ул. Пушкина 15',
+              ),
 
               // العناصر مع السحب للحذف + SnackBar Undo
               Padding(
@@ -69,7 +76,6 @@ class CartPage extends StatelessWidget {
                               action: SnackBarAction(
                                 label: 'Отменить',
                                 onPressed: () {
-                                  // إرجاع العنصر واحد كمية 1 (أبسط سلوك)
                                   context.read<CartBloc>().add(
                                     CartItemAdded(ci.item),
                                   );
@@ -86,37 +92,34 @@ class CartPage extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // حقل البروموكود
+              // بروموكود
               const PromoField(),
 
-              // Chip يظهر عند تفعيل الخصم لإزالته
-              if (state.promoCode != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ActionChip(
-                      avatar: const Icon(Icons.percent, size: 18),
-                      label: Text('Промокод: ${state.promoCode}'),
-                      onPressed: () => context.read<CartBloc>().add(
-                        const CartPromoApplied(''),
-                      ),
-                    ),
-                  ),
-                ),
-
+              // طريقة الدفع (تقدر تخليها بسيط: نقدًا/ببطاقة عند الاستلام)
               const PaymentMethodSelector(),
-              const AddressBox(),
-              const SummaryPanel(),
+
+              // ✅ ملخص بدون “Доставка”
+              const SummaryPanel(pickup: true, pickupAddress: 'ул. Пушкина 15'),
+
               const SizedBox(height: 80),
             ],
           );
         },
       ),
+
+      // ✅ الزر هيعرض “Оформить самовывоз”
       bottomNavigationBar: CheckoutBar(
         onCheckout: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Переход к оформлению заказа')),
+          final state = context.read<CartBloc>().state;
+          final amount = state.grandTotal; // الإجمالي النهائي من الحالة
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OnlinePaymentPage(
+                amount: amount,
+                description: 'Самовывоз: заказ из корзины',
+              ),
+            ),
           );
         },
       ),

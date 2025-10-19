@@ -29,7 +29,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    _pages = const [MenuPage(), CartPage(), ProfilePage()];
+    _pages = [const MenuPage(), CartPage(), const ProfilePage()];
   }
 
   @override

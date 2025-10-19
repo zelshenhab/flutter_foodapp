@@ -6,17 +6,14 @@ class CartState extends Equatable {
   final bool loading;
   final String? error;
 
-  /// The UI expects a strongly-typed list with MenuItemModel + qty
   final List<CartItem> items;
 
-  /// Totals come from backend
   final double subtotal;
   final double discount;
-  final double deliveryFee;
+  final double deliveryFee; // ✅ هنسيبه ثابت صفر
   final double total;
   final String? promoCode;
 
-  /// Selected payment method (local UI state)
   final PaymentMethod paymentMethod;
 
   const CartState({
@@ -31,10 +28,9 @@ class CartState extends Equatable {
     this.paymentMethod = PaymentMethod.cash,
   });
 
-  // === UI helpers the widgets already use ===
   bool get isEmpty => items.isEmpty;
-  double get itemsTotal => subtotal; // item lines sum, from backend
-  double get grandTotal => total;    // final amount, from backend
+  double get itemsTotal => subtotal;
+  double get grandTotal => subtotal - discount; // ✅ Pickup logic
 
   CartState copyWith({
     bool? loading,
@@ -53,8 +49,8 @@ class CartState extends Equatable {
       items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
       discount: discount ?? this.discount,
-      deliveryFee: deliveryFee ?? this.deliveryFee,
-      total: total ?? this.total,
+      deliveryFee: 0, // ✅ دايمًا صفر
+      total: total ?? (subtotal ?? this.subtotal) - (discount ?? this.discount),
       promoCode: promoCode ?? this.promoCode,
       paymentMethod: paymentMethod ?? this.paymentMethod,
     );
@@ -62,14 +58,14 @@ class CartState extends Equatable {
 
   @override
   List<Object?> get props => [
-        loading,
-        error,
-        items,
-        subtotal,
-        discount,
-        deliveryFee,
-        total,
-        promoCode,
-        paymentMethod,
-      ];
+    loading,
+    error,
+    items,
+    subtotal,
+    discount,
+    deliveryFee,
+    total,
+    promoCode,
+    paymentMethod,
+  ];
 }
