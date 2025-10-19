@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/auth/data/real_auth_service.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'login_otp_page.dart';
-import '../data/mock_auth_service.dart';
 
 class LoginInfoPage extends StatelessWidget {
   const LoginInfoPage({super.key});
@@ -14,7 +14,7 @@ class LoginInfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => AuthBloc(MockAuthService())..add(AuthStarted()),
+      create: (_) => AuthBloc(RealAuthService())..add(AuthStarted()),
       child: const _LoginInfoView(),
     );
   }

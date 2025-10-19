@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
           displayColor: text,
         ),
       ),
-      home: const LoginInfoPage(), // ✅ ابدأ بتسجيل الدخول
+      home: const LoginInfoPage(), // ✅ start at login
     );
   }
 }
