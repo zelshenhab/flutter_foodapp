@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
+import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
 
 // BLoC المنيو
 import '../bloc/menu_bloc.dart';
@@ -14,8 +16,6 @@ import '../widgets/category_icon_strip.dart';
 import '../widgets/menu_item_tile.dart';
 
 // للربط مع السلة
-import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
-import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
 
 class MenuPage extends StatelessWidget {
   const MenuPage({super.key});

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../menu/models/menu_item.dart';
+import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 
 class CartItem extends Equatable {
   final MenuItemModel item;

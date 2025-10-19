@@ -4,11 +4,16 @@ import '../models/order.dart';
 
 String _statusText(OrderStatus s) {
   switch (s) {
-    case OrderStatus.pending: return 'Ожидает';
-    case OrderStatus.preparing: return 'Готовится';
-    case OrderStatus.onTheWay: return 'В пути';
-    case OrderStatus.delivered: return 'Доставлен';
-    case OrderStatus.cancelled: return 'Отменён';
+    case OrderStatus.pending:
+      return 'Ожидает';
+    case OrderStatus.preparing:
+      return 'Готовится';
+    case OrderStatus.ready:
+      return 'Готов к выдаче';
+    case OrderStatus.completed:
+      return 'Завершён';
+    case OrderStatus.cancelled:
+      return 'Отменён';
   }
 }
 
@@ -37,11 +42,13 @@ class OrderCard extends StatelessWidget {
             // رقم الطلب + التاريخ
             Row(
               children: [
-                Text('Заказ №${order.id}',
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  'Заказ №${order.id}',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const Spacer(),
                 Text(
-                  '${order.createdAt.day}.${order.createdAt.month}.${order.createdAt.year}',
+                  '${order.createdAt.day.toString().padLeft(2, '0')}.${order.createdAt.month.toString().padLeft(2, '0')}.${order.createdAt.year}',
                   style: const TextStyle(color: Color(0xFFA7A7A7)),
                 ),
               ],
@@ -53,14 +60,19 @@ class OrderCard extends StatelessWidget {
                 Text(order.restaurant),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1E1E),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF2A2A2A)),
                   ),
-                  child: Text(_statusText(order.status),
-                      style: const TextStyle(fontSize: 12)),
+                  child: Text(
+                    _statusText(order.status),
+                    style: const TextStyle(fontSize: 12),
+                  ),
                 ),
               ],
             ),
@@ -74,18 +86,26 @@ class OrderCard extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(first.image, width: 44, height: 44, fit: BoxFit.cover),
+                      child: Image.asset(
+                        first.image,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         more > 0 ? '${first.name} и ещё $more' : first.name,
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(money(order.grandTotal),
-                        style: const TextStyle(fontWeight: FontWeight.w800)),
+                    Text(
+                      money(order.grandTotal),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ],
                 );
               },

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 import '../models/payment_method.dart';
-import '../../menu/models/menu_item.dart';
 
 abstract class CartEvent extends Equatable {
   const CartEvent(); // <-- make base const so subclasses can be const

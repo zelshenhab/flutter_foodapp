@@ -1,28 +1,47 @@
 import 'package:flutter/material.dart';
 
 class RestaurantHeader extends StatelessWidget {
-  final bool showName; // لو عايز تخفي الاسم خلّيه false
-  const RestaurantHeader({super.key, this.showName = true});
+  final bool showName;
+  final bool showPickupBadge;
+  final String? pickupAddress;
+
+  const RestaurantHeader({
+    super.key,
+    this.showName = false,
+    this.showPickupBadge = false,
+    this.pickupAddress,
+  });
 
   @override
   Widget build(BuildContext context) {
-    const muted = Color(0xFFA7A7A7);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Row(
         children: [
-          if (showName)
-            const Text('Адам и Ева',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 6),
-          Row(
-            children: const [
-              Icon(Icons.timer_outlined, size: 16, color: muted),
-              SizedBox(width: 6),
-              Text('Время приготовления: 25–35 мин',
-                  style: TextStyle(color: muted, fontSize: 13)),
-            ],
+          if (showPickupBadge) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+              ),
+              child: const Text('Самовывоз', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showName)
+                  const Text('Адам и Ева', style: TextStyle(fontWeight: FontWeight.w800)),
+                if (pickupAddress != null) ...[
+                  const SizedBox(height: 4),
+                  Text(pickupAddress!, style: const TextStyle(color: Color(0xFFA7A7A7))),
+                ],
+              ],
+            ),
           ),
         ],
       ),

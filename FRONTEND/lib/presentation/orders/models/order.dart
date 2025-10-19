@@ -1,6 +1,12 @@
 import 'package:equatable/equatable.dart';
 
-enum OrderStatus { pending, preparing, onTheWay, delivered, cancelled }
+/// حالات pickup (بدون توصيل):
+/// pending = قيد الانتظار (تم إنشاء الطلب)
+/// preparing = جاري التحضير
+/// ready = جاهز للاستلام عند الكاشير
+/// completed = تم الاستلام
+/// cancelled = ملغى
+enum OrderStatus { pending, preparing, ready, completed, cancelled }
 
 class OrderItem extends Equatable {
   final String id;        // menu item id
@@ -28,7 +34,7 @@ class OrderEntity extends Equatable {
   final DateTime createdAt;
   final String restaurant; // "Адам и Ева"
   final List<OrderItem> items;
-  final double deliveryFee;
+  final double deliveryFee; // هيبقى 0 في pickup
   final double discount;
   final OrderStatus status;
 
@@ -39,14 +45,33 @@ class OrderEntity extends Equatable {
     required this.items,
     this.deliveryFee = 0,
     this.discount = 0,
-    this.status = OrderStatus.delivered,
+    this.status = OrderStatus.completed,
   });
 
-  double get itemsTotal =>
-      items.fold(0.0, (s, it) => s + it.subtotal);
+  double get itemsTotal => items.fold(0.0, (s, it) => s + it.subtotal);
 
   double get grandTotal =>
       (itemsTotal + deliveryFee - discount).clamp(0, double.infinity);
+
+  OrderEntity copyWith({
+    String? id,
+    DateTime? createdAt,
+    String? restaurant,
+    List<OrderItem>? items,
+    double? deliveryFee,
+    double? discount,
+    OrderStatus? status,
+  }) {
+    return OrderEntity(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      restaurant: restaurant ?? this.restaurant,
+      items: items ?? this.items,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      discount: discount ?? this.discount,
+      status: status ?? this.status,
+    );
+  }
 
   @override
   List<Object?> get props =>

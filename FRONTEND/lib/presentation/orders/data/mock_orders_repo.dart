@@ -25,7 +25,7 @@ class MockOrdersRepo {
         ],
         deliveryFee: 0,
         discount: 0,
-        status: OrderStatus.delivered,
+        status: OrderStatus.completed,
       ),
       OrderEntity(
         id: '1019',
@@ -40,9 +40,9 @@ class MockOrdersRepo {
             image: 'assets/images/Chicken-Shawarma-8.jpg',
           ),
         ],
-        deliveryFee: 99,
+        deliveryFee: 0,
         discount: 50,
-        status: OrderStatus.delivered,
+        status: OrderStatus.completed,
       ),
       OrderEntity(
         id: '1003',
@@ -66,7 +66,25 @@ class MockOrdersRepo {
         ],
         deliveryFee: 0,
         discount: 0,
-        status: OrderStatus.delivered,
+        status: OrderStatus.preparing, // مثال: لسه بيتحضّر
+      ),
+      // ممكن تضيف طلب بحالة ready للاختبار:
+      OrderEntity(
+        id: '1033',
+        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+        restaurant: 'Адам и Ева',
+        items: const [
+          OrderItem(
+            id: 'sh2',
+            name: 'Шаурма «Классическая»',
+            price: 249,
+            qty: 1,
+            image: 'assets/images/Chicken-Shawarma-8.jpg',
+          ),
+        ],
+        deliveryFee: 0,
+        discount: 0,
+        status: OrderStatus.ready, // جاهز للاستلام
       ),
     ];
   }

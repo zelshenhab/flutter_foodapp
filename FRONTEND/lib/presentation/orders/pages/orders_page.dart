@@ -28,7 +28,8 @@ class OrdersPage extends StatelessWidget {
                     Text(state.error!),
                     const SizedBox(height: 8),
                     ElevatedButton(
-                      onPressed: () => context.read<OrdersBloc>().add(OrdersStarted()),
+                      onPressed: () =>
+                          context.read<OrdersBloc>().add(OrdersStarted()),
                       child: const Text('Повторить'),
                     ),
                   ],
@@ -54,7 +55,11 @@ class OrdersPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => OrderDetailsPage(order: order),
+                          builder: (_) => BlocProvider.value(
+                            value: context
+                                .read<OrdersBloc>(), // نمرّر نفس الـ bloc
+                            child: OrderDetailsPage(order: order),
+                          ),
                         ),
                       );
                     },
