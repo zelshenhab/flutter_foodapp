@@ -5,6 +5,8 @@ import 'tickets_state.dart';
 
 class TicketsBloc extends Bloc<TicketsEvent, TicketsState> {
   final TicketsRepo repo;
+
+  // Positional (الأصلي)
   TicketsBloc(this.repo) : super(const TicketsState()) {
     on<TicketsLoaded>(_onLoaded);
     on<TicketsFilterChanged>(_onFilter);
@@ -12,13 +14,17 @@ class TicketsBloc extends Bloc<TicketsEvent, TicketsState> {
     on<TicketClosed>(_onClose);
   }
 
+  // ✅ Named
+  TicketsBloc.withRepo({required TicketsRepo repo}) : this(repo);
+
   Future<void> _onLoaded(TicketsLoaded e, Emitter<TicketsState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
       final list = await repo.fetchTickets();
       emit(state.copyWith(loading: false, data: list));
     } catch (_) {
-      emit(state.copyWith(loading: false, error: 'Не удалось загрузить обращения'));
+      emit(state.copyWith(
+          loading: false, error: 'Не удалось загрузить обращения'));
     }
   }
 

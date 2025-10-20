@@ -1,17 +1,9 @@
-// lib/presentation/payments/pages/payment_failed_page.dart
 import 'package:flutter/material.dart';
 
 class PaymentFailedPage extends StatelessWidget {
-  final VoidCallback? onRetry;
-  final VoidCallback? onGoToCart;
   final String? reason;
 
-  const PaymentFailedPage({
-    super.key,
-    this.onRetry,
-    this.onGoToCart,
-    this.reason,
-  });
+  const PaymentFailedPage({super.key, this.reason});
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +18,7 @@ class PaymentFailedPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // 🔴 دائرة فيها علامة الخطأ
               Container(
                 width: 86,
                 height: 86,
@@ -33,12 +26,15 @@ class PaymentFailedPage extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: Colors.red.withOpacity(.15),
                 ),
-                child: const Icon(Icons.close_rounded,
-                    size: 42, color: Colors.redAccent),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 42,
+                  color: Colors.redAccent,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
-                'Оплата не прошла',
+                'Ошибка оплаты',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
@@ -47,28 +43,33 @@ class PaymentFailedPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                reason ?? 'Проверьте карту или попробуйте ещё раз.',
+                reason ?? 'Оплата отклонена. Попробуйте снова.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: hint),
               ),
               const SizedBox(height: 24),
+
+              // 🔁 زر "Попробовать снова"
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: onRetry ?? () => Navigator.pop(context),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Попробовать снова'),
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
+
+              // 🛒 زر "Вернуться в корзину"
               SizedBox(
                 width: double.infinity,
                 height: 46,
-                child: OutlinedButton(
-                  onPressed:
-                      onGoToCart ?? () => Navigator.popUntil(context, (r) => r.isFirst),
-                  child: const Text('Вернуться в корзину'),
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.shopping_cart_outlined),
+                  label: const Text('Вернуться в корзину'),
+                  onPressed: () =>
+                      Navigator.of(context).popUntil((r) => r.isFirst),
                 ),
               ),
             ],
