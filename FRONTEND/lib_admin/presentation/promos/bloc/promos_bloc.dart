@@ -5,6 +5,8 @@ import 'promos_state.dart';
 
 class PromosBloc extends Bloc<PromosEvent, PromosState> {
   final PromosRepo repo;
+
+  // Positional (الأصلي)
   PromosBloc(this.repo) : super(const PromosState()) {
     on<PromosLoaded>(_onLoaded);
     on<PromoAdded>(_onAdd);
@@ -12,6 +14,9 @@ class PromosBloc extends Bloc<PromosEvent, PromosState> {
     on<PromoDeleted>(_onDelete);
     on<PromoToggled>(_onToggle);
   }
+
+  // ✅ Named
+  PromosBloc.withRepo({required PromosRepo repo}) : this(repo);
 
   Future<void> _onLoaded(PromosLoaded e, Emitter<PromosState> emit) async {
     emit(state.copyWith(loading: true, error: null));

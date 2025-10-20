@@ -6,6 +6,7 @@ import 'users_state.dart';
 class UsersBloc extends Bloc<UsersEvent, UsersState> {
   final UsersRepo repo;
 
+  // Positional (الأصلي)
   UsersBloc(this.repo) : super(const UsersState()) {
     on<UsersLoaded>(_onLoaded);
     on<UsersSearchChanged>(_onSearch);
@@ -14,13 +15,17 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     on<UserBlocked>(_onBlock);
   }
 
+  // ✅ Named
+  UsersBloc.withRepo({required UsersRepo repo}) : this(repo);
+
   Future<void> _onLoaded(UsersLoaded e, Emitter<UsersState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
       final list = await repo.fetchUsers();
       emit(state.copyWith(loading: false, data: list, error: null));
     } catch (_) {
-      emit(state.copyWith(loading: false, error: 'Не удалось загрузить пользователей'));
+      emit(state.copyWith(
+          loading: false, error: 'Не удалось загрузить пользователей'));
     }
   }
 

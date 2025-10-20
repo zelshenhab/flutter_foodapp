@@ -1,5 +1,6 @@
+// lib_admin/presentation/menu/bloc/menu_admin_event.dart
 import 'package:equatable/equatable.dart';
-import '../../../data/repos/menu_repo.dart';
+import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 
 abstract class MenuAdminEvent extends Equatable {
   const MenuAdminEvent();
@@ -12,29 +13,29 @@ class MenuAdminLoaded extends MenuAdminEvent {
 }
 
 class MenuCategoryChanged extends MenuAdminEvent {
-  final String categoryId; // 'pizza', 'shawarma', ...
+  final String categoryId;
   const MenuCategoryChanged(this.categoryId);
   @override
   List<Object?> get props => [categoryId];
 }
 
 class MenuItemAdded extends MenuAdminEvent {
-  final AdminDish dish;
+  final MenuItemModel dish;
   const MenuItemAdded(this.dish);
   @override
   List<Object?> get props => [dish];
 }
 
 class MenuItemUpdated extends MenuAdminEvent {
-  final AdminDish dish;
+  final MenuItemModel dish;
   const MenuItemUpdated(this.dish);
   @override
   List<Object?> get props => [dish];
 }
 
 class MenuItemDeleted extends MenuAdminEvent {
-  final String dishId;
-  const MenuItemDeleted(this.dishId);
+  final MenuItemModel dish; // ✅
+  const MenuItemDeleted(this.dish);
   @override
-  List<Object?> get props => [dishId];
+  List<Object?> get props => [dish];
 }
