@@ -1,4 +1,3 @@
-// lib/presentation/payments/bloc/payment_state.dart
 import 'package:equatable/equatable.dart';
 
 enum PaymentStep { idle, creating, ready, processing, success, failed }
@@ -35,6 +34,7 @@ class PaymentState extends Equatable {
     return PaymentState(
       step: step ?? this.step,
       loading: loading ?? this.loading,
+      // مرّر null لمسح الخطأ
       error: error,
       intentId: intentId ?? this.intentId,
       amount: amount ?? this.amount,
@@ -44,6 +44,13 @@ class PaymentState extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [step, loading, error, intentId, amount, currency, description];
+  List<Object?> get props => [
+    step,
+    loading,
+    error,
+    intentId,
+    amount,
+    currency,
+    description,
+  ];
 }

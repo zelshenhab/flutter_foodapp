@@ -10,7 +10,7 @@ class CartState extends Equatable {
 
   final double subtotal;
   final double discount;
-  final double deliveryFee; // ✅ هنسيبه ثابت صفر
+  final double deliveryFee; // ثابت 0 في الـ pickup
   final double total;
   final String? promoCode;
 
@@ -30,7 +30,7 @@ class CartState extends Equatable {
 
   bool get isEmpty => items.isEmpty;
   double get itemsTotal => subtotal;
-  double get grandTotal => subtotal - discount; // ✅ Pickup logic
+  double get grandTotal => subtotal - discount; // pickup logic
 
   CartState copyWith({
     bool? loading,
@@ -49,7 +49,7 @@ class CartState extends Equatable {
       items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
       discount: discount ?? this.discount,
-      deliveryFee: 0, // ✅ دايمًا صفر
+      deliveryFee: 0, // دايمًا صفر
       total: total ?? (subtotal ?? this.subtotal) - (discount ?? this.discount),
       promoCode: promoCode ?? this.promoCode,
       paymentMethod: paymentMethod ?? this.paymentMethod,
@@ -58,14 +58,14 @@ class CartState extends Equatable {
 
   @override
   List<Object?> get props => [
-    loading,
-    error,
-    items,
-    subtotal,
-    discount,
-    deliveryFee,
-    total,
-    promoCode,
-    paymentMethod,
-  ];
+        loading,
+        error,
+        items,
+        subtotal,
+        discount,
+        deliveryFee,
+        total,
+        promoCode,
+        paymentMethod,
+      ];
 }

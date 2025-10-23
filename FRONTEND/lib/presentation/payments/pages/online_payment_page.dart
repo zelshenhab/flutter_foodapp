@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../bloc/payment_bloc.dart';
 import '../bloc/payment_event.dart';
 import '../bloc/payment_state.dart';
+
 import 'payment_success_page.dart';
 import 'payment_failed_page.dart';
 
@@ -33,23 +35,33 @@ class OnlinePaymentPage extends StatelessWidget {
         ),
       child: BlocConsumer<PaymentBloc, PaymentState>(
         listenWhen: (p, n) => p.step != n.step,
-        listener: (context, state) {
+        listener: (context, state) async {
+          // Debug بسيط
+          // ignore: avoid_print
+          print('PAYMENT LISTENER -> step=${state.step} error=${state.error}');
+
           if (state.step == PaymentStep.success) {
+            // ✅ الدفع نجح -> نروح لصفحة النجاح
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (_) => PaymentSuccessPage(
-                  orderId: 'AUTO', // بدّلها برقم الطلب الحقيقي لو عندك
+                  orderId: 'AUTO', // بدّلها برقم الطلب الحقيقي لو متاح
                   amount: state.amount,
                 ),
               ),
             );
           } else if (state.step == PaymentStep.failed &&
               state.error == 'Оплата отклонена') {
-            // 👇 مهم: push عادي بدل pushReplacement، وما نبعتش callbacks ماسكة context خارجي
-            Navigator.push(
+            // ❌ فشل نهائي -> نروح لصفحة الفشل (Center UI موجود هناك)
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const PaymentFailedPage()),
+              MaterialPageRoute(
+                builder: (_) => PaymentFailedPage(
+                  reason: state.error,
+                  // بإمكانك هنا لاحقًا ترجع للـ Cart تلقائيًا أو تسيبها للأزرار داخل صفحة الفشل
+                ),
+              ),
             );
           }
         },
@@ -71,8 +83,8 @@ class OnlinePaymentPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: const Color(0xFF2A2A2A)),
                         ),
-                        child: const Row(
-                          children: [
+                        child: Row(
+                          children: const [
                             Icon(Icons.restaurant, color: Color(0xFFFF7A00)),
                             SizedBox(width: 12),
                             Expanded(
@@ -114,8 +126,8 @@ class OnlinePaymentPage extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            const Row(
-                              children: [
+                            Row(
+                              children: const [
                                 Icon(
                                   Icons.lock,
                                   size: 16,
@@ -124,7 +136,7 @@ class OnlinePaymentPage extends StatelessWidget {
                                 SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    'Безопасная оплата банковской картой',
+                                    'Оплата банковской картой',
                                     style: TextStyle(color: Color(0xFFA7A7A7)),
                                   ),
                                 ),
@@ -148,7 +160,7 @@ class OnlinePaymentPage extends StatelessWidget {
                         height: 48,
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.credit_score),
-                          label: const Text('Оплатить сейчас'),
+                          label: const Text('Оплатить картой'),
                           onPressed:
                               (state.step == PaymentStep.ready ||
                                   state.step == PaymentStep.failed)
@@ -158,6 +170,7 @@ class OnlinePaymentPage extends StatelessWidget {
                               : null,
                         ),
                       ),
+
                       if (state.step == PaymentStep.failed &&
                           state.error != 'Оплата отклонена') ...[
                         const SizedBox(height: 12),

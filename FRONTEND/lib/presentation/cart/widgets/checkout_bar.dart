@@ -4,7 +4,11 @@ class CheckoutBar extends StatelessWidget {
   final VoidCallback onCheckout;
   final bool pickup;
 
-  const CheckoutBar({super.key, required this.onCheckout, this.pickup = false});
+  const CheckoutBar({
+    super.key,
+    required this.onCheckout,
+    this.pickup = true, // الافتراضي pickup
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +23,10 @@ class CheckoutBar extends StatelessWidget {
       child: SizedBox(
         width: double.infinity,
         height: 48,
-        child: ElevatedButton(onPressed: onCheckout, child: Text(label)),
+        child: ElevatedButton(
+          onPressed: onCheckout,
+          child: Text(label),
+        ),
       ),
     );
   }

@@ -3,7 +3,7 @@ import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 import '../models/payment_method.dart';
 
 abstract class CartEvent extends Equatable {
-  const CartEvent(); // <-- make base const so subclasses can be const
+  const CartEvent();
   @override
   List<Object?> get props => [];
 }
@@ -16,7 +16,7 @@ class CartRefreshed extends CartEvent {
   const CartRefreshed();
 }
 
-/// Programmatic add by numeric id (used from menu etc.)
+/// إضافة صنف بالـ ID (من المنيو)
 class CartAddItem extends CartEvent {
   final int itemId;
   final int quantity;
@@ -30,7 +30,7 @@ class CartAddItem extends CartEvent {
   List<Object?> get props => [itemId, quantity, optionIds];
 }
 
-/// UI Undo chip calls this with the whole MenuItemModel (your UI already does this)
+/// إضافة صنف من الموديل (Undo chip)
 class CartItemAdded extends CartEvent {
   final MenuItemModel item;
   final int quantity;
@@ -39,7 +39,7 @@ class CartItemAdded extends CartEvent {
   List<Object?> get props => [item, quantity];
 }
 
-/// Promo applied/removed (empty string = remove)
+/// تطبيق كود خصم
 class CartPromoApplied extends CartEvent {
   final String code;
   const CartPromoApplied(this.code);
@@ -47,15 +47,15 @@ class CartPromoApplied extends CartEvent {
   List<Object?> get props => [code];
 }
 
-/// Swipe-to-delete / delete icon
+/// حذف صنف
 class CartItemRemoved extends CartEvent {
-  final String itemId; // UI uses string ids on tiles
+  final String itemId;
   const CartItemRemoved(this.itemId);
   @override
   List<Object?> get props => [itemId];
 }
 
-/// Qty controls on tile
+/// تقليل كمية
 class CartItemQtyDecreased extends CartEvent {
   final String itemId;
   const CartItemQtyDecreased(this.itemId);
@@ -63,6 +63,7 @@ class CartItemQtyDecreased extends CartEvent {
   List<Object?> get props => [itemId];
 }
 
+/// زيادة كمية
 class CartItemQtyIncreased extends CartEvent {
   final String itemId;
   const CartItemQtyIncreased(this.itemId);
@@ -70,10 +71,15 @@ class CartItemQtyIncreased extends CartEvent {
   List<Object?> get props => [itemId];
 }
 
-/// Payment selector
+/// تغيير طريقة الدفع
 class CartPaymentMethodChanged extends CartEvent {
   final PaymentMethod method;
   const CartPaymentMethodChanged(this.method);
   @override
   List<Object?> get props => [method];
+}
+
+/// تفريغ السلة بالكامل بعد الدفع
+class CartCleared extends CartEvent {
+  const CartCleared();
 }
