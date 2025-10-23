@@ -4,7 +4,6 @@ import 'package:flutter_foodapp/presentation/cart/models/payment_method.dart';
 import '../../../repos/cart_repository.dart';
 import '../../menu/models/menu_item.dart';
 import '../models/cart_item.dart';
-
 import 'cart_event.dart';
 import 'cart_state.dart';
 
@@ -16,23 +15,19 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       super(CartState(paymentMethod: PaymentMethod.defaultMethod)) {
     on<CartStarted>(_load);
     on<CartRefreshed>(_load);
-
     on<CartAddItem>(_addById);
     on<CartItemAdded>(_addFromModel);
-
     on<CartPromoApplied>(_applyPromo);
     on<CartPaymentMethodChanged>(_changeMethod);
-
     on<CartItemRemoved>(_removeItem);
     on<CartItemQtyIncreased>(_increaseQty);
     on<CartItemQtyDecreased>(_decreaseQty);
+    on<CartCleared>(_clear);
   }
 
-  // تحويل بيانات الـ API إلى CartItem
   List<CartItem> _mapApiItemsToCartItems(List<dynamic> apiItems) {
     return apiItems.map<CartItem>((raw) {
       final m = Map<String, dynamic>.from(raw as Map);
-
       final menu = MenuItemModel(
         id: (m['id'] ?? m['menuItemId'] ?? m['title'] ?? '').toString(),
         name: (m['title'] ?? m['name'] ?? 'Товар').toString(),
@@ -42,25 +37,22 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         categoryId: (m['categoryId'] as String?) ?? '',
         description: (m['description'] as String?),
       );
-
       final qty = (m['quantity'] as num?)?.toInt() ?? 1;
       return CartItem(item: menu, qty: qty);
     }).toList();
   }
 
-  // تحميل البيانات (Pickup version — بدون delivery)
   Future<void> _load(CartEvent e, Emitter<CartState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
       final data = await repo.getCart();
       final items = _mapApiItemsToCartItems(List.from(data['items'] as List));
-
       final subtotal = (data['subtotal'] as num).toDouble();
       final discount = (data['discount'] as num).toDouble();
-      final total = (subtotal - discount).clamp(
+      final total = ((subtotal - discount).clamp(
         0,
         double.infinity,
-      ); // ✅ Pickup logic
+      )).toDouble();
 
       emit(
         state.copyWith(
@@ -68,8 +60,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           items: items,
           subtotal: subtotal,
           discount: discount,
-          deliveryFee: 0, // ✅ ثابت 0
-          total: total.toDouble(),
+          deliveryFee: 0,
+          total: total,
           promoCode: data['promoCode'] as String?,
           error: null,
         ),
@@ -81,7 +73,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // إضافة عنصر جديد بالـ id
   Future<void> _addById(CartAddItem e, Emitter<CartState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
@@ -96,7 +87,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // Undo (إرجاع العنصر)
   Future<void> _addFromModel(CartItemAdded e, Emitter<CartState> emit) async {
     final id = e.item.serverId ?? int.tryParse(e.item.id);
     if (id == null) {
@@ -106,19 +96,14 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     add(CartAddItem(itemId: id, quantity: e.quantity));
   }
 
-  // تطبيق كود خصم
   Future<void> _applyPromo(CartPromoApplied e, Emitter<CartState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
       final data = await repo.applyPromo(e.code);
       final items = _mapApiItemsToCartItems(List.from(data['items'] as List));
-
       final subtotal = (data['subtotal'] as num).toDouble();
       final discount = (data['discount'] as num).toDouble();
-      final total = (subtotal - discount).clamp(
-        0,
-        double.infinity,
-      ); // ✅ Pickup logic
+      final total = (subtotal - discount).clamp(0, double.infinity);
 
       emit(
         state.copyWith(
@@ -137,17 +122,15 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // تغيير طريقة الدفع
   void _changeMethod(CartPaymentMethodChanged e, Emitter<CartState> emit) {
     emit(state.copyWith(paymentMethod: e.method));
   }
 
-  // حذف عنصر
   Future<void> _removeItem(CartItemRemoved e, Emitter<CartState> emit) async {
+    // NOTE: نفّذ استدعاء API الحذف هنا لو موجود، ثم refresh.
     add(const CartRefreshed());
   }
 
-  // زيادة كمية
   Future<void> _increaseQty(
     CartItemQtyIncreased e,
     Emitter<CartState> emit,
@@ -160,11 +143,23 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     add(CartAddItem(itemId: numericId, quantity: 1));
   }
 
-  // تقليل كمية
   Future<void> _decreaseQty(
     CartItemQtyDecreased e,
     Emitter<CartState> emit,
   ) async {
+    // NOTE: لو API عندك بيقلل الكمية، ناديه هنا. حالياً نعمل refresh فقط.
     add(const CartRefreshed());
+  }
+
+  Future<void> _clear(CartCleared e, Emitter<CartState> emit) async {
+    emit(
+      state.copyWith(
+        items: [],
+        subtotal: 0,
+        discount: 0,
+        total: 0,
+        promoCode: null,
+      ),
+    );
   }
 }
