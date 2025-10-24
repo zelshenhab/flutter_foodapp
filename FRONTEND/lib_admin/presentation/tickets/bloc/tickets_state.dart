@@ -28,8 +28,14 @@ class TicketsState extends Equatable {
     );
   }
 
-  List<AdminTicket> get filtered =>
-      filter == 'all' ? data : data.where((t) => t.status == filter).toList();
+  List<AdminTicket> get filtered {
+    if (filter == 'all') return data;
+    return data.where((t) => t.status == filter).toList();
+  }
+
+  int get total => data.length;
+  int get openCount => data.where((e) => e.status == 'open').length;
+  int get closedCount => data.where((e) => e.status == 'closed').length;
 
   @override
   List<Object?> get props => [loading, data, filter, error];

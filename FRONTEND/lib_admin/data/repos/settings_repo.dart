@@ -1,61 +1,101 @@
-import 'package:flutter/foundation.dart';
-import '../admin_api_client.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart' show immutable;
 
-/// نموذج إعدادات لوحة التحكم
+/// لو عندك عميل API حقيقي لاحقًا، إربطه هنا
+/// حالياً بنستخدم تخزين مؤقت داخل الذاكرة (mock) علشان الديمو يعمل فوراً.
 @immutable
 class AdminSettings {
   final bool notifyAdmins;
   final bool testMode;
 
-  const AdminSettings({required this.notifyAdmins, required this.testMode});
+  final String supportPhone;
+  final String restaurantEmail;
+  final String businessHours;
 
-  AdminSettings copyWith({bool? notifyAdmins, bool? testMode}) {
+  final bool maintenanceMode;
+  final String maintenanceMessage;
+
+  const AdminSettings({
+    required this.notifyAdmins,
+    required this.testMode,
+    required this.supportPhone,
+    required this.restaurantEmail,
+    required this.businessHours,
+    required this.maintenanceMode,
+    required this.maintenanceMessage,
+  });
+
+  const AdminSettings.defaults()
+      : notifyAdmins = true,
+        testMode = false,
+        supportPhone = '+7 (900) 000-00-00',
+        restaurantEmail = 'info@restaurant.ru',
+        businessHours = 'Ежедневно: 10:00 — 22:00',
+        maintenanceMode = false,
+        maintenanceMessage = 'Технические работы. Пожалуйста, зайдите позже.';
+
+  AdminSettings copyWith({
+    bool? notifyAdmins,
+    bool? testMode,
+    String? supportPhone,
+    String? restaurantEmail,
+    String? businessHours,
+    bool? maintenanceMode,
+    String? maintenanceMessage,
+  }) {
     return AdminSettings(
       notifyAdmins: notifyAdmins ?? this.notifyAdmins,
       testMode: testMode ?? this.testMode,
+      supportPhone: supportPhone ?? this.supportPhone,
+      restaurantEmail: restaurantEmail ?? this.restaurantEmail,
+      businessHours: businessHours ?? this.businessHours,
+      maintenanceMode: maintenanceMode ?? this.maintenanceMode,
+      maintenanceMessage: maintenanceMessage ?? this.maintenanceMessage,
     );
   }
 
   factory AdminSettings.fromJson(Map<String, dynamic> j) => AdminSettings(
-    notifyAdmins: (j['notifyAdmins'] as bool?) ?? true,
-    testMode: (j['testMode'] as bool?) ?? false,
-  );
+        notifyAdmins: (j['notifyAdmins'] as bool?) ?? true,
+        testMode: (j['testMode'] as bool?) ?? false,
+        supportPhone: (j['supportPhone'] as String?) ?? '',
+        restaurantEmail: (j['restaurantEmail'] as String?) ?? '',
+        businessHours: (j['businessHours'] as String?) ?? '',
+        maintenanceMode: (j['maintenanceMode'] as bool?) ?? false,
+        maintenanceMessage: (j['maintenanceMessage'] as String?) ?? '',
+      );
 
   Map<String, dynamic> toJson() => {
-    'notifyAdmins': notifyAdmins,
-    'testMode': testMode,
-  };
+        'notifyAdmins': notifyAdmins,
+        'testMode': testMode,
+        'supportPhone': supportPhone,
+        'restaurantEmail': restaurantEmail,
+        'businessHours': businessHours,
+        'maintenanceMode': maintenanceMode,
+        'maintenanceMessage': maintenanceMessage,
+      };
 }
 
-/// مستودع إعدادات (Mock) — جاهز للاستبدال باتصال حقيقي لاحقًا
 class SettingsRepo {
-  final AdminApiClient api;
-  SettingsRepo(this.api);
+  // بديل مؤقت: تخزين داخل الذاكرة (يشبه قاعدة بيانات صغيرة)
+  static AdminSettings _mem = const AdminSettings.defaults();
+  static bool _loadedOnce = false;
 
-  /// جلب الإعدادات الحالية
   Future<AdminSettings> fetchSettings() async {
-    // في الـMock: هنستخدم endpoint وهمي
-    final data = await api.getList('/settings');
-    // لو السيرفر رجّع قائمة فاضية — رجّع قيم افتراضية
-    if (data.isEmpty) {
-      return const AdminSettings(notifyAdmins: true, testMode: false);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (!_loadedOnce) {
+      _loadedOnce = true;
+      _mem = const AdminSettings.defaults();
     }
-    return AdminSettings.fromJson(data.first);
+    return _mem;
   }
 
-  /// حفظ الإعدادات كاملة
   Future<bool> saveSettings(AdminSettings s) async {
-    // في API حقيقي ممكن يكون PATCH/PUT على /settings
-    return api.patch('/settings', s.toJson());
+    await Future.delayed(const Duration(milliseconds: 200));
+    _mem = s;
+    return true;
   }
 
-  /// تفعيل/إلغاء إشعارات المدراء
-  Future<bool> toggleNotifyAdmins(bool enabled) async {
-    return api.patch('/settings', {'notifyAdmins': enabled});
-  }
-
-  /// تفعيل/إلغاء وضع الاختبار
-  Future<bool> toggleTestMode(bool enabled) async {
-    return api.patch('/settings', {'testMode': enabled});
-  }
+  // مساعدات لو حبيت تستخدم واجهات جزئية لاحقًا
+  Future<bool> toggleNotifyAdmins(bool v) => saveSettings(_mem.copyWith(notifyAdmins: v));
+  Future<bool> toggleTestMode(bool v) => saveSettings(_mem.copyWith(testMode: v));
 }

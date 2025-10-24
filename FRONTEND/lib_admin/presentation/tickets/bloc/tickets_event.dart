@@ -14,20 +14,19 @@ class TicketReplySent extends TicketsEvent {
   final String ticketId;
   final String message;
   const TicketReplySent(this.ticketId, this.message);
-  @override
-  List<Object?> get props => [ticketId, message];
 }
 
 class TicketClosed extends TicketsEvent {
   final String ticketId;
   const TicketClosed(this.ticketId);
-  @override
-  List<Object?> get props => [ticketId];
+}
+
+class TicketReopened extends TicketsEvent {
+  final String ticketId;
+  const TicketReopened(this.ticketId);
 }
 
 class TicketsFilterChanged extends TicketsEvent {
-  final String filter; // all/open/closed
+  final String filter;
   const TicketsFilterChanged(this.filter);
-  @override
-  List<Object?> get props => [filter];
 }

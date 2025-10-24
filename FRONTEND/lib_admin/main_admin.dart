@@ -1,10 +1,10 @@
-// lib_admin/main_admin.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'data/repos/menu_repo_supabase.dart' as menu_repo_sb;
 
+// Menu
 import 'presentation/menu/bloc/menu_admin_bloc.dart' as admin_menu_bloc;
 import 'presentation/menu/bloc/menu_admin_event.dart' as admin_menu_event;
 
@@ -14,7 +14,6 @@ import 'presentation/root/admin_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ بدّل القيم دول بقيم مشروعك على Supabase
   await Supabase.initialize(
     url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
     anonKey:
