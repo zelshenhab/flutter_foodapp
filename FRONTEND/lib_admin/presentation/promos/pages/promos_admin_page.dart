@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_foodapp/presentation/promos/models/promo.dart';
-import '../../../data/repos/promos_repo.dart' hide PromoType;
-import '../bloc/promos_bloc.dart';
-import '../bloc/promos_event.dart';
-import '../bloc/promos_state.dart';
+
+import '../../promos/bloc/promos_bloc.dart';
+import '../../promos/bloc/promos_event.dart';
+import '../../promos/bloc/promos_state.dart';
+import '../../../data/repos/promos_repo.dart'; // <- يحتوي AdminPromo و PromoType (كـ String constants)
 
 class PromosAdminPage extends StatelessWidget {
   const PromosAdminPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<PromosBloc>(
+      create: (_) => PromosBloc(PromosRepo())..add(const PromosLoaded()),
+      child: const _PromosView(),
+    );
+  }
+}
+
+class _PromosView extends StatelessWidget {
+  const _PromosView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +63,7 @@ class PromosAdminPage extends StatelessWidget {
                   : Column(
                       children: state.data.map((p) {
                         return ListTile(
+                          leading: Text(p.active ? '✅' : '⏸️'),
                           title: Text('${p.title}  •  ${p.code}'),
                           subtitle: Text(
                             p.type == PromoType.percent
@@ -95,11 +108,15 @@ class PromosAdminPage extends StatelessWidget {
     final titleCtrl = TextEditingController(text: promo?.title ?? '');
     final codeCtrl = TextEditingController(text: promo?.code ?? '');
     final descCtrl = TextEditingController(text: promo?.description ?? '');
-    String type = promo?.type ?? 'percent';
+
+    // النوع كسلسلة نصية (متوافقة مع الموديل/الـ API)
+    String type = promo?.type ?? PromoType.percent;
+
     final amountCtrl = TextEditingController(
-      text: promo == null ? '' : promo!.amount.toStringAsFixed(0),
+      text: promo == null ? '' : promo.amount.toStringAsFixed(0),
     );
     bool active = promo?.active ?? true;
+    DateTime? validTo = promo?.validTo;
 
     showDialog(
       context: context,
@@ -124,21 +141,24 @@ class PromosAdminPage extends StatelessWidget {
                 decoration: const InputDecoration(labelText: 'Код'),
               ),
               const SizedBox(height: 8),
+
+              // النوع كسلسلة (percent/amount)
               DropdownButtonFormField<String>(
                 value: type,
                 decoration: const InputDecoration(labelText: 'Тип скидки'),
-                items: [
+                items: const [
                   DropdownMenuItem(
-                    value: 'percent',
-                    child: const Text('Процент'),
+                    value: PromoType.percent,
+                    child: Text('Процент'),
                   ),
                   DropdownMenuItem(
-                    value: 'amount',
-                    child: const Text('Фикс. сумма'),
+                    value: PromoType.amount,
+                    child: Text('Фикс. сумма'),
                   ),
                 ],
-                onChanged: (v) => type = v ?? 'percent',
+                onChanged: (v) => type = v ?? PromoType.percent,
               ),
+
               const SizedBox(height: 8),
               TextField(
                 controller: amountCtrl,
@@ -154,6 +174,28 @@ class PromosAdminPage extends StatelessWidget {
                 title: const Text('Активен'),
                 value: active,
                 onChanged: (v) => active = v,
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  validTo == null
+                      ? 'Срок действия: не задан'
+                      : 'Срок действия до: ${validTo.toString().split(' ').first}',
+                ),
+                trailing: OutlinedButton(
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final picked = await showDatePicker(
+                      context: context,
+                      firstDate: now,
+                      lastDate: DateTime(now.year + 2),
+                      initialDate: validTo ?? now,
+                    );
+                    if (picked != null) validTo = picked;
+                  },
+                  child: const Text('Выбрать дату'),
+                ),
               ),
             ],
           ),
@@ -178,16 +220,17 @@ class PromosAdminPage extends StatelessWidget {
                 title: t,
                 description: d,
                 code: c,
-                type: type,
+                type: type, // <-- String متوقعة من الموديل
                 amount: a,
                 active: active,
-                validTo: promo?.validTo,
+                validTo: validTo,
               );
 
+              final bloc = context.read<PromosBloc>();
               if (promo == null) {
-                context.read<PromosBloc>().add(PromoAdded(obj));
+                bloc.add(PromoAdded(obj));
               } else {
-                context.read<PromosBloc>().add(PromoUpdated(obj));
+                bloc.add(PromoUpdated(obj));
               }
               Navigator.pop(context);
             },
