@@ -114,17 +114,22 @@ class MenuPage extends StatelessWidget {
                     sliver: SliverList.separated(
                       itemBuilder: (context, i) {
                         final item = state.items[i];
+                        // inside SliverList.separated itemBuilder:
                         return MenuItemTile(
                           item: item,
                           onAdd: () {
-                            // ✅ SAFE: delegate id resolution to CartBloc
-                            context
-                                .read<CartBloc>()
-                                .add(CartItemAdded(item, quantity: 1));
+                            // Prefer numeric server id from backend; fallback to parsing string id
+                            final numericId = item.serverId ?? int.tryParse(item.id);
+                            if (numericId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Товар недоступен для заказа (id: ${item.id})')),
+                              );
+                              return;
+                            }
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Добавлено в корзину')),
+                            // Dispatch to CartBloc -> will call POST /cart/items
+                            context.read<CartBloc>().add(
+                              CartAddItem(itemId: numericId, quantity: 1),
                             );
                           },
                         );
