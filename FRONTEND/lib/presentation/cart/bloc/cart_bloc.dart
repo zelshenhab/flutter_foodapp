@@ -1,3 +1,4 @@
+// lib/presentation/cart/bloc/cart_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/presentation/cart/models/payment_method.dart';
 
@@ -11,8 +12,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   final CartRepository repo;
 
   CartBloc({CartRepository? repo})
-    : repo = repo ?? const CartRepository(),
-      super(CartState(paymentMethod: PaymentMethod.defaultMethod)) {
+      : repo = repo ?? const CartRepository(),
+        super(const CartState()) {
     on<CartStarted>(_load);
     on<CartRefreshed>(_load);
     on<CartAddItem>(_addById);
@@ -28,16 +29,21 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   List<CartItem> _mapApiItemsToCartItems(List<dynamic> apiItems) {
     return apiItems.map<CartItem>((raw) {
       final m = Map<String, dynamic>.from(raw as Map);
+
+      // ID preference: numeric backend id
+      final idStr = (m['id'] ?? m['menuItemId'] ?? m['title'] ?? '').toString();
+
       final menu = MenuItemModel(
-        id: (m['id'] ?? m['menuItemId'] ?? m['title'] ?? '').toString(),
+        id: idStr,
+        serverId: (m['menuItemId'] as num?)?.toInt(),
         name: (m['title'] ?? m['name'] ?? 'Товар').toString(),
-        price: (m['unitPrice'] as num?) ?? (m['price'] as num?) ?? 0,
-        image:
-            (m['image'] as String?) ?? 'assets/images/Chicken-Shawarma-8.jpg',
-        categoryId: (m['categoryId'] as String?) ?? '',
+        price: ((m['unitPrice'] ?? m['price'] ?? 0) as num).toDouble(),
+        image: (m['image'] as String?) ?? 'assets/images/Chicken-Shawarma-8.jpg',
+        categoryId: (m['categoryId']?.toString()) ?? '',
         description: (m['description'] as String?),
       );
-      final qty = (m['quantity'] as num?)?.toInt() ?? 1;
+
+      final qty = (m['quantity'] as num? ?? 1).toInt();
       return CartItem(item: menu, qty: qty);
     }).toList();
   }
@@ -46,13 +52,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     emit(state.copyWith(loading: true, error: null));
     try {
       final data = await repo.getCart();
-      final items = _mapApiItemsToCartItems(List.from(data['items'] as List));
-      final subtotal = (data['subtotal'] as num).toDouble();
-      final discount = (data['discount'] as num).toDouble();
-      final total = ((subtotal - discount).clamp(
-        0,
-        double.infinity,
-      )).toDouble();
+
+      final items = _mapApiItemsToCartItems(
+        List.from(data['items'] as List),
+      );
+
+      final subtotal    = (data['subtotal'] as num).toDouble();
+      final discount    = (data['discount'] as num).toDouble();
+      final deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
+      final total       = (data['total'] as num?)?.toDouble()
+                          ?? (subtotal - discount + deliveryFee);
 
       emit(
         state.copyWith(
@@ -60,16 +69,17 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           items: items,
           subtotal: subtotal,
           discount: discount,
-          deliveryFee: 0,
+          deliveryFee: deliveryFee,
           total: total,
           promoCode: data['promoCode'] as String?,
           error: null,
         ),
       );
-    } catch (_) {
-      emit(
-        state.copyWith(loading: false, error: 'Не удалось загрузить корзину'),
-      );
+    } catch (err) {
+      emit(state.copyWith(
+        loading: false,
+        error: 'Не удалось загрузить корзину',
+      ));
     }
   }
 
@@ -101,9 +111,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     try {
       final data = await repo.applyPromo(e.code);
       final items = _mapApiItemsToCartItems(List.from(data['items'] as List));
-      final subtotal = (data['subtotal'] as num).toDouble();
-      final discount = (data['discount'] as num).toDouble();
-      final total = (subtotal - discount).clamp(0, double.infinity);
+
+      final subtotal    = (data['subtotal'] as num).toDouble();
+      final discount    = (data['discount'] as num).toDouble();
+      final deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
+      final total       = (data['total'] as num?)?.toDouble()
+                          ?? (subtotal - discount + deliveryFee);
 
       emit(
         state.copyWith(
@@ -111,8 +124,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           items: items,
           subtotal: subtotal,
           discount: discount,
-          deliveryFee: 0,
-          total: total.toDouble(),
+          deliveryFee: deliveryFee,
+          total: total,
           promoCode: data['promoCode'] as String?,
           error: null,
         ),
@@ -127,14 +140,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   Future<void> _removeItem(CartItemRemoved e, Emitter<CartState> emit) async {
-    // NOTE: نفّذ استدعاء API الحذف هنا لو موجود، ثم refresh.
+    // If you later add DELETE route on FE, call it here; for now just refresh.
     add(const CartRefreshed());
   }
 
-  Future<void> _increaseQty(
-    CartItemQtyIncreased e,
-    Emitter<CartState> emit,
-  ) async {
+  Future<void> _increaseQty(CartItemQtyIncreased e, Emitter<CartState> emit) async {
     final numericId = int.tryParse(e.itemId);
     if (numericId == null) {
       add(const CartRefreshed());
@@ -143,11 +153,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     add(CartAddItem(itemId: numericId, quantity: 1));
   }
 
-  Future<void> _decreaseQty(
-    CartItemQtyDecreased e,
-    Emitter<CartState> emit,
-  ) async {
-    // NOTE: لو API عندك بيقلل الكمية، ناديه هنا. حالياً نعمل refresh فقط.
+  Future<void> _decreaseQty(CartItemQtyDecreased e, Emitter<CartState> emit) async {
+    // If you add PATCH qty endpoint on FE, call it; for now refresh only.
     add(const CartRefreshed());
   }
 
@@ -157,6 +164,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         items: [],
         subtotal: 0,
         discount: 0,
+        deliveryFee: 0,
         total: 0,
         promoCode: null,
       ),

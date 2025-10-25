@@ -5,7 +5,7 @@ import '../bloc/cart_bloc.dart';
 import '../bloc/cart_state.dart';
 
 class SummaryPanel extends StatelessWidget {
-  final bool pickup; // ✅ نحدّد إن ده ملخص Pickup
+  final bool pickup; // ✅ ملخص للـ Pickup عند الحاجة
   final String? pickupAddress;
 
   const SummaryPanel({super.key, this.pickup = false, this.pickupAddress});
@@ -13,9 +13,11 @@ class SummaryPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
+      // نعيد البناء عند تغيّر أرقام الملخص فقط
       buildWhen: (p, n) =>
           p.subtotal != n.subtotal ||
           p.discount != n.discount ||
+          p.deliveryFee != n.deliveryFee ||
           p.total != n.total ||
           p.promoCode != n.promoCode,
       builder: (context, state) {
@@ -28,12 +30,21 @@ class SummaryPanel extends StatelessWidget {
                 const SizedBox(height: 8),
               ],
 
-              _row('Сумма заказа', money(state.itemsTotal)),
+              // Сумма заказа = subtotal
+              _row('Сумма заказа', money(state.subtotal)),
+
+              // Скидка (если есть)
               if (state.discount > 0)
                 _row('Скидка', '-${money(state.discount)}'),
 
+              // Доставка (покажем только если НЕ pickup ولها قيمة > 0)
+              if (!pickup && state.deliveryFee > 0)
+                _row('Доставка', money(state.deliveryFee)),
+
               const Divider(color: Color(0xFF2A2A2A)),
-              _row('Итого', money(state.grandTotal), bold: true),
+
+              // Итого = total القادم من الباكэнд (already subtotal - discount + deliveryFee)
+              _row('Итого', money(state.total), bold: true),
             ],
           ),
         );
@@ -46,8 +57,20 @@ class SummaryPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Expanded(child: Text(l, style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.w500))),
-          Text(v, style: TextStyle(fontWeight: bold ? FontWeight.w800 : FontWeight.w600)),
+          Expanded(
+            child: Text(
+              l,
+              style: TextStyle(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            v,
+            style: TextStyle(
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -63,7 +86,10 @@ class SummaryPanel extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: const Color(0xFF2A2A2A)),
         ),
-        child: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

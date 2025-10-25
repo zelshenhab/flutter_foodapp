@@ -26,27 +26,23 @@ class _CartPageState extends State<CartPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // ابعت CartStarted مرة واحدة
+    // Dispatch once if you DON'T already dispatch CartStarted at app root.
     if (!_started) {
       _started = true;
-      // لو الـ Bloc متوفر فوق، السطر ده هيشتغل تمام
       context.read<CartBloc>().add(const CartStarted());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ==========
-    // لو "ما عندكش" BlocProvider<CartBloc> فوق، افتح الكود التالي ولف الصفحة به:
-    //
+    // If your CartBloc is provided at app root, this is enough:
+    return const _CartScaffold();
+
+    // If you DON'T provide CartBloc above, wrap with a local provider instead:
     // return BlocProvider<CartBloc>(
     //   create: (_) => CartBloc()..add(const CartStarted()),
-    //   child: _CartScaffold(),
+    //   child: const _CartScaffold(),
     // );
-    //
-    // لو عندك بالفعل، استخدم:
-    return const _CartScaffold();
-    // ==========
   }
 }
 
@@ -84,12 +80,13 @@ class _CartScaffold extends StatelessWidget {
                 pickupAddress: 'ул. Пушкина 15',
               ),
 
-              // العناصر مع السحب للحذف + SnackBar Undo
+              // Use the BlocBuilder's reactive state here 👇
+              // inside BlocBuilder<CartBloc, CartState> builder:
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    for (final ci in context.read<CartBloc>().state.items)
+                    for (final ci in state.items)  // <— use state.items
                       Dismissible(
                         key: ValueKey(ci.item.id),
                         direction: DismissDirection.endToStart,
@@ -133,7 +130,6 @@ class _CartScaffold extends StatelessWidget {
           );
         },
       ),
-
       bottomNavigationBar: CheckoutBar(
         onCheckout: () {
           final state = context.read<CartBloc>().state;
