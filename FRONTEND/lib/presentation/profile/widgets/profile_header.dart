@@ -1,11 +1,12 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import '../models/user_profile.dart';
+import 'package:flutter_foodapp/presentation/profile/models/user_profile.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserProfile profile;
-  final VoidCallback onEdit; // يفتح شيت تعديل الاسم/الهاتف
-  final VoidCallback onChangeAvatar; // يفتح اختيار صورة
+  final VoidCallback onEdit;
+  final VoidCallback onChangeAvatar;
 
   const ProfileHeader({
     super.key,
@@ -17,9 +18,13 @@ class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool hasAvatar = profile.avatarPath != null;
-    final ImageProvider? imgProvider = hasAvatar
-        ? FileImage(File(profile.avatarPath!))
-        : null;
+    final ImageProvider? imgProvider =
+        hasAvatar ? FileImage(File(profile.avatarPath!)) : null;
+
+    // ✅ SIMPLE: Just combine name + surname for display
+    final String displayName = [
+      profile.name?.trim(),
+    ].where((part) => part != null && part.isNotEmpty).join(' ');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -32,7 +37,7 @@ class ProfileHeader extends StatelessWidget {
                 onTap: onChangeAvatar,
                 child: CircleAvatar(
                   radius: 32,
-                  backgroundImage: imgProvider, // لو null → هيتعرض الـ child
+                  backgroundImage: imgProvider,
                   backgroundColor: Colors.grey[800],
                   child: !hasAvatar
                       ? const Icon(
@@ -72,14 +77,18 @@ class ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  profile.name,
+                  displayName.isEmpty ? '-' : displayName,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(profile.phone, style: const TextStyle(color: Colors.grey)),
+                Text(
+                  profile.phone ?? '',
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -91,4 +100,7 @@ class ProfileHeader extends StatelessWidget {
       ),
     );
   }
+
+  // ❌ DELETE THIS ENTIRE METHOD
+  // String _buildFullName(String? name, String? surname) { ... }
 }

@@ -29,7 +29,6 @@ class _LoginInfoView extends StatefulWidget {
 
 class _LoginInfoViewState extends State<_LoginInfoView> {
   final _nameCtrl = TextEditingController();
-  final _surnameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
 
   final _mask = MaskTextInputFormatter(
@@ -40,7 +39,6 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _surnameCtrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
   }
@@ -97,15 +95,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                           context.read<AuthBloc>().add(AuthNameChanged(v)),
                     ),
                     const SizedBox(height: 14),
-
-                    _darkField(
-                      controller: _surnameCtrl,
-                      label: 'Фамилия',
-                      onChanged: (v) =>
-                          context.read<AuthBloc>().add(AuthSurnameChanged(v)),
-                    ),
-                    const SizedBox(height: 14),
-
+                    
                     _darkField(
                       controller: _phoneCtrl,
                       label: 'Телефон',

@@ -1,31 +1,45 @@
-import 'package:flutter_foodapp/presentation/profile/models/user_profile.dart';
+import 'package:equatable/equatable.dart';
 
-import '../models/order_history.dart';
-
-class ProfileState {
-  final UserProfile? profile;
-  final List<OrderHistory> orders; // 🆕
+class ProfileState extends Equatable {
   final bool loading;
   final String? error;
 
+  final int? id;
+  final String? phone;
+  final String name;
+  final String? avatarUrl;
+  final DateTime? createdAt;
+
   const ProfileState({
-    this.profile,
-    this.orders = const [],
     this.loading = false,
     this.error,
+    this.id,
+    this.phone,
+    this.name = '',
+    this.avatarUrl,
+    this.createdAt,
   });
 
   ProfileState copyWith({
-    UserProfile? profile,
-    List<OrderHistory>? orders,
     bool? loading,
     String? error,
+    int? id,
+    String? phone,
+    String? name,
+    String? avatarUrl,
+    DateTime? createdAt,
   }) {
     return ProfileState(
-      profile: profile ?? this.profile,
-      orders: orders ?? this.orders,
       loading: loading ?? this.loading,
       error: error,
+      id: id ?? this.id,
+      phone: phone ?? this.phone,
+      name: name ?? this.name,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  @override
+  List<Object?> get props => [loading, error, id, phone, name, avatarUrl, createdAt];
 }

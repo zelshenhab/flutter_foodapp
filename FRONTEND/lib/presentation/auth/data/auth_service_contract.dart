@@ -16,7 +16,6 @@ abstract class IAuthService {
   Future<RequestOtpResult> requestCode({
     required String phone,
     String? name,
-    String? surname,
   });
 
   Future<VerifyOtpResult> verifyCode({

@@ -1,3 +1,4 @@
+// login_otp_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinput/pinput.dart';
@@ -17,17 +18,19 @@ class LoginOtpPage extends StatelessWidget {
         listenWhen: (p, c) => p.step != c.step || p.error != c.error,
         listener: (context, state) {
           if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error!)),
+            );
           }
 
           if (state.step == AuthStep.enterInfo) {
-            Navigator.pop(context); // رجوع لتعديل الرقم
+            Navigator.pop(context); // back to edit phone/name
           }
 
           if (state.step == AuthStep.success) {
-            final fullName = '${state.name} ${state.surname}'.trim();
+            final fullName = '${state.name}'.trim();
+            // IMPORTANT: pass surname separately too
+            if (!context.mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
@@ -42,7 +45,6 @@ class LoginOtpPage extends StatelessWidget {
         },
         builder: (context, state) {
           final canResend = state.resendIn == 0 && !state.loading;
-
           return Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -53,7 +55,6 @@ class LoginOtpPage extends StatelessWidget {
                   children: [
                     const _BrandTitle(),
                     const SizedBox(height: 28),
-
                     const Text(
                       'Введите код подтверждения',
                       style: TextStyle(
@@ -65,17 +66,13 @@ class LoginOtpPage extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       'Код отправлен на ${state.phone}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFFA7A7A7),
-                      ),
+                      style: const TextStyle(fontSize: 14, color: Color(0xFFA7A7A7)),
                     ),
                     const SizedBox(height: 24),
 
                     Pinput(
                       length: 6,
-                      onChanged: (v) =>
-                          context.read<AuthBloc>().add(AuthOtpChanged(v)),
+                      onChanged: (v) => context.read<AuthBloc>().add(AuthOtpChanged(v)),
                       defaultPinTheme: PinTheme(
                         width: 56,
                         height: 56,
@@ -120,39 +117,28 @@ class LoginOtpPage extends StatelessWidget {
                           ),
                         ),
                         onPressed: state.canVerify
-                            ? () => context.read<AuthBloc>().add(
-                                AuthVerifyPressed(),
-                              )
+                            ? () => context.read<AuthBloc>().add(AuthVerifyPressed())
                             : null,
                         child: state.loading
                             ? const SizedBox(
                                 height: 22,
                                 width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
                             : const Text('Подтвердить'),
                       ),
                     ),
 
                     const SizedBox(height: 12),
-                    // ===== Resend Row =====
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       spacing: 6,
                       children: [
-                        const Text(
-                          'Не получили код?',
-                          style: TextStyle(color: Color(0xFFA7A7A7)),
-                        ),
+                        const Text('Не получили код?', style: TextStyle(color: Color(0xFFA7A7A7))),
                         TextButton(
                           onPressed: canResend
-                              ? () => context.read<AuthBloc>().add(
-                                  AuthResendCode(),
-                                )
+                              ? () => context.read<AuthBloc>().add(AuthResendCode())
                               : null,
                           child: Text(
                             canResend
@@ -173,7 +159,6 @@ class LoginOtpPage extends StatelessWidget {
   }
 }
 
-/// نفس العنوان بخط Montserrat
 class _BrandTitle extends StatelessWidget {
   const _BrandTitle();
 

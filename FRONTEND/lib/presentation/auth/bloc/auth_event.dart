@@ -15,12 +15,6 @@ class AuthNameChanged extends AuthEvent {
   List<Object?> get props => [name];
 }
 
-class AuthSurnameChanged extends AuthEvent {
-  final String surname;
-  const AuthSurnameChanged(this.surname);
-  @override
-  List<Object?> get props => [surname];
-}
 
 class AuthPhoneChanged extends AuthEvent {
   final String phone;

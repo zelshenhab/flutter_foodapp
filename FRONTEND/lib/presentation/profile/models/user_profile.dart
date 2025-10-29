@@ -1,39 +1,37 @@
 class UserProfile {
-  final String name;
-  final String phone;
+  final String? name;
+  final String? phone;
+  final String? avatarPath;
   final String? email;
-  final String address;
-  final bool notifications;
-  final String languageCode;
-  final String? avatarPath; // ملف محلي أو Network لاحقًا
+  final String? address;
+  final bool? notifications;
+  final String? languageCode;
 
   const UserProfile({
-    required this.name,
-    required this.phone,
-    this.email,
-    this.address = 'ул. Пушкина 15',
-    this.notifications = true,
-    this.languageCode = 'ru',
+    this.name,
+    this.phone,
     this.avatarPath,
+    this.email,
+    this.address,
+    this.notifications,
+    this.languageCode,
   });
 
-  UserProfile copyWith({
-    String? name,
-    String? phone,
-    String? email,
-    String? address,
-    bool? notifications,
-    String? languageCode,
-    String? avatarPath,
-  }) {
-    return UserProfile(
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      email: email ?? this.email,
-      address: address ?? this.address,
-      notifications: notifications ?? this.notifications,
-      languageCode: languageCode ?? this.languageCode,
-      avatarPath: avatarPath ?? this.avatarPath,
-    );
-  }
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+  return UserProfile(
+    name: json['name'] as String?,
+    phone: json['phone'] as String?,
+    avatarPath: json['avatarUrl'] as String?,
+    email: json['email'] as String?,
+    address: json['address'] as String?,
+    notifications: json['notifications'] as bool?,
+    languageCode: json['languageCode'] as String?,
+  );
+}
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'phone': phone,
+        'avatarUrl': avatarPath,
+      };
 }

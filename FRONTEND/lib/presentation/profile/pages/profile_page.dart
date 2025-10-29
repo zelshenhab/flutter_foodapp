@@ -1,197 +1,165 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-
-import 'package:flutter_foodapp/presentation/auth/pages/login_info_page.dart';
 import 'package:flutter_foodapp/presentation/profile/widgets/bonuses_card.dart';
-import 'package:flutter_foodapp/presentation/promos/pages/promotions_page.dart';
-import 'package:flutter_foodapp/presentation/orders/pages/orders_page.dart';
-import 'package:flutter_foodapp/presentation/support/pages/support_page.dart';
+
+import '../../promos/pages/promotions_page.dart';
+import '../../orders/pages/orders_page.dart';
+import '../../support/pages/support_page.dart';
 
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
-
 import '../widgets/profile_header.dart';
 import '../widgets/profile_section_card.dart';
 import '../widgets/address_readonly_tile.dart';
 import '../widgets/settings_tile_switch.dart';
 import '../widgets/settings_tile_language.dart';
+import '../models/user_profile.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ProfileBloc, ProfileState>(
-      listenWhen: (prev, next) =>
-          prev.profile != next.profile || prev.loading != next.loading,
-      listener: (context, state) {
-        if (!state.loading && state.profile == null) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginInfoPage()),
-            (route) => false,
+    return Scaffold(
+      appBar: AppBar(title: const Text('Профиль')),
+      body: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) {
+          if (state.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final name = state.name;
+          final phone = state.phone ?? '';
+
+          final headerProfile = UserProfile(
+            name: name,
+            phone: phone,
+            email: null,
+            address: 'ул. Пушкина 15',
+            notifications: true,
+            languageCode: 'ru',
+            avatarPath: state.avatarUrl,
           );
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Профиль'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                context.read<ProfileBloc>().add(ProfileLogoutRequested());
-              },
-            ),
-          ],
-        ),
-        body: BlocBuilder<ProfileBloc, ProfileState>(
-          builder: (context, state) {
-            if (state.loading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (state.profile == null) {
-              // الحالة المؤقتة بين الضغط على الخروج والتنقل (هيتلقطها الـ Listener فوق)
-              return const SizedBox.shrink();
-            }
-            final profile = state.profile!;
 
-            return ListView(
+          return ListView(
+            children: [
+              /// ===== Header (Avatar + name + phone)
+              ProfileHeader(
+                profile: headerProfile,
+                onEdit: () =>
+                    _showEditDataSheet(context, name, phone),
+                onChangeAvatar: () => _pickAvatar(context),
+              ),
+
+              /// ===== Bonuses + Promotions
+              _BonusesCardShim(),
+
+              /// ===== Personal data
+              /// ===== Personal data
+            const SizedBox(height: 8),
+            ProfileSectionCard(
+              title: "Мои данные",
               children: [
-                // ===== Header (Avatar + name + phone)
-                ProfileHeader(
-                  profile: profile,
-                  onEdit: () =>
-                      _showEditDataSheet(context, profile.name, profile.phone),
-                  onChangeAvatar: () => _pickAvatar(context),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text("Имя: ${name.isEmpty ? '-' : name}"),
                 ),
-
-                // ===== Bonuses + Promotions
-                BonusesCard(
-                  balance: 150, // مبدئيًا — بعدين من الباك-энд
-                  onViewPromos: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PromotionsPage()),
-                    );
-                  },
+                ListTile(
+                  leading: const Icon(Icons.phone),
+                  title: Text("Телефон: $phone"),
                 ),
-
-                // ===== Personal data (editable)
-                const SizedBox(height: 8),
-                ProfileSectionCard(
-                  title: "Мои данные",
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.person),
-                      title: Text("Имя: ${profile.name}"),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.phone),
-                      title: Text("Телефон: ${profile.phone}"),
-                    ),
-                    const SizedBox(height: 4),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () => _showEditDataSheet(
-                          context,
-                          profile.name,
-                          profile.phone,
-                        ),
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Редактировать'),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        _showEditDataSheet(context, name, phone),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Редактировать'),
+                  ),
                 ),
-
-                // ===== Orders entry
-                const SizedBox(height: 8),
-                ProfileSectionCard(
-                  title: "Мои заказы",
-                  children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.history,
-                        color: Colors.orangeAccent,
-                      ),
-                      title: const Text("Посмотреть заказы"),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const OrdersPage()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-
-                // ===== Address (read-only)
-                const SizedBox(height: 8),
-                ProfileSectionCard(
-                  title: "Адрес доставки",
-                  children: [AddressReadonlyTile(address: profile.address)],
-                ),
-
-                // ===== Settings
-                const SizedBox(height: 8),
-                ProfileSectionCard(
-                  title: "Настройки",
-                  children: [
-                    SettingsTileSwitch(
-                      title: "Уведомления",
-                      value: profile.notifications,
-                      onChanged: (v) => context.read<ProfileBloc>().add(
-                        ProfileNotificationsToggled(v),
-                      ),
-                    ),
-                    SettingsTileLanguage(
-                      currentCode: profile.languageCode,
-                      onChanged: (c) => context.read<ProfileBloc>().add(
-                        ProfileLanguageChanged(c),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // ===== Support
-                const SizedBox(height: 8),
-                ProfileSectionCard(
-                  title: "Поддержка",
-                  children: [
-                    ListTile(
-                      leading: const Icon(
-                        Icons.support_agent,
-                        color: Colors.orangeAccent,
-                      ),
-                      title: const Text("Связаться с поддержкой"),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SupportPage(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
               ],
-            );
-          },
-        ),
+            ),
+
+              /// ===== Orders
+              const SizedBox(height: 8),
+              ProfileSectionCard(
+                title: "Мои заказы",
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.history,
+                        color: Colors.orangeAccent),
+                    title: const Text("Посмотреть заказы"),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const OrdersPage()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              /// ===== Address
+              const SizedBox(height: 8),
+              ProfileSectionCard(
+                title: "Адрес доставки",
+                children: const [
+                  AddressReadonlyTile(address: 'ул. Пушкина 15')
+                ],
+              ),
+
+              /// ===== Settings
+              const SizedBox(height: 8),
+              ProfileSectionCard(
+                title: "Настройки",
+                children: [
+                  SettingsTileSwitch(
+                    title: "Уведомления",
+                    value: true,
+                    onChanged: (_) {},
+                  ),
+                  SettingsTileLanguage(
+                    currentCode: 'ru',
+                    onChanged: (_) {},
+                  ),
+                ],
+              ),
+
+              /// ===== Support
+              const SizedBox(height: 8),
+              ProfileSectionCard(
+                title: "Поддержка",
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.support_agent,
+                        color: Colors.orangeAccent),
+                    title: const Text("Связаться с поддержкой"),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SupportPage()),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+            ],
+          );
+        },
       ),
     );
   }
 
-  /// BottomSheet: تعديل الاسم + الهاتف معاً
+  /// 🧾 Bottom Sheet — Edit Name + Surname + Phone
   void _showEditDataSheet(
     BuildContext context,
     String currentName,
@@ -227,82 +195,24 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Имя",
-                  style: TextStyle(
-                    color: Colors.grey[300],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
+              /// Имя
+              _buildLabel("Имя"),
               TextField(
                 controller: nameCtrl,
                 style: const TextStyle(color: Color(0xFFEDEDED)),
-                decoration: InputDecoration(
-                  hintText: 'Введите имя',
-                  hintStyle: const TextStyle(color: Color(0xFFA7A7A7)),
-                  filled: true,
-                  fillColor: fieldBg,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
+                decoration: _inputDecoration("Введите имя", fieldBg),
               ),
-
               const SizedBox(height: 12),
-
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Телефон",
-                  style: TextStyle(
-                    color: Colors.grey[300],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
+              /// Телефон
+              _buildLabel("Телефон"),
               TextField(
                 controller: phoneCtrl,
                 keyboardType: TextInputType.phone,
                 style: const TextStyle(color: Color(0xFFEDEDED)),
-                decoration: InputDecoration(
-                  hintText: '+7 999 123-45-67',
-                  hintStyle: const TextStyle(color: Color(0xFFA7A7A7)),
-                  filled: true,
-                  fillColor: fieldBg,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12)),
-                    borderSide: BorderSide(color: borderColor),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
+                decoration: _inputDecoration("+7 999 123-45-67", fieldBg),
               ),
-
               const SizedBox(height: 16),
+
               SizedBox(
                 width: double.infinity,
                 height: 44,
@@ -319,18 +229,11 @@ class ProfilePage extends StatelessWidget {
                       );
                       return;
                     }
-                    if (!RegExp(r'^\+?\d[\d \-\(\)]{9,}$').hasMatch(phone)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Введите корректный номер телефона'),
-                        ),
-                      );
-                      return;
-                    }
 
-                    context.read<ProfileBloc>().add(
-                      ProfileInfoUpdated(name: name, phone: phone),
-                    );
+                    context.read<ProfileBloc>()
+                      ..add(ProfileNameChanged(name))
+                    //  ..add(ProfilePhoneChanged(phone))
+                      ..add(const ProfileSaved());
                     Navigator.pop(context);
                   },
                   child: const Text('Сохранить'),
@@ -343,10 +246,43 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  /// اختيار صورة جديدة (كاميرا/معرض) ثم إرسال ProfileAvatarUpdated
+  /// Helper for label text
+  Widget _buildLabel(String text) => Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+
+  /// Helper for consistent field styling
+  InputDecoration _inputDecoration(String hint, Color fieldBg) {
+    const borderColor = Color(0xFF2A2A2A);
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFFA7A7A7)),
+      filled: true,
+      fillColor: fieldBg,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.orangeAccent),
+      ),
+    );
+  }
+
+  /// 📸 Avatar picker
   Future<void> _pickAvatar(BuildContext context) async {
     final picker = ImagePicker();
-    final bloc = context.read<ProfileBloc>(); // ✅ خزّناه قبل await
+    final bloc = context.read<ProfileBloc>();
 
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -380,11 +316,27 @@ class ProfilePage extends StatelessWidget {
     try {
       final xfile = await picker.pickImage(source: source, imageQuality: 85);
       if (xfile == null) return;
-      bloc.add(ProfileAvatarUpdated(xfile.path)); // ✅ استخدمنا bloc المخزّن
+      bloc.add(ProfileAvatarSet(xfile.path));
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Не удалось выбрать изображение')),
       );
     }
+  }
+}
+
+/// Keeps your existing BonusesCard look
+class _BonusesCardShim extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BonusesCard(
+      balance: 150,
+      onViewPromos: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PromotionsPage()),
+        );
+      },
+    );
   }
 }

@@ -1,33 +1,29 @@
-abstract class ProfileEvent {}
+import 'package:equatable/equatable.dart';
 
-class ProfileStarted extends ProfileEvent {}
+abstract class ProfileEvent extends Equatable {
+  const ProfileEvent();
+  @override
+  List<Object?> get props => [];
+}
 
-class ProfileNameEdited extends ProfileEvent {
+class ProfileStarted extends ProfileEvent {
+  const ProfileStarted();
+}
+
+class ProfileNameChanged extends ProfileEvent {
   final String name;
-  ProfileNameEdited(this.name);
+  const ProfileNameChanged(this.name);
+  @override
+  List<Object?> get props => [name];
 }
 
-class ProfileNotificationsToggled extends ProfileEvent {
-  final bool enabled;
-  ProfileNotificationsToggled(this.enabled);
+class ProfileSaved extends ProfileEvent {
+  const ProfileSaved();
 }
 
-class ProfileLanguageChanged extends ProfileEvent {
-  final String code; // "ru" / "ar"
-  ProfileLanguageChanged(this.code);
-}
-
-class ProfileLogoutRequested extends ProfileEvent {}
-
-/// تحديث الاسم + الهاتف معًا
-class ProfileInfoUpdated extends ProfileEvent {
-  final String name;
-  final String phone;
-  ProfileInfoUpdated({required this.name, required this.phone});
-}
-
-/// تحديث صورة البروفايل
-class ProfileAvatarUpdated extends ProfileEvent {
-  final String path; // مسار ملف محلي
-  ProfileAvatarUpdated(this.path);
+class ProfileAvatarSet extends ProfileEvent {
+  final String avatarUrl;
+  const ProfileAvatarSet(this.avatarUrl);
+  @override
+  List<Object?> get props => [avatarUrl];
 }
