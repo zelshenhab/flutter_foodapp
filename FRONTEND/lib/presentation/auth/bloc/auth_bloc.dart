@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'auth_event.dart';
@@ -120,7 +122,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   // Verify OTP
-  Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
+Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
     if (!state.canVerify) return;
     if (state.requestId == null || state.requestId!.isEmpty) {
       emit(state.copyWith(error: 'Нет requestId. Получите код заново.'));
@@ -133,21 +135,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final res = await service.verifyCode(
         phone: state.phone,
         requestId: state.requestId!,
-        code: state.otp, // should be 6 digits (111111 in dev)
+        code: state.otp,
       );
 
-      // Set token for subsequent requests
+      // ✅ Save tokens securely for future API calls
+      const storage = FlutterSecureStorage();
+      await storage.write(key: 'auth_token', value: res.accessToken);
+      await storage.write(key: 'refresh_token', value: res.refreshToken);
+      await storage.write(key: 'user_phone', value: state.phone);
+
+      // ✅ Set Authorization header for the global dio instance (for immediate use)
       dio.options.headers['Authorization'] = 'Bearer ${res.accessToken}';
+
+      debugPrint('✅ Token saved: ${res.accessToken.substring(0, 20)}...');
 
       _timer?.cancel();
       emit(
         state.copyWith(
           loading: false,
           step: AuthStep.success,
-          // You can add tokens/user to state if desired.
         ),
       );
-    } catch (_) {
+    } catch (err) {
       emit(state.copyWith(loading: false, error: 'Неверный код'));
     }
   }

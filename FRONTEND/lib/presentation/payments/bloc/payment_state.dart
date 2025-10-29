@@ -6,8 +6,12 @@ class PaymentState extends Equatable {
   final PaymentStep step;
   final bool loading;
   final String? error;
+
+  // Payment session (mock gateway)
   final String? intentId;
 
+  // Real backend order info
+  final int? orderId;
   final double amount;
   final String currency;
   final String? description;
@@ -17,6 +21,7 @@ class PaymentState extends Equatable {
     this.loading = false,
     this.error,
     this.intentId,
+    this.orderId,
     this.amount = 0,
     this.currency = 'RUB',
     this.description,
@@ -27,6 +32,7 @@ class PaymentState extends Equatable {
     bool? loading,
     String? error,
     String? intentId,
+    int? orderId,
     double? amount,
     String? currency,
     String? description,
@@ -34,9 +40,9 @@ class PaymentState extends Equatable {
     return PaymentState(
       step: step ?? this.step,
       loading: loading ?? this.loading,
-      // مرّر null لمسح الخطأ
       error: error,
       intentId: intentId ?? this.intentId,
+      orderId: orderId ?? this.orderId,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       description: description ?? this.description,
@@ -45,12 +51,13 @@ class PaymentState extends Equatable {
 
   @override
   List<Object?> get props => [
-    step,
-    loading,
-    error,
-    intentId,
-    amount,
-    currency,
-    description,
-  ];
+        step,
+        loading,
+        error,
+        intentId,
+        orderId,
+        amount,
+        currency,
+        description,
+      ];
 }

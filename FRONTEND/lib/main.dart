@@ -1,12 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'core/api_client.dart'; // 👈 your global Dio instance
 import 'presentation/auth/pages/login_info_page.dart';
+import 'presentation/root/app_shell.dart'; // 👈 main app after login
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 🧩 Initialize Supabase before anything else
+  await Supabase.initialize(
+    url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53YXBoZ3ZteHRhYWx5eHBnZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTQzNjMsImV4cCI6MjA3NjE5MDM2M30.MgK0G5bmvZJ6yT1vNnzn4Qz0OiIhtWde2kLx7KAG3wo',
+  );
+
+  // 🔐 Restore saved JWT token if available
+  const storage = FlutterSecureStorage();
+  final token = await storage.read(key: 'auth_token');
+  if (token != null && token.isNotEmpty) {
+    dio.options.headers['Authorization'] = 'Bearer $token';
+    debugPrint('✅ Auth token restored from secure storage');
+  } else {
+    debugPrint('ℹ️ No saved token found, user must log in');
+  }
+
+  runApp(MyApp(isLoggedIn: token != null && token.isNotEmpty));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isLoggedIn;
+  const MyApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -45,11 +69,12 @@ class MyApp extends StatelessWidget {
           showUnselectedLabels: false,
         ),
         textTheme: ThemeData.dark().textTheme.apply(
-          bodyColor: text,
-          displayColor: text,
-        ),
+              bodyColor: text,
+              displayColor: text,
+            ),
       ),
-      home: const LoginInfoPage(), // ✅ start at login
+      // 🔁 Navigate directly to AppShell if logged in
+      home: isLoggedIn ? const AppShell() : const LoginInfoPage(),
     );
   }
 }

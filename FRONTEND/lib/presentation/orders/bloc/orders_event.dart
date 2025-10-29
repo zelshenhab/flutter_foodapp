@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import '../models/order.dart';
 
 abstract class OrdersEvent extends Equatable {
   const OrdersEvent();
@@ -21,7 +20,7 @@ class OrderPickupConfirmed extends OrdersEvent {
 /// (اختياري) تحديث حالة معين من الداشبورد الريلتايم
 class OrderStatusPatched extends OrdersEvent {
   final String orderId;
-  final OrderStatus status;
+  final String status;
   const OrderStatusPatched(this.orderId, this.status);
   @override
   List<Object?> get props => [orderId, status];

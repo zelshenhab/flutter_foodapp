@@ -1,17 +1,19 @@
-// lib/presentation/payments/pages/payment_success_page.dart
 import 'package:flutter/material.dart';
 
 class PaymentSuccessPage extends StatelessWidget {
-  final String orderId;
-  final double amount;
+  /// The real order ID returned from backend (OrderApiService)
+  final int orderId;
+
+  /// The total order amount returned from backend (Number)
+  final double total;
 
   const PaymentSuccessPage({
     super.key,
     required this.orderId,
-    required this.amount,
+    required this.total,
   });
 
-  String _money(double v) => '${v.toStringAsFixed(0)} ₽';
+  String _money(double v) => '${v.toStringAsFixed(2)} ₽';
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +35,11 @@ class PaymentSuccessPage extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: Colors.green.withOpacity(.15),
                 ),
-                child: const Icon(Icons.check_rounded,
-                    size: 42, color: Colors.greenAccent),
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 42,
+                  color: Colors.greenAccent,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -47,7 +52,7 @@ class PaymentSuccessPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Заказ №$orderId оформлен.\nСумма: ${_money(amount)}',
+                'Заказ №$orderId оформлен.\nСумма: ${_money(total)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: hint),
               ),
@@ -57,7 +62,7 @@ class PaymentSuccessPage extends StatelessWidget {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () {
-                    // ارجع لأول شاشة (مثلاً المنيو) — عدل على حسب هيكل الروت عندك
+                    // Возврат на первый экран (например, меню)
                     Navigator.popUntil(context, (r) => r.isFirst);
                   },
                   child: const Text('Готово'),

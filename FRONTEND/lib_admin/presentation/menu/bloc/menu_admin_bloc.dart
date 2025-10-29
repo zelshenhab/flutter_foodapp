@@ -1,4 +1,5 @@
 // lib_admin/presentation/menu/bloc/menu_admin_bloc.dart
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 
@@ -40,7 +41,7 @@ class MenuAdminBloc extends Bloc<MenuAdminEvent, MenuAdminState> {
       );
     } catch (err) {
       // ignore: avoid_print
-      print('ADMIN MENU LOAD ERROR: $err');
+      debugPrint('ADMIN MENU LOAD ERROR: $err');
       emit(state.copyWith(loading: false, error: '$err'));
     }
   }
@@ -65,7 +66,7 @@ class MenuAdminBloc extends Bloc<MenuAdminEvent, MenuAdminState> {
       emit(state.copyWith(loading: false, items: items));
     } catch (err) {
       // ignore: avoid_print
-      print('ADMIN DISHES LOAD ERROR: $err');
+      debugPrint('ADMIN DISHES LOAD ERROR: $err');
       emit(state.copyWith(loading: false, error: '$err'));
     }
   }
@@ -78,7 +79,7 @@ class MenuAdminBloc extends Bloc<MenuAdminEvent, MenuAdminState> {
       emit(state.copyWith(loading: false, items: items));
     } catch (err) {
       // ignore: avoid_print
-      print('ADMIN DISH ADD ERROR: $err');
+      debugPrint('ADMIN DISH ADD ERROR: $err');
       emit(state.copyWith(loading: false, error: '$err'));
     }
   }
@@ -98,7 +99,7 @@ class MenuAdminBloc extends Bloc<MenuAdminEvent, MenuAdminState> {
         state.selectedCategoryId,
       );
       // ignore: avoid_print
-      print('ADMIN DISH UPDATE ERROR: $err');
+      debugPrint('ADMIN DISH UPDATE ERROR: $err');
       emit(state.copyWith(items: refreshed, error: '$err'));
     }
   }
@@ -117,7 +118,7 @@ class MenuAdminBloc extends Bloc<MenuAdminEvent, MenuAdminState> {
         state.selectedCategoryId,
       );
       // ignore: avoid_print
-      print('ADMIN DISH DELETE ERROR: $err');
+      debugPrint('ADMIN DISH DELETE ERROR: $err');
       emit(state.copyWith(items: refreshed, error: '$err'));
     }
   }
