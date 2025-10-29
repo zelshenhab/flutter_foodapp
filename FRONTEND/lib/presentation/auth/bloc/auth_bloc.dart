@@ -18,9 +18,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     super.on<AuthNameChanged>(
       (e, emit) => emit(state.copyWith(name: e.name, error: null)),
     );
-    super.on<AuthSurnameChanged>(
-      (e, emit) => emit(state.copyWith(surname: e.surname, error: null)),
-    );
     super.on<AuthPhoneChanged>(
       (e, emit) => emit(state.copyWith(phone: e.phone, error: null)),
     );
@@ -51,7 +48,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final res = await service.requestCode(
         phone: state.phone,
         name: state.name.trim().isEmpty ? null : state.name.trim(),
-        surname: state.surname.trim().isEmpty ? null : state.surname.trim(),
       );
 
       emit(
@@ -99,7 +95,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final res = await service.requestCode(
         phone: state.phone,
         name: state.name,
-        surname: state.surname,
       );
 
       emit(

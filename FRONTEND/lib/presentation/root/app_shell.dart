@@ -6,6 +6,7 @@ import '../cart/pages/cart_page.dart';
 import '../profile/pages/profile_page.dart';
 
 import '../cart/bloc/cart_bloc.dart';
+import '../cart/bloc/cart_event.dart';
 import '../menu/bloc/menu_bloc.dart';
 import '../menu/bloc/menu_event.dart';
 import '../profile/bloc/profile_bloc.dart';
@@ -24,44 +25,40 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   late final List<Widget> _pages;
-  bool _dispatchedInitialProfile = false;
+  bool _appliedInitialProfile = false;
 
   @override
   void initState() {
     super.initState();
-    _pages = [const MenuPage(), CartPage(), const ProfilePage()];
+    _pages = const [MenuPage(), CartPage(), ProfilePage()];
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<CartBloc>(create: (_) => CartBloc()),
+        // Start cart immediately so it loads when user opens tab
+        BlocProvider<CartBloc>(create: (_) => CartBloc()..add(const CartStarted())),
         BlocProvider<MenuBloc>(create: (_) => MenuBloc()..add(MenuStarted())),
-        BlocProvider<ProfileBloc>(
-          create: (_) => ProfileBloc()..add(ProfileStarted()),
-        ),
+        BlocProvider<ProfileBloc>(create: (_) => ProfileBloc()..add(const ProfileStarted())),
       ],
       child: Builder(
         builder: (context) {
-          // بعد أول فريم: لو فيه بيانات جاية من الـ OTP ولم نرسلها بعد → حدّث البروفايل
-          if (!_dispatchedInitialProfile &&
-              (widget.initialName != null || widget.initialPhone != null)) {
-            _dispatchedInitialProfile = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final name = widget.initialName;
-              final phone = widget.initialPhone;
-              if (name != null || phone != null) {
-                context.read<ProfileBloc>().add(
-                  ProfileInfoUpdated(name: name ?? '', phone: phone ?? ''),
-                );
-              }
-            });
-          }
+          // Apply initial profile (if passed from OTP flow) once after first frame
+          if (!_appliedInitialProfile &&
+          (widget.initialName != null || widget.initialPhone != null)) {
+        _appliedInitialProfile = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final name = widget.initialName ?? '';
+          // populate bloc state first
+          context.read<ProfileBloc>()
+            ..add(ProfileNameChanged(name))
+            ..add(const ProfileSaved()); // will call PUT /api/users/me with {name, surname}
+        });
+      }
 
           return Scaffold(
             body: IndexedStack(index: _index, children: _pages),
-
             bottomNavigationBar: Builder(
               builder: (context) {
                 final cartCount = context.select<CartBloc, int>(
@@ -85,10 +82,7 @@ class _AppShellState extends State<AppShell> {
                               right: -6,
                               top: -4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).colorScheme.primary,
                                   borderRadius: BorderRadius.circular(10),

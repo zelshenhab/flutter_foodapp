@@ -4,7 +4,6 @@ enum AuthStep { enterInfo, verifyOtp, success, authorized }
 
 class AuthState extends Equatable {
   final String name;
-  final String surname;
   final String phone;
   final String otp;
 
@@ -22,7 +21,6 @@ class AuthState extends Equatable {
 
   const AuthState({
     this.name = '',
-    this.surname = '',
     this.phone = '',
     this.otp = '',
     this.step = AuthStep.enterInfo,
@@ -41,7 +39,6 @@ class AuthState extends Equatable {
 
   AuthState copyWith({
     String? name,
-    String? surname,
     String? phone,
     String? otp,
     AuthStep? step,
@@ -54,7 +51,6 @@ class AuthState extends Equatable {
   }) {
     return AuthState(
       name: name ?? this.name,
-      surname: surname ?? this.surname,
       phone: phone ?? this.phone,
       otp: otp ?? this.otp,
       step: step ?? this.step,
@@ -70,7 +66,6 @@ class AuthState extends Equatable {
   @override
   List<Object?> get props => [
         name,
-        surname,
         phone,
         otp,
         step,

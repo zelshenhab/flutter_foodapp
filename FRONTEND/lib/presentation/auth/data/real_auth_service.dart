@@ -5,11 +5,10 @@ import 'auth_service_contract.dart';
 
 class RealAuthService implements IAuthService {
   @override
-  Future<RequestOtpResult> requestCode({required String phone, String? name, String? surname}) async {
+  Future<RequestOtpResult> requestCode({required String phone, String? name}) async {
     final res = await dio.post('/auth/otp/request', data: {
       'phone': phone,
       if (name != null && name.isNotEmpty) 'name': name,
-      if (surname != null && surname.isNotEmpty) 'surname': surname,
     });
 
     debugPrint('OTP REQUEST -> ${res.data}');
