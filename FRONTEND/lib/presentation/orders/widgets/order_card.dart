@@ -1,24 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_foodapp/core/utils/money.dart';
-import '../models/order.dart';
+import '../models/order_model.dart'; // make sure the import points to your actual OrderModel file
 
-String _statusText(OrderStatus s) {
-  switch (s) {
-    case OrderStatus.pending:
+// 🧩 Convert status enum-like string to readable text
+String _statusText(String status) {
+  switch (status) {
+    case 'pending':
       return 'Ожидает';
-    case OrderStatus.preparing:
+    case 'preparing':
       return 'Готовится';
-    case OrderStatus.ready:
+    case 'ready':
       return 'Готов к выдаче';
-    case OrderStatus.completed:
+    case 'completed':
       return 'Завершён';
-    case OrderStatus.cancelled:
+    case 'cancelled':
       return 'Отменён';
+    default:
+      return status;
+  }
+}
+
+// 🧩 Status color helper
+Color _statusColor(String status) {
+  switch (status) {
+    case 'pending':
+      return Colors.orangeAccent;
+    case 'completed':
+      return Colors.greenAccent;
+    case 'cancelled':
+      return Colors.redAccent;
+    default:
+      return Colors.grey;
   }
 }
 
 class OrderCard extends StatelessWidget {
-  final OrderEntity order;
+  final OrderModel order;
   final VoidCallback? onTap;
 
   const OrderCard({super.key, required this.order, this.onTap});
@@ -39,12 +56,15 @@ class OrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // رقم الطلب + التاريخ
+            // ===== Header (Order ID + Date)
             Row(
               children: [
                 Text(
                   'Заказ №${order.id}',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
                 ),
                 const Spacer(),
                 Text(
@@ -53,62 +73,102 @@ class OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            // المطعم + الحالة
+            const SizedBox(height: 6),
+
+            // ===== Status + Payment
             Row(
               children: [
-                Text(order.restaurant),
-                const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1E1E),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF2A2A2A)),
                   ),
-                  child: Text(
-                    _statusText(order.status),
-                    style: const TextStyle(fontSize: 12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.circle,
+                          size: 8, color: _statusColor(order.status)),
+                      const SizedBox(width: 6),
+                      Text(
+                        _statusText(order.status),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  order.paymentMethod.toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.orangeAccent,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            // أول صنف + عدد إضافي
-            Builder(
-              builder: (_) {
-                final first = order.items.first;
-                final more = order.items.length - 1;
-                return Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        first.image,
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
+
+            // ===== Address + Promo (optional)
+            if (order.addressText.isNotEmpty)
+              Row(
+                children: [
+                  const Icon(Icons.location_on,
+                      size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      order.addressText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            if (order.promoCode != null && order.promoCode!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Промокод: ${order.promoCode}',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
+
+            const SizedBox(height: 10),
+
+            // ===== Totals section
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Сумма: ${money(order.subtotal)}',
+                        style: const TextStyle(color: Colors.grey),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        more > 0 ? '${first.name} и ещё $more' : first.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Text(
+                        'Скидка: -${money(order.discount)}',
+                        style: const TextStyle(color: Colors.grey),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      money(order.grandTotal),
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ],
-                );
-              },
+                      Text(
+                        'Доставка: ${money(order.deliveryFee)}',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  money(order.total),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

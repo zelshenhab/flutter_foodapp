@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
-import '../models/order.dart';
+import '../models/order_model.dart';
 
 class OrdersState extends Equatable {
   final bool loading;
   final String? error;
-  final List<OrderEntity> orders;
+  final List<OrderModel> orders;
 
   const OrdersState({
     this.loading = false,
@@ -15,7 +15,7 @@ class OrdersState extends Equatable {
   OrdersState copyWith({
     bool? loading,
     String? error,
-    List<OrderEntity>? orders,
+    List<OrderModel>? orders,
   }) {
     return OrdersState(
       loading: loading ?? this.loading,

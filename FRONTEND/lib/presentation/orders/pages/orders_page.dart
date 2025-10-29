@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../orders/bloc/orders_bloc.dart';
-import '../../orders/bloc/orders_event.dart';
-import '../../orders/bloc/orders_state.dart';
-import '../../orders/widgets/order_card.dart';
-import 'order_details_page.dart';
+import '../bloc/orders_bloc.dart';
+import '../bloc/orders_event.dart';
+import '../bloc/orders_state.dart';
+import '../widgets/order_card.dart';
 
 class OrdersPage extends StatelessWidget {
   const OrdersPage({super.key});
@@ -21,51 +20,19 @@ class OrdersPage extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
             if (state.error != null) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.error!),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () =>
-                          context.read<OrdersBloc>().add(OrdersStarted()),
-                      child: const Text('Повторить'),
-                    ),
-                  ],
-                ),
-              );
+              return Center(child: Text(state.error!));
             }
             if (state.orders.isEmpty) {
-              return const Center(child: Text('Заказов пока нет'));
+              return const Center(child: Text('У вас пока нет заказов'));
             }
 
-            return RefreshIndicator(
-              onRefresh: () async {
-                context.read<OrdersBloc>().add(OrdersRefreshed());
+            return ListView.separated(
+              itemCount: state.orders.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final order = state.orders[index];
+                return OrderCard(order: order);
               },
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: state.orders.length,
-                itemBuilder: (context, i) {
-                  final order = state.orders[i];
-                  return OrderCard(
-                    order: order,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BlocProvider.value(
-                            value: context
-                                .read<OrdersBloc>(), // نمرّر نفس الـ bloc
-                            child: OrderDetailsPage(order: order),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
             );
           },
         ),

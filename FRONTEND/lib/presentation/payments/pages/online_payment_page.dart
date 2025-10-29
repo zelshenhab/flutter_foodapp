@@ -38,20 +38,24 @@ class OnlinePaymentPage extends StatelessWidget {
         listener: (context, state) async {
           // Debug بسيط
           // ignore: avoid_print
-          print('PAYMENT LISTENER -> step=${state.step} error=${state.error}');
+          debugPrint('PAYMENT LISTENER -> step=${state.step} error=${state.error}');
 
           if (state.step == PaymentStep.success) {
-            // ✅ الدفع نجح -> نروح لصفحة النجاح
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PaymentSuccessPage(
-                  orderId: 'AUTO', // بدّلها برقم الطلب الحقيقي لو متاح
-                  amount: state.amount,
-                ),
-              ),
-            );
-          } else if (state.step == PaymentStep.failed &&
+  // Assuming orderApi.createOrder() returns { orderId, status, total }
+  final orderId = state.orderId ?? 0;     // from your PaymentBloc
+  final total = state.amount;             // from PaymentBloc (or backend response)
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PaymentSuccessPage(
+        orderId: orderId,
+        total: total,
+      ),
+    ),
+  );
+}
+ else if (state.step == PaymentStep.failed &&
               state.error == 'Оплата отклонена') {
             // ❌ فشل نهائي -> نروح لصفحة الفشل (Center UI موجود هناك)
             Navigator.pushReplacement(

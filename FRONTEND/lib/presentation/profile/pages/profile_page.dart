@@ -24,14 +24,34 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Профиль')),
-      body: BlocBuilder<ProfileBloc, ProfileState>(
+      body: BlocConsumer<ProfileBloc, ProfileState>(
+        listenWhen: (p, c) => p.error != c.error,
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.error!)),
+            );
+          }
+        },
         builder: (context, state) {
+          // 🔄 Show loading indicator
           if (state.loading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final name = state.name;
-          final phone = state.phone ?? '';
+          // ⚠️ Handle error
+          if (state.error != null && state.name.isEmpty) {
+            return Center(
+              child: Text(
+                state.error!,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
+            );
+          }
+
+          // ✅ Build the actual profile content
+          final name = state.name.isNotEmpty ? state.name : '-';
+          final phone = state.phone ?? '-';
 
           final headerProfile = UserProfile(
             name: name,
@@ -43,132 +63,129 @@ class ProfilePage extends StatelessWidget {
             avatarPath: state.avatarUrl,
           );
 
-          return ListView(
-            children: [
-              /// ===== Header (Avatar + name + phone)
-              ProfileHeader(
-                profile: headerProfile,
-                onEdit: () =>
-                    _showEditDataSheet(context, name, phone),
-                onChangeAvatar: () => _pickAvatar(context),
-              ),
-
-              /// ===== Bonuses + Promotions
-              _BonusesCardShim(),
-
-              /// ===== Personal data
-              /// ===== Personal data
-            const SizedBox(height: 8),
-            ProfileSectionCard(
-              title: "Мои данные",
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<ProfileBloc>().add(const ProfileStarted());
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text("Имя: ${name.isEmpty ? '-' : name}"),
+                /// ===== Header (Avatar + name + phone)
+                ProfileHeader(
+                  profile: headerProfile,
+                  onEdit: () => _showEditDataSheet(context, name, phone),
+                  onChangeAvatar: () => _pickAvatar(context),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.phone),
-                  title: Text("Телефон: $phone"),
+
+                /// ===== Bonuses + Promotions
+                _BonusesCardShim(),
+
+                /// ===== Personal data
+                const SizedBox(height: 8),
+                ProfileSectionCard(
+                  title: "Мои данные",
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.person),
+                      title: Text("Имя: $name"),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.phone),
+                      title: Text("Телефон: $phone"),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => _showEditDataSheet(context, name, phone),
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Редактировать'),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () =>
-                        _showEditDataSheet(context, name, phone),
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Редактировать'),
-                  ),
+
+                /// ===== Orders
+                const SizedBox(height: 8),
+                ProfileSectionCard(
+                  title: "Мои заказы",
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.history,
+                          color: Colors.orangeAccent),
+                      title: const Text("Посмотреть заказы"),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const OrdersPage()),
+                        );
+                      },
+                    ),
+                  ],
                 ),
+
+                /// ===== Address
+                const SizedBox(height: 8),
+                const ProfileSectionCard(
+                  title: "Адрес доставки",
+                  children: [AddressReadonlyTile(address: 'ул. Пушкина 15')],
+                ),
+
+                /// ===== Settings
+                const SizedBox(height: 8),
+                ProfileSectionCard(
+                  title: "Настройки",
+                  children: [
+                    SettingsTileSwitch(
+                      title: "Уведомления",
+                      value: true,
+                      onChanged: (_) {},
+                    ),
+                    SettingsTileLanguage(
+                      currentCode: 'ru',
+                      onChanged: (_) {},
+                    ),
+                  ],
+                ),
+
+                /// ===== Support
+                const SizedBox(height: 8),
+                ProfileSectionCard(
+                  title: "Поддержка",
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.support_agent,
+                          color: Colors.orangeAccent),
+                      title: const Text("Связаться с поддержкой"),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SupportPage()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
             ),
-
-              /// ===== Orders
-              const SizedBox(height: 8),
-              ProfileSectionCard(
-                title: "Мои заказы",
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.history,
-                        color: Colors.orangeAccent),
-                    title: const Text("Посмотреть заказы"),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const OrdersPage()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-
-              /// ===== Address
-              const SizedBox(height: 8),
-              ProfileSectionCard(
-                title: "Адрес доставки",
-                children: const [
-                  AddressReadonlyTile(address: 'ул. Пушкина 15')
-                ],
-              ),
-
-              /// ===== Settings
-              const SizedBox(height: 8),
-              ProfileSectionCard(
-                title: "Настройки",
-                children: [
-                  SettingsTileSwitch(
-                    title: "Уведомления",
-                    value: true,
-                    onChanged: (_) {},
-                  ),
-                  SettingsTileLanguage(
-                    currentCode: 'ru',
-                    onChanged: (_) {},
-                  ),
-                ],
-              ),
-
-              /// ===== Support
-              const SizedBox(height: 8),
-              ProfileSectionCard(
-                title: "Поддержка",
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.support_agent,
-                        color: Colors.orangeAccent),
-                    title: const Text("Связаться с поддержкой"),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SupportPage()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-            ],
           );
         },
       ),
     );
   }
 
-  /// 🧾 Bottom Sheet — Edit Name + Surname + Phone
+  /// 🧾 Bottom Sheet — Edit Name + Phone
   void _showEditDataSheet(
     BuildContext context,
     String currentName,
     String currentPhone,
   ) {
-    final nameCtrl = TextEditingController(text: currentName);
-    final phoneCtrl = TextEditingController(text: currentPhone);
+    final nameCtrl = TextEditingController(text: currentName != '-' ? currentName : '');
+    final phoneCtrl = TextEditingController(text: currentPhone != '-' ? currentPhone : '');
 
-    const borderColor = Color(0xFF2A2A2A);
     const fieldBg = Color(0xFF1E1E1E);
 
     showModalBottomSheet(
@@ -195,7 +212,6 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              /// Имя
               _buildLabel("Имя"),
               TextField(
                 controller: nameCtrl,
@@ -203,7 +219,7 @@ class ProfilePage extends StatelessWidget {
                 decoration: _inputDecoration("Введите имя", fieldBg),
               ),
               const SizedBox(height: 12),
-              /// Телефон
+
               _buildLabel("Телефон"),
               TextField(
                 controller: phoneCtrl,
@@ -223,17 +239,16 @@ class ProfilePage extends StatelessWidget {
 
                     if (name.isEmpty || phone.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Заполните имя и телефон'),
-                        ),
+                        const SnackBar(content: Text('Заполните имя и телефон')),
                       );
                       return;
                     }
 
-                    context.read<ProfileBloc>()
+                    final bloc = context.read<ProfileBloc>();
+                    bloc
                       ..add(ProfileNameChanged(name))
-                    //  ..add(ProfilePhoneChanged(phone))
                       ..add(const ProfileSaved());
+
                     Navigator.pop(context);
                   },
                   child: const Text('Сохранить'),
@@ -246,7 +261,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  /// Helper for label text
   Widget _buildLabel(String text) => Align(
         alignment: Alignment.centerLeft,
         child: Text(
@@ -258,7 +272,6 @@ class ProfilePage extends StatelessWidget {
         ),
       );
 
-  /// Helper for consistent field styling
   InputDecoration _inputDecoration(String hint, Color fieldBg) {
     const borderColor = Color(0xFF2A2A2A);
     return InputDecoration(
