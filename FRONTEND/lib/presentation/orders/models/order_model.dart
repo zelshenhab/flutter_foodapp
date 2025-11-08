@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'order_item.dart';
 
 class OrderModel {
   final int id;
@@ -14,6 +15,7 @@ class OrderModel {
   final String? notes;
   final String addressText;
   final DateTime createdAt;
+  final List<OrderItem> items;
 
   const OrderModel({
     required this.id,
@@ -27,37 +29,71 @@ class OrderModel {
     required this.total,
     required this.addressText,
     required this.createdAt,
+    required this.items,
     this.promoCode,
     this.notes,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
-    // decode addressSnapshot JSON safely
+    // 🧩 Decode addressSnapshot JSON safely
     String address = '';
     try {
       final addrJson = json['addressSnapshot'];
-      if (addrJson != null && addrJson is String && addrJson.isNotEmpty) {
-        final decoded = jsonDecode(addrJson);
-        address = decoded['text'] ?? '';
+      if (addrJson != null) {
+        if (addrJson is String && addrJson.isNotEmpty) {
+          final decoded = jsonDecode(addrJson);
+          address = decoded['text'] ?? '';
+        } else if (addrJson is Map<String, dynamic>) {
+          address = addrJson['text'] ?? '';
+        }
       }
     } catch (_) {
       address = '';
     }
 
+    // 🧩 Decode items list (Supabase may return as `OrderItem` or `items`)
+    final rawItems = json['items'] ?? json['OrderItem'];
+    List<OrderItem> parsedItems = [];
+    if (rawItems is List) {
+      parsedItems = rawItems
+          .map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
     return OrderModel(
-      id: json['id'] as int,
-      userId: json['userId'] as int,
-      status: json['status'] as String,
-      paymentMethod: json['paymentMethod'] as String,
-      paymentStatus: json['paymentStatus'] as String,
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      userId: json['userId'] is int
+          ? json['userId']
+          : int.tryParse(json['userId'].toString()) ?? 0,
+      status: json['status']?.toString() ?? 'unknown',
+      paymentMethod: json['paymentMethod']?.toString() ?? '',
+      paymentStatus: json['paymentStatus']?.toString() ?? '',
       subtotal: double.tryParse(json['subtotal'].toString()) ?? 0,
       discount: double.tryParse(json['discount'].toString()) ?? 0,
       deliveryFee: double.tryParse(json['deliveryFee'].toString()) ?? 0,
       total: double.tryParse(json['total'].toString()) ?? 0,
-      promoCode: json['promoCode'] as String?,
-      notes: json['notes'] as String?,
+      promoCode: json['promoCode']?.toString(),
+      notes: json['notes']?.toString(),
       addressText: address,
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now(),
+      items: parsedItems,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'status': status,
+        'paymentMethod': paymentMethod,
+        'paymentStatus': paymentStatus,
+        'subtotal': subtotal,
+        'discount': discount,
+        'deliveryFee': deliveryFee,
+        'total': total,
+        'promoCode': promoCode,
+        'notes': notes,
+        'addressText': addressText,
+        'createdAt': createdAt.toIso8601String(),
+        'items': items.map((i) => i.toJson()).toList(),
+      };
 }

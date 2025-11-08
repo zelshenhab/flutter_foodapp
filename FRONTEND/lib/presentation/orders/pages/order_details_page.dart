@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/core/utils/money.dart';
-
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
-import '../models/order.dart';
+import '../models/order_model.dart';
 import '../widgets/order_item_row.dart';
 
 class OrderDetailsPage extends StatelessWidget {
-  final OrderEntity order;
+  final OrderModel order;
   const OrderDetailsPage({super.key, required this.order});
 
   @override
@@ -20,7 +19,7 @@ class OrderDetailsPage extends StatelessWidget {
       body: SafeArea(
         child: ListView(
           children: [
-            // ===== Header: Restaurant + date/time + status badge
+            // ===== Header =====
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
@@ -29,9 +28,9 @@ class OrderDetailsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          order.restaurant,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        const Text(
+                          'Адам и Ева — Самовывоз',
+                          style: TextStyle(fontWeight: FontWeight.w800),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -42,10 +41,8 @@ class OrderDetailsPage extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1E1E1E),
                       borderRadius: BorderRadius.circular(8),
@@ -62,7 +59,7 @@ class OrderDetailsPage extends StatelessWidget {
 
             const Divider(color: Color(0xFF2A2A2A)),
 
-            // ===== Title: items
+            // ===== Items =====
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Text(
@@ -71,39 +68,38 @@ class OrderDetailsPage extends StatelessWidget {
               ),
             ),
 
-            // ===== Items list
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Column(
-                children: [
-                  for (final it in order.items) ...[
-                    OrderItemRow(item: it),
-                    const SizedBox(height: 10),
-                  ],
-                ],
+                children: order.items
+                    .map((i) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: OrderItemRow(item: i),
+                        ))
+                    .toList(),
               ),
             ),
 
             const Divider(color: Color(0xFF2A2A2A)),
 
-            // ===== Summary
+            // ===== Summary =====
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Column(
                 children: [
-                  _row('Сумма заказа', money(order.itemsTotal)),
-                  if (order.deliveryFee > 0) // غالبًا صفر في الاستلام الذاتي
+                  _row('Сумма заказа', money(order.subtotal)),
+                  if (order.deliveryFee > 0)
                     _row('Доставка', money(order.deliveryFee)),
                   if (order.discount > 0)
                     _row('Скидка', '-${money(order.discount)}'),
                   const Divider(color: Color(0xFF2A2A2A)),
-                  _row('Итого', money(order.grandTotal), bold: true),
+                  _row('Итого', money(order.total), bold: true),
                 ],
               ),
             ),
 
-            // ===== Confirm pickup button (only when ready)
-            if (order.status == OrderStatus.ready)
+            // ===== Confirm Pickup =====
+            if (order.status == 'ready')
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: SizedBox(
@@ -113,30 +109,13 @@ class OrderDetailsPage extends StatelessWidget {
                     icon: const Icon(Icons.check_circle_outline),
                     label: const Text('Подтвердить получение'),
                     onPressed: () {
-                      // نحاول نقرأ OrdersBloc بأمان (بدون كراش لو مش موجود)
-                      final ordersBloc = BlocProvider.of<OrdersBloc>(
-                        context,
-                        listen: false,
-                      );
-                      if (ordersBloc == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Не удалось обновить статус: OrdersBloc не найден. '
-                              'Проверьте, что вы передали Bloc через BlocProvider.value при навигации.',
-                            ),
-                          ),
-                        );
-                        return;
-                      }
-
-                      ordersBloc.add(OrderPickupConfirmed(order.id));
+                      context.read<OrdersBloc>().add(OrderPickupConfirmed(order.id));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Спасибо! Приятного аппетита.'),
                         ),
                       );
-                      Navigator.pop(context); // رجوع لقائمة الطلبов
+                      Navigator.pop(context);
                     },
                   ),
                 ),
@@ -147,23 +126,21 @@ class OrderDetailsPage extends StatelessWidget {
     );
   }
 
-  // ===== Helpers =====
-
-  Widget _row(String l, String v, {bool bold = false}) {
+  Widget _row(String label, String value, {bool bold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              l,
+              label,
               style: TextStyle(
                 fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ),
           Text(
-            v,
+            value,
             style: TextStyle(
               fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
             ),
@@ -173,18 +150,20 @@ class OrderDetailsPage extends StatelessWidget {
     );
   }
 
-  String _statusText(OrderStatus s) {
-    switch (s) {
-      case OrderStatus.pending:
+  String _statusText(String status) {
+    switch (status) {
+      case 'pending':
         return 'Ожидает';
-      case OrderStatus.preparing:
+      case 'preparing':
         return 'Готовится';
-      case OrderStatus.ready:
+      case 'ready':
         return 'Готов к выдаче';
-      case OrderStatus.completed:
+      case 'completed':
         return 'Завершён';
-      case OrderStatus.cancelled:
+      case 'cancelled':
         return 'Отменён';
+      default:
+        return status;
     }
   }
 

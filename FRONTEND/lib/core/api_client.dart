@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class Env {
   static const apiBaseUrl = String.fromEnvironment(
@@ -16,29 +18,39 @@ final dio = Dio(
   ),
 );
 
-class AuthTokenStore {
-  static const _kAccess = 'access_token';
+/// ✅ Setup Dio interceptors globally
+void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
+  const storage = FlutterSecureStorage();
 
-  static Future<void> saveAccessToken(String token) async {
-    final sp = await SharedPreferences.getInstance();
-    await sp.setString(_kAccess, token);
-  }
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await storage.read(key: 'auth_token');
+        if (token != null && !JwtDecoder.isExpired(token)) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+      onError: (DioException e, handler) async {
+        final msg = e.response?.data.toString() ?? e.message ?? '';
 
-  static Future<String?> loadAccessToken() async {
-    final sp = await SharedPreferences.getInstance();
-    return sp.getString(_kAccess);
-  }
+        if (e.response?.statusCode == 401 ||
+            msg.contains('jwt expired') ||
+            msg.contains('TokenExpiredError')) {
+          debugPrint('⚠️ JWT expired — redirecting to login');
 
-  static Future<void> clear() async {
-    final sp = await SharedPreferences.getInstance();
-    await sp.remove(_kAccess);
-  }
-}
+          await storage.delete(key: 'auth_token');
 
-/// Call this once at app start
-Future<void> initApiClient() async {
-  final token = await AuthTokenStore.loadAccessToken();
-  if (token != null && token.isNotEmpty) {
-    dio.options.headers['Authorization'] = 'Bearer $token';
-  }
+          if (navigatorKey?.currentState != null) {
+            navigatorKey!.currentState!.pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
+            );
+          }
+        }
+
+        handler.next(e);
+      },
+    ),
+  );
 }

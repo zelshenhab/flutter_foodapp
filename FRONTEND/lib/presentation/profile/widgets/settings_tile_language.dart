@@ -18,7 +18,7 @@ class SettingsTileLanguage extends StatelessWidget {
         value: currentCode,
         items: const [
           DropdownMenuItem(value: 'ru', child: Text("Русский")),
-          DropdownMenuItem(value: 'ar', child: Text("العربية")),
+          DropdownMenuItem(value: 'en', child: Text("English")),
         ],
         onChanged: (value) {
           if (value != null) {

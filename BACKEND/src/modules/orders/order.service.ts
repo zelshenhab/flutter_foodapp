@@ -157,35 +157,64 @@ export async function listOrders(
 export async function getOrderDetail(userId: number, orderId: number) {
   const { data: order, error } = await supabase
     .from('Order')
-    .select(`
-      *,
-      OrderItem(*)
-    `)
+    .select('*')
     .eq('id', orderId)
     .eq('userId', userId)
     .single();
 
-  if (error || !order) {
-    throw { status: 404, message: "Order not found" };
-  }
+  if (error || !order) throw { status: 404, message: "Order not found" };
 
-  type OrderItemRow = {
-    unitPrice: number | string;
-    lineTotal: number | string;
-    // keep all other columns (ids, snapshots, etc.)
-    [key: string]: any;
-  };
+  const { data: items, error: itemsError } = await supabase
+    .from('OrderItem')
+    .select('*')
+    .eq('orderId', orderId);
+
+  if (itemsError) throw { status: 500, message: "Failed to load items" };
 
   return {
     ...order,
-    total: Number(order.total),
-    subtotal: Number(order.subtotal),
-    discount: Number(order.discount),
-    deliveryFee: Number(order.deliveryFee),
-    items: (order.OrderItem ?? []).map((it: OrderItemRow) => ({
+    items: (items ?? []).map(it => ({
       ...it,
       unitPrice: Number(it.unitPrice),
       lineTotal: Number(it.lineTotal),
     })),
+    total: Number(order.total),
+    subtotal: Number(order.subtotal),
+    discount: Number(order.discount),
+    deliveryFee: Number(order.deliveryFee),
   };
 }
+
+
+export async function completeOrder(userId: number, orderId: number) {
+  // Make sure order belongs to this user
+  const { data: order, error: findError } = await supabase
+    .from('Order')
+    .select('id, userId, status')
+    .eq('id', orderId)
+    .eq('userId', userId)
+    .single();
+
+  if (findError || !order) {
+    throw { status: 404, message: "Order not found" };
+  }
+
+  if (order.status === "completed") {
+    return { id: order.id, status: "completed" }; // already done
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from('Order')
+    .update({ status: "completed" })
+    .eq('id', orderId)
+    .eq('userId', userId)
+    .select()
+    .single();
+
+  if (updateError || !updated) {
+    throw { status: 500, message: "Failed to update order status" };
+  }
+
+  return { id: updated.id, status: updated.status };
+}
+
