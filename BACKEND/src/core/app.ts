@@ -3,7 +3,9 @@ import cors from "cors";
 import morgan from "morgan";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const listEndpoints = require("express-list-endpoints") as (app: Express) => any[];
-import { router } from "../routes";
+import { router } from "../mobile_application/routes";
+import { router as adminRouter } from "../dashboard/routes";
+import { errorHandler } from "./middlewares/errorHandler";
 
 export function createApp(): Express {
   const app = express();
@@ -15,10 +17,13 @@ export function createApp(): Express {
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
   console.log("Router stack length before mount:", (router as any).stack?.length);
-  app.use("/api", router);
+  app.use("/api", router);         
+  app.use("/api/admin", adminRouter);
+  
+  app.use(errorHandler);
 
   // Debug helper for Express 4/5, routers, and nested mounts
-function collectRoutes(app: any) {
+/*function collectRoutes(app: any) {
   const out: Array<{ method: string; path: string }> = [];
 
   const walk = (stack: any[], prefix = "") => {
@@ -57,6 +62,6 @@ function collectRoutes(app: any) {
 console.log("==== Registered endpoints (custom) ====");
 console.log(collectRoutes(app));
 console.log("=======================================");
-
+*/
   return app;
 }

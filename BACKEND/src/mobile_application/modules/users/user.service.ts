@@ -1,4 +1,4 @@
-﻿import { supabase } from "../../core/config/supabase";
+﻿import { supabase } from "../../../core/config/supabase";
 
 export async function getMe(userId: number) {
   const { data, error } = await supabase

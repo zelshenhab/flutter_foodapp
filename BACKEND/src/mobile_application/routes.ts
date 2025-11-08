@@ -1,11 +1,11 @@
 ﻿import { Router } from "express";
 import { authRouter } from "./modules/auth/auth.routes";
-import { userRouter } from "./modules/users/user.routes";
-import { menuRouter } from "./modules/menu/menu.routes";
 import { cartRouter } from "./modules/cart/cart.routes";
+import { menuRouter } from "./modules/menu/menu.routes";
 import { orderRouter } from "./modules/orders/order.routes";
-import { supportRouter } from "./modules/support/support.routes";
 import { promoRouter } from "./modules/promos/promo.routes";
+import { supportRouter } from "./modules/support/support.routes";
+import { userRouter } from "./modules/users/user.routes";
 
 export const router = Router();
 
