@@ -1,28 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'core/api_client.dart'; // 👈 your global Dio instance
+import 'core/api_client.dart';
 import 'presentation/auth/pages/login_info_page.dart';
-import 'presentation/root/app_shell.dart'; // 👈 main app after login
+import 'presentation/root/app_shell.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🧩 Initialize Supabase before anything else
   await Supabase.initialize(
     url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53YXBoZ3ZteHRhYWx5eHBnZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTQzNjMsImV4cCI6MjA3NjE5MDM2M30.MgK0G5bmvZJ6yT1vNnzn4Qz0OiIhtWde2kLx7KAG3wo',
   );
 
-  // 🔐 Restore saved JWT token if available
   const storage = FlutterSecureStorage();
   final token = await storage.read(key: 'auth_token');
+
+  // 🧩 Setup interceptors (pass global navigator)
+  setupInterceptors(navigatorKey: appNavigatorKey);
+
+  // Add token to headers if valid
   if (token != null && token.isNotEmpty) {
     dio.options.headers['Authorization'] = 'Bearer $token';
-    debugPrint('✅ Auth token restored from secure storage');
+    debugPrint('✅ Token restored from secure storage');
   } else {
-    debugPrint('ℹ️ No saved token found, user must log in');
+    debugPrint('ℹ️ No token found — login required');
   }
 
   runApp(MyApp(isLoggedIn: token != null && token.isNotEmpty));
@@ -40,6 +45,7 @@ class MyApp extends StatelessWidget {
     const accent = Color(0xFFFF7A00);
 
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Адам и Ева',
       theme: ThemeData.dark().copyWith(
@@ -73,8 +79,11 @@ class MyApp extends StatelessWidget {
               displayColor: text,
             ),
       ),
-      // 🔁 Navigate directly to AppShell if logged in
-      home: isLoggedIn ? const AppShell() : const LoginInfoPage(),
+      initialRoute: isLoggedIn ? '/app' : '/login',
+      routes: {
+        '/login': (_) => const LoginInfoPage(),
+        '/app': (_) => const AppShell(),
+      },
     );
   }
 }

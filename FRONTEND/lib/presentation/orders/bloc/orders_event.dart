@@ -11,7 +11,7 @@ class OrdersRefreshed extends OrdersEvent {}
 
 /// يضغطها العميل عندما يستلم الطلب الجاهز من الكاشير
 class OrderPickupConfirmed extends OrdersEvent {
-  final String orderId;
+  final int orderId;
   const OrderPickupConfirmed(this.orderId);
   @override
   List<Object?> get props => [orderId];

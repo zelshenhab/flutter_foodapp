@@ -43,3 +43,16 @@ export async function getMyOrder(req: Request, res: Response) {
   const data = await svc.getOrderDetail(userId, id);
   res.json({ data });
 }
+
+export async function completeOrder(req: Request, res: Response) {
+  const userId = userIdFrom(req);
+  const id = Number(req.params.id);
+  try {
+    const data = await svc.completeOrder(userId, id);
+    res.status(200).json({ data });
+  } catch (err: any) {
+    res
+      .status(err.status || 500)
+      .json({ error: err.message || "Failed to complete order" });
+  }
+}

@@ -37,6 +37,7 @@ dependencies:
     sdk: flutter
   flutter_bloc: ^9.1.1
   flutter_secure_storage: ^9.2.4
+  jwt_decoder: ^2.0.1   # ✅ Add this line
   google_fonts: ^6.3.0
   image_picker: ^1.2.0
   mask_text_input_formatter: ^2.9.0

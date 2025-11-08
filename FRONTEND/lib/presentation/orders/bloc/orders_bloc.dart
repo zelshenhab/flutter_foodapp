@@ -16,7 +16,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     on<OrderStatusPatched>(_onStatusPatched);
   }
 
-  /// 🔹 Initial load of user's orders
+  /// 🔹 Load user's orders on start
   Future<void> _load(OrdersEvent e, Emitter<OrdersState> emit) async {
     emit(state.copyWith(loading: true, error: null));
     try {
@@ -40,12 +40,12 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     }
   }
 
-  /// 🧾 Customer confirms pickup (status ready → completed)
+  /// 🧾 User confirms pickup (ready → completed)
   Future<void> _onPickupConfirmed(
       OrderPickupConfirmed e, Emitter<OrdersState> emit) async {
+    // Update status locally
     final updated = state.orders.map((o) {
       if (o.id == e.orderId) {
-        // Create a new OrderModel with updated status
         return OrderModel(
           id: o.id,
           userId: o.userId,
@@ -60,15 +60,23 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
           promoCode: o.promoCode,
           notes: o.notes,
           createdAt: o.createdAt,
+          items: o.items, // ✅ keep items!
         );
       }
       return o;
     }).toList();
 
     emit(state.copyWith(orders: updated));
+
+    // Optionally sync to backend
+    try {
+      await repo.confirmPickup(e.orderId);
+    } catch (err) {
+      // ignore silently or log
+    }
   }
 
-  /// ⚡ Realtime or external status update (optional)
+  /// ⚡ Realtime / external status update (optional)
   void _onStatusPatched(OrderStatusPatched e, Emitter<OrdersState> emit) {
     final updated = state.orders.map((o) {
       if (o.id == e.orderId) {
@@ -86,6 +94,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
           promoCode: o.promoCode,
           notes: o.notes,
           createdAt: o.createdAt,
+          items: o.items, // ✅ preserve items
         );
       }
       return o;
