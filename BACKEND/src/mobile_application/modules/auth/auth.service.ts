@@ -1,7 +1,7 @@
-﻿import { supabase } from "../../core/config/supabase";
+﻿import { supabase } from "../../../core/config/supabase";
 import { randomBytes } from "crypto";
 import { addMinutes, isBefore } from "date-fns";
-import { signAccess, signRefresh } from "../../core/utils/jwt";
+import { signAccess, signRefresh } from "../../../core/utils/jwt";
 import type { JwtUser } from "./auth.types";
 
 const OTP_TTL_MIN = 2;

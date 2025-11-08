@@ -1,4 +1,4 @@
-﻿import { supabase } from "../../core/config/supabase";
+﻿import { supabase } from "../../../core/config/supabase";
 
 export async function fetchPromos() {
   const now = new Date().toISOString();

@@ -1,4 +1,4 @@
-﻿import { supabase } from "../../core/config/supabase";
+﻿import { supabase } from "../../../core/config/supabase";
 import * as cartSvc from "../cart/cart.service";
 
 /** -------- Already implemented (Phase 3) ---------- */

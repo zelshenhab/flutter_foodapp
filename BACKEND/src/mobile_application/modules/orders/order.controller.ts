@@ -1,16 +1,17 @@
 ﻿import { Request, Response } from "express";
 import * as svc from "./order.service";
-import { verifyToken } from "../../core/utils/jwt";
+import { verifyTokenSafe } from "../../../core/utils/jwt";
 
 function userIdFrom(req: Request): number {
-  const h = req.headers.authorization || "";
-  const token = h.startsWith("Bearer ") ? h.slice(7) : "";
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!token) throw { status: 401, message: "Unauthorized" };
-  const payload = verifyToken<{ id: number }>(token);
-  return payload.id;
+
+  const { valid, expired, payload } = verifyTokenSafe<{ id: number }>(token);
+  if (!valid) throw { status: 401, message: expired ? "Token expired" : "Invalid token" };
+  return payload!.id;
 }
 
-// Phase 3 (existing)
 export async function previewOrder(req: Request, res: Response) {
   const userId = userIdFrom(req);
   const data = await svc.preview(userId);
@@ -20,12 +21,12 @@ export async function previewOrder(req: Request, res: Response) {
 export async function createOrder(req: Request, res: Response) {
   const userId = userIdFrom(req);
   const { paymentMethod, address, notes } = req.body || {};
-  if (!paymentMethod) return res.status(400).json({ error: "paymentMethod is required" });
+  if (!paymentMethod) throw { status: 400, message: "paymentMethod is required" };
+
   const data = await svc.createOrder(userId, { paymentMethod, address, notes });
   res.status(201).json(data);
 }
 
-// Phase 4 (new)
 export async function listMyOrders(req: Request, res: Response) {
   const userId = userIdFrom(req);
   const { status, page, limit } = req.query as { status?: string; page?: string; limit?: string };
@@ -47,12 +48,6 @@ export async function getMyOrder(req: Request, res: Response) {
 export async function completeOrder(req: Request, res: Response) {
   const userId = userIdFrom(req);
   const id = Number(req.params.id);
-  try {
-    const data = await svc.completeOrder(userId, id);
-    res.status(200).json({ data });
-  } catch (err: any) {
-    res
-      .status(err.status || 500)
-      .json({ error: err.message || "Failed to complete order" });
-  }
+  const data = await svc.completeOrder(userId, id);
+  res.json({ data });
 }
