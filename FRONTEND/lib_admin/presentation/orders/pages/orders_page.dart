@@ -21,14 +21,30 @@ class _OrdersPageState extends State<OrdersPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<OrdersBloc>(
-  create: (ctx) =>
-      OrdersBloc(ctx.read<OrdersRepo>())..add(const OrdersLoaded()),
+      create: (ctx) =>
+          OrdersBloc(ctx.read<OrdersRepo>())..add(const OrdersLoaded()),
       child: BlocConsumer<OrdersBloc, OrdersState>(
         listenWhen: (p, n) => p.error != n.error,
         listener: (context, state) {
           if (state.error != null) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.error!)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Expanded(child: Text(state.error!)),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        context.read<OrdersBloc>().add(const OrdersErrorDismissed());
+                      },
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
           }
         },
         builder: (context, state) {

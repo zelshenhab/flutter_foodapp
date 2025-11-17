@@ -37,11 +37,17 @@ export async function getUser(req: Request, res: Response) {
 
 export async function blockUserController(req: Request, res: Response) {
   try {
-    await blockUser(Number(req.params.id));
+    console.log('🛑 BLOCK USER CONTROLLER - START');
+    const userId = Number(req.params.id);
+    
+    const result = await blockUser(userId);
+    console.log('✅ BLOCK USER CONTROLLER - SUCCESS:', result);
+    
     return res.json({ success: true });
   } catch (e) {
-    console.error("BLOCK USER ERROR:", e);
-    return res.status(500).json({ error: "Failed to block user" });
+    console.error("❌ BLOCK USER CONTROLLER - CAUGHT ERROR:", e);
+    // Don't modify the error, let it pass through to errorHandler
+    throw e;
   }
 }
 

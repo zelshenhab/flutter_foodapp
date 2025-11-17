@@ -30,6 +30,8 @@ export async function updateStatus(req: Request, res: Response, next: NextFuncti
     const id = Number(req.params.id);
     const { status } = req.body;
     const data = await svc.updateStatus(id, { status });
+
+    console.log('📦 Backend response data:', data);
     res.json(data);
   } catch (err) {
     next(err);

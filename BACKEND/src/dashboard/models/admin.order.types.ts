@@ -5,5 +5,5 @@ export interface AdminOrderFilters {
 }
 
 export interface AdminOrderUpdateStatus {
-  status: "pending" | "preparing" | "delivering" | "completed" | "cancelled";
+  status: "pending" | "preparing" | "ready" | "completed" | "cancelled";
 }

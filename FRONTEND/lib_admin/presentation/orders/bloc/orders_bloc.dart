@@ -12,6 +12,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     on<OrdersLoaded>(_onLoaded);
     on<OrdersFilterChanged>(_onFilter);
     on<OrderStatusChanged>(_onStatusChanged);
+    on<OrdersErrorDismissed>(_onErrorDismissed);
   }
 
   Future<void> _onLoaded(
@@ -45,26 +46,37 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     if (index == -1) return;
 
     final oldList = List<AdminOrder>.from(state.data);
-    final updated = oldList[index].copyWith(status: e.status);
-
-    // optimistic update
+    final oldStatus = oldList[index].status;
+    
+    // Optimistic update
     List<AdminOrder> optimistic = List.from(state.data);
-    optimistic[index] = updated;
-    emit(state.copyWith(data: optimistic));
+    optimistic[index] = optimistic[index].copyWith(status: e.status);
+    emit(state.copyWith(data: optimistic, error: null));
 
     try {
       final ok = await repo.updateOrderStatus(e.orderId, e.status);
-      if (!ok) {
+      if (ok) {
+        // Success - keep the optimistic state, just clear any errors
+        emit(state.copyWith(data: optimistic, error: null));
+      } else {
+        // Revert on failure
+        optimistic[index] = optimistic[index].copyWith(status: oldStatus);
         emit(state.copyWith(
           data: oldList,
           error: "Не удалось обновить статус",
         ));
       }
     } catch (err) {
+      // Revert on error
+      optimistic[index] = optimistic[index].copyWith(status: oldStatus);
       emit(state.copyWith(
         data: oldList,
         error: "Не удалось обновить статус",
       ));
     }
+  }
+
+  void _onErrorDismissed(OrdersErrorDismissed e, Emitter<OrdersState> emit) {
+    emit(state.copyWith(error: null));
   }
 }

@@ -16,6 +16,7 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     on<UserRoleChanged>(_onRole);
     on<UserBlocked>(_onBlock);
     on<UserUnblocked>(_onUnblock);
+    on<UsersErrorDismissed>((e, emit) => emit(state.copyWith(error: null)));
   }
 
   Future<void> _loadPage(int page, Emitter<UsersState> emit) async {
@@ -47,29 +48,83 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
   }
 
   Future<void> _onRole(UserRoleChanged e, Emitter<UsersState> emit) async {
+    final oldUsers = List<AdminUser>.from(state.data);
+    
+    // Optimistic update
+    final optimisticUsers = oldUsers.map((user) {
+      if (user.id == e.userId) {
+        return user.copyWith(role: e.role);
+      }
+      return user;
+    }).toList();
+    
+    emit(state.copyWith(data: optimisticUsers, error: null));
+
     final ok = await repo.updateUserRole(e.userId, e.role);
     if (!ok) {
-      emit(state.copyWith(error: 'Ошибка при смене роли'));
+      // Revert on failure
+      emit(state.copyWith(
+        data: oldUsers,
+        error: 'Ошибка при смене роли'
+      ));
       return;
     }
+    
+    // Success - refresh to get latest data
     add(UsersPageChanged(state.page));
   }
 
   Future<void> _onBlock(UserBlocked e, Emitter<UsersState> emit) async {
+    final oldUsers = List<AdminUser>.from(state.data);
+    
+    // Optimistic update - use 'blocked' field
+    final optimisticUsers = oldUsers.map((user) {
+      if (user.id == e.userId) {
+        return user.copyWith(blocked: true);
+      }
+      return user;
+    }).toList();
+    
+    emit(state.copyWith(data: optimisticUsers, error: null));
+
     final ok = await repo.blockUser(e.userId);
     if (!ok) {
-      emit(state.copyWith(error: 'Ошибка при блокировке'));
+      // Revert on failure
+      emit(state.copyWith(
+        data: oldUsers,
+        error: 'Ошибка при блокировке'
+      ));
       return;
     }
+    
+    // Success - refresh to get latest data
     add(UsersPageChanged(state.page));
   }
 
   Future<void> _onUnblock(UserUnblocked e, Emitter<UsersState> emit) async {
+    final oldUsers = List<AdminUser>.from(state.data);
+    
+    // Optimistic update - use 'blocked' field
+    final optimisticUsers = oldUsers.map((user) {
+      if (user.id == e.userId) {
+        return user.copyWith(blocked: false);
+      }
+      return user;
+    }).toList();
+    
+    emit(state.copyWith(data: optimisticUsers, error: null));
+
     final ok = await repo.unblockUser(e.userId);
     if (!ok) {
-      emit(state.copyWith(error: 'Ошибка при разблокировке'));
+      // Revert on failure
+      emit(state.copyWith(
+        data: oldUsers,
+        error: 'Ошибка при разблокировке'
+      ));
       return;
     }
+    
+    // Success - refresh to get latest data
     add(UsersPageChanged(state.page));
   }
 }

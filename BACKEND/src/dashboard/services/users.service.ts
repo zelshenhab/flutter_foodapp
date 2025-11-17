@@ -37,14 +37,35 @@ export async function fetchUser(id: number): Promise<AdminUser | null> {
 }
 
 // Block user
+// Block user
 export async function blockUser(id: number): Promise<boolean> {
-  const { error } = await supabase
-    .from(USER_TABLE)
-    .update({ blocked: true })
-    .eq("id", id);
+  try {
+    console.log('🛑 Attempting to block user:', id);
+    
+    const { data, error } = await supabase
+      .from(USER_TABLE)
+      .update({ blocked: true })
+      .eq("id", id)
+      .select();
 
-  if (error) throw error;
-  return true;
+    console.log('🔧 Block user response:', { data, error });
+
+    if (error) {
+      console.error('❌ Supabase error blocking user:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
+    
+    console.log('✅ User blocked successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ BLOCK USER SERVICE ERROR:', error);
+    throw error; // Re-throw so error handler can see it
+  }
 }
 
 // Unblock user

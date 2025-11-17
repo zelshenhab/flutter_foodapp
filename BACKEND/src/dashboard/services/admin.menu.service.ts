@@ -9,7 +9,22 @@ import {
   AdminMenuItemFilters,
 } from "../models/admin.menu.types";
 
-/* ========= CATEGORIES ========= */
+/* ===============================================================
+   🔤 SLUGIFY HELPER — used for Categories and Menu Items
+   =============================================================== */
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^\w\-]+/g, "")
+    .replace(/\-\-+/g, "-");
+}
+
+/* ===============================================================
+   🟧 CATEGORIES
+   =============================================================== */
 
 export async function listCategories() {
   const { data, error } = await supabase
@@ -22,7 +37,9 @@ export async function listCategories() {
 }
 
 export async function createCategory(payload: AdminCategoryCreate) {
-  const { title, slug, position } = payload;
+  const { title, position } = payload;
+
+  const slug = slugify(title);
 
   const { data, error } = await supabase
     .from("Category")
@@ -43,9 +60,14 @@ export async function createCategory(payload: AdminCategoryCreate) {
 export async function updateCategory(id: number, payload: AdminCategoryUpdate) {
   const patch: AdminCategoryUpdate = {};
 
-  if (typeof payload.title === "string") patch.title = payload.title;
-  if (typeof payload.slug === "string") patch.slug = payload.slug;
-  if (typeof payload.position === "number") patch.position = payload.position;
+  if (typeof payload.title === "string") {
+    patch.title = payload.title;
+    patch.slug = slugify(payload.title); // auto-update slug
+  }
+
+  if (typeof payload.position === "number") {
+    patch.position = payload.position;
+  }
 
   const { data, error } = await supabase
     .from("Category")
@@ -63,7 +85,9 @@ export async function deleteCategory(id: number) {
   if (error) throw error;
 }
 
-/* ========= MENU ITEMS ========= */
+/* ===============================================================
+   🍔 MENU ITEMS
+   =============================================================== */
 
 export async function listItems(filters: AdminMenuItemFilters) {
   const { categoryId, search, isActive } = filters;
@@ -83,11 +107,13 @@ export async function listItems(filters: AdminMenuItemFilters) {
   return data;
 }
 
+/* ===============================================================
+   🍔 CREATE ITEM (slug auto-generated)
+   =============================================================== */
 export async function createItem(payload: AdminMenuItemCreate) {
   const {
     categoryId,
     title,
-    slug,
     description,
     imageUrl,
     basePrice,
@@ -95,18 +121,20 @@ export async function createItem(payload: AdminMenuItemCreate) {
     isPopular,
   } = payload;
 
+  const slug = slugify(title);
+
   const { data, error } = await supabase
     .from("MenuItem")
     .insert([
       {
         categoryId,
         title,
-        slug,
+        slug, // ← Auto-generated
         description: description ?? null,
         imageUrl: imageUrl ?? null,
         basePrice,
-        isActive,
-        isPopular,
+        isActive: isActive ?? true,
+        isPopular: isPopular ?? false,
       },
     ])
     .select()
@@ -116,17 +144,40 @@ export async function createItem(payload: AdminMenuItemCreate) {
   return data;
 }
 
+/* ===============================================================
+   🍔 UPDATE ITEM (if title changes → slug updates)
+   =============================================================== */
 export async function updateItem(id: number, payload: AdminMenuItemUpdate) {
   const patch: AdminMenuItemUpdate = {};
 
-  if (typeof payload.categoryId === "number") patch.categoryId = payload.categoryId;
-  if (typeof payload.title === "string") patch.title = payload.title;
-  if (typeof payload.slug === "string") patch.slug = payload.slug;
-  if (payload.description !== undefined) patch.description = payload.description;
-  if (payload.imageUrl !== undefined) patch.imageUrl = payload.imageUrl;
-  if (typeof payload.basePrice === "number") patch.basePrice = payload.basePrice;
-  if (typeof payload.isActive === "boolean") patch.isActive = payload.isActive;
-  if (typeof payload.isPopular === "boolean") patch.isPopular = payload.isPopular;
+  if (typeof payload.categoryId === "number") {
+    patch.categoryId = payload.categoryId;
+  }
+
+  if (typeof payload.title === "string") {
+    patch.title = payload.title;
+    patch.slug = slugify(payload.title); // ← auto-regenerate slug
+  }
+
+  if (payload.description !== undefined) {
+    patch.description = payload.description;
+  }
+
+  if (payload.imageUrl !== undefined) {
+    patch.imageUrl = payload.imageUrl;
+  }
+
+  if (typeof payload.basePrice === "number") {
+    patch.basePrice = payload.basePrice;
+  }
+
+  if (typeof payload.isActive === "boolean") {
+    patch.isActive = payload.isActive;
+  }
+
+  if (typeof payload.isPopular === "boolean") {
+    patch.isPopular = payload.isPopular;
+  }
 
   const { data, error } = await supabase
     .from("MenuItem")
@@ -139,6 +190,9 @@ export async function updateItem(id: number, payload: AdminMenuItemUpdate) {
   return data;
 }
 
+/* ===============================================================
+   🗑 DELETE ITEM
+   =============================================================== */
 export async function deleteItem(id: number) {
   const { error } = await supabase.from("MenuItem").delete().eq("id", id);
   if (error) throw error;

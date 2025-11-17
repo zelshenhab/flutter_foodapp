@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import '../admin_api_client.dart';
 
 class UsersRepo {
@@ -16,39 +18,51 @@ class UsersRepo {
 
   Future<bool> updateUserRole(int userId, String role) async {
     try {
-      await api.put("/users/$userId/role", body: {"role": role});
-      return true;
+      final res = await api.put("/users/$userId/role", body: {"role": role});
+      return res["success"] == true;
     } catch (_) {
       return false;
     }
   }
 
-  Future<bool> blockUser(int userId) async {
-    try {
-      await api.put("/users/$userId/block");
-      return true;
-    } catch (_) {
-      return false;
-    }
+Future<bool> blockUser(int userId) async {
+  try {
+    debugPrint('🛑 Attempting to block user $userId');
+    
+    // Send empty object instead of null body
+    final res = await api.put("/users/$userId/block", body: {});
+    
+    debugPrint('✅ Block user response: $res');
+    return res["success"] == true;
+  } catch (e) {
+    debugPrint('❌ Error blocking user $userId: $e');
+    return false;
   }
+}
 
-  Future<bool> unblockUser(int userId) async {
+Future<bool> unblockUser(int userId) async {
     try {
-      await api.put("/users/$userId/unblock");
-      return true;
-    } catch (_) {
+      debugPrint('🛑 Attempting to unblock user $userId');
+      
+      // Send empty object instead of null body
+      final res = await api.put("/users/$userId/unblock", body: {});
+      
+      debugPrint('✅ Unblock user response: $res');
+      return res["success"] == true;
+    } catch (e) {
+      debugPrint('❌ Error unblocking user $userId: $e');
       return false;
     }
   }
 
   Future<bool> addUser(String name, String phone, {String role = "customer"}) async {
     try {
-      await api.post("/users", body: {
+      final res = await api.post("/users", body: {
         "name": name,
         "phone": phone,
         "role": role,
       });
-      return true;
+      return res["success"] == true;
     } catch (_) {
       return false;
     }

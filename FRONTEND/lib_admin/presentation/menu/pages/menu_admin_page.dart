@@ -132,84 +132,116 @@ class MenuAdminPage extends StatelessWidget {
   }
 
   // ---------- ADD / EDIT DIALOG ----------
-  void _showDishDialog(
-    BuildContext context,
-    String categoryId, {
-    Map<String, dynamic>? dish,
-  }) {
-    final nameCtrl = TextEditingController(text: dish?["title"] ?? "");
-    final priceCtrl = TextEditingController(
-        text: dish?["basePrice"]?.toString() ?? "");
-    final imageCtrl = TextEditingController(text: dish?["imageUrl"] ?? "");
-    final descCtrl = TextEditingController(text: dish?["description"] ?? "");
+ void _showDishDialog(
+  BuildContext context,
+  String categoryId, {
+  Map<String, dynamic>? dish,
+}) {
+  final nameCtrl = TextEditingController(text: dish?["title"] ?? "");
+  final slugCtrl = TextEditingController(text: dish?["slug"] ?? "");
+  final priceCtrl = TextEditingController(text: dish?["basePrice"]?.toString() ?? "");
+  final imageCtrl = TextEditingController(text: dish?["imageUrl"] ?? "");
+  final descCtrl = TextEditingController(text: dish?["description"] ?? "");
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(dish == null ? "Добавить блюдо" : "Редактировать блюдо"),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: "Название"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: priceCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Цена"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: imageCtrl,
-                decoration:
-                    const InputDecoration(labelText: "Изображение URL"),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: descCtrl,
-                decoration: const InputDecoration(labelText: "Описание"),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Отмена"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = nameCtrl.text.trim();
-              final price = num.tryParse(priceCtrl.text.trim()) ?? 0;
+  // Auto-generate slug only when creating a new item
+  if (dish == null) {
+    nameCtrl.addListener(() {
+      final text = nameCtrl.text.trim().toLowerCase();
 
-              if (name.isEmpty || price <= 0) return;
+      String slug = text
+          .replaceAll(RegExp(r'\s+'), '-')        // spaces → dash
+          .replaceAll(RegExp(r'[^\w\-]'), '')     // remove symbols
+          .replaceAll(RegExp(r'\-+'), '-')        // remove duplicates
+          .replaceAll(RegExp(r'^-+|-+$'), '');    // trim dashes
 
-              final map = {
-                "id": dish?["id"] ??
-                    "tmp-${DateTime.now().millisecondsSinceEpoch}",
-                "title": name,
-                "basePrice": price,
-                "imageUrl": imageCtrl.text.trim(),
-                "description": descCtrl.text.trim(),
-                "categoryId": categoryId,
-              };
-
-              final bloc = context.read<MenuAdminBloc>();
-
-              if (dish == null) {
-                bloc.add(MenuItemAdded(map));
-              } else {
-                bloc.add(MenuItemUpdated(map));
-              }
-
-              Navigator.pop(context);
-            },
-            child: const Text("Сохранить"),
-          )
-        ],
-      ),
-    );
+      slugCtrl.text = slug;
+    });
   }
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(dish == null ? "Добавить блюдо" : "Редактировать блюдо"),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: "Название"),
+            ),
+            const SizedBox(height: 8),
+
+            // ---------- SLUG FIELD ----------
+            TextField(
+              controller: slugCtrl,
+              enabled: dish == null, // ❗ Disable editing in edit mode
+              decoration: InputDecoration(
+                labelText: dish == null
+                    ? "Slug"
+                    : "Slug (изменить нельзя)",
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            TextField(
+              controller: priceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "Цена"),
+            ),
+            const SizedBox(height: 8),
+
+            TextField(
+              controller: imageCtrl,
+              decoration:
+                  const InputDecoration(labelText: "Ссылка на изображение"),
+            ),
+            const SizedBox(height: 8),
+
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(labelText: "Описание"),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Отмена"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final name = nameCtrl.text.trim();
+            final slug = slugCtrl.text.trim();
+            final price = num.tryParse(priceCtrl.text.trim()) ?? 0;
+
+            if (name.isEmpty || slug.isEmpty || price <= 0) return;
+
+            final map = {
+              "id": dish?["id"],
+              "title": name,
+              "slug": slug,
+              "basePrice": price,
+              "imageUrl": imageCtrl.text.trim(),
+              "description": descCtrl.text.trim(),
+              "categoryId": categoryId,
+            };
+
+            final bloc = context.read<MenuAdminBloc>();
+
+            if (dish == null) {
+              bloc.add(MenuItemAdded(map));
+            } else {
+              bloc.add(MenuItemUpdated(map));
+            }
+
+            Navigator.pop(context);
+          },
+          child: const Text("Сохранить"),
+        )
+      ],
+    ),
+  );
+}
 }

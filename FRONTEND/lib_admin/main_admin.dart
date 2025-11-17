@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'data/admin_api_client.dart';
 
 // repos
+import 'data/repos/analytics_repo.dart';
 import 'data/repos/menu_repo.dart';
 import 'data/repos/orders_repo.dart';
 import 'data/repos/promos_repo.dart';
@@ -13,6 +14,8 @@ import 'data/repos/tickets_repo.dart';
 import 'data/repos/settings_repo.dart';
 
 // blocs
+import 'presentation/dashboard/bloc/analytics_bloc.dart';
+import 'presentation/dashboard/bloc/analytics_event.dart';
 import 'presentation/menu/bloc/menu_admin_bloc.dart';
 import 'presentation/menu/bloc/menu_admin_event.dart';
 
@@ -52,6 +55,7 @@ class AdminApp extends StatelessWidget {
         RepositoryProvider<UsersRepo>(create: (_) => UsersRepo(api)),
         RepositoryProvider<TicketsRepo>(create: (_) => TicketsRepo(api)),
         RepositoryProvider<SettingsRepo>(create: (_) => SettingsRepo(api)),
+        RepositoryProvider<AnalyticsRepo>(create: (_) => AnalyticsRepo(api)),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -67,6 +71,12 @@ class AdminApp extends StatelessWidget {
             create: (ctx) => UsersBloc(
               ctx.read<UsersRepo>(),
             )..add(const UsersLoaded()),
+          ),
+
+          BlocProvider<AnalyticsBloc>(
+            create: (ctx) => AnalyticsBloc(
+              ctx.read<AnalyticsRepo>(),
+            )..add(const AnalyticsLoad()),
           ),
         ],
         child: MaterialApp(

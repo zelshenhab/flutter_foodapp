@@ -37,7 +37,7 @@ adminRouter.delete("/menu/items/:id", menuController.deleteItem);
 /* ORDERS */
 adminRouter.get("/orders", orderController.listOrders);
 adminRouter.get("/orders/:id", orderController.getOrder);
-adminRouter.patch("/orders/:id/status", orderController.updateStatus);
+adminRouter.put("/orders/:id/status", orderController.updateStatus);
 
 /* PROMOS */
 adminRouter.get("/promos", promoController.listPromos);

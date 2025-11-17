@@ -25,3 +25,7 @@ class OrderStatusChanged extends OrdersEvent {
   @override
   List<Object?> get props => [orderId, status];
 }
+
+class OrdersErrorDismissed extends OrdersEvent {
+  const OrdersErrorDismissed();
+}
