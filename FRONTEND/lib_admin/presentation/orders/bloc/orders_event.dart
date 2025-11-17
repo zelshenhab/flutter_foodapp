@@ -11,16 +11,17 @@ class OrdersLoaded extends OrdersEvent {
 }
 
 class OrdersFilterChanged extends OrdersEvent {
-  final String filter; // all/pending/preparing/ready/completed/cancelled
+  final String filter;
   const OrdersFilterChanged(this.filter);
   @override
   List<Object?> get props => [filter];
 }
 
 class OrderStatusChanged extends OrdersEvent {
-  final String orderId;
+  final int orderId;
   final String status;
   const OrderStatusChanged(this.orderId, this.status);
+
   @override
   List<Object?> get props => [orderId, status];
 }

@@ -4,13 +4,20 @@ import morgan from "morgan";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const listEndpoints = require("express-list-endpoints") as (app: Express) => any[];
 import { router } from "../mobile_application/routes";
-import { router as adminRouter } from "../dashboard/routes";
+import { adminRouter as adminRouter } from "../dashboard/routes";
 import { errorHandler } from "./middlewares/errorHandler";
 
 export function createApp(): Express {
   const app = express();
 
-  app.use(cors());
+  // Enhanced CORS configuration
+  app.use(cors({
+    origin: true, // Allow all origins in development
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  }));
+
   app.use(morgan("dev"));
   app.use(express.json());
 
@@ -22,46 +29,5 @@ export function createApp(): Express {
   
   app.use(errorHandler);
 
-  // Debug helper for Express 4/5, routers, and nested mounts
-/*function collectRoutes(app: any) {
-  const out: Array<{ method: string; path: string }> = [];
-
-  const walk = (stack: any[], prefix = "") => {
-    for (const layer of stack) {
-      // Mounted router (e.g., /api, /menu, etc.)
-      if (layer.name === "router" && layer.handle?.stack) {
-        // Try to reconstruct the mount path from the regexp (best-effort)
-        let mount = "";
-        if (layer.regexp && layer.regexp.fast_star) mount = "*";
-        else if (layer.regexp && layer.regexp.fast_slash) mount = "/";
-        else if (layer.regexp) {
-          const m = layer.regexp
-            .toString()
-            .match(/^\/\\\/\^\\(.*)\\\/\?\(\?=\\\/\|\$\)\\\/i?$/); // fragile but works often
-          if (m && m[1]) mount = m[1].replace(/\\\//g, "/");
-        }
-        walk(layer.handle.stack, prefix + "/" + mount);
-      }
-
-      // Direct route on this stack
-      if (layer.route) {
-        const routePath = prefix + layer.route.path;
-        const methods = Object.keys(layer.route.methods);
-        for (const m of methods) {
-          out.push({ method: m.toUpperCase(), path: routePath.replace(/\/+/g, "/") });
-        }
-      }
-    }
-  };
-
-  if (app._router?.stack) walk(app._router.stack);
-  return out;
-}
-
-// AFTER app.use("/api", router);
-console.log("==== Registered endpoints (custom) ====");
-console.log(collectRoutes(app));
-console.log("=======================================");
-*/
   return app;
 }

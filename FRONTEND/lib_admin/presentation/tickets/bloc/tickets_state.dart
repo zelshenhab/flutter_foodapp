@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../data/repos/tickets_repo.dart';
+import '../../../data/models/admin_ticket.dart';
 
 class TicketsState extends Equatable {
   final bool loading;

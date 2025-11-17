@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../data/admin_api_client.dart';
+import '../../../data/models/admin_ticket.dart';
 import '../../../data/repos/tickets_repo.dart';
 import '../bloc/tickets_bloc.dart';
 import '../bloc/tickets_event.dart';
@@ -12,7 +14,8 @@ class TicketsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<TicketsBloc>(
-      create: (_) => TicketsBloc(TicketsRepo())..add(const TicketsLoaded()),
+      create: (_) => TicketsBloc(TicketsRepo(AdminApiClient()))
+        ..add(const TicketsLoaded()),
       child: const _TicketsView(),
     );
   }

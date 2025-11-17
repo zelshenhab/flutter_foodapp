@@ -5,6 +5,7 @@ import '../../settings/bloc/settings_bloc.dart';
 import '../../settings/bloc/settings_event.dart';
 import '../../settings/bloc/settings_state.dart';
 import '../../../data/repos/settings_repo.dart';
+import '../../../data/admin_api_client.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -12,7 +13,8 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SettingsBloc>(
-      create: (_) => SettingsBloc(SettingsRepo())..add(const SettingsLoaded()),
+      create: (_) => SettingsBloc(SettingsRepo(AdminApiClient()))
+        ..add(const SettingsLoaded()),
       child: const _SettingsView(),
     );
   }
@@ -31,7 +33,6 @@ class _SettingsView extends StatelessWidget {
             SnackBar(content: Text(state.error!)),
           );
         } else if (!state.saving) {
-          // بعد الحفظ الناجح (بدون خطأ)
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Настройки сохранены')),
           );
@@ -53,7 +54,7 @@ class _SettingsView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Системные переключатели
+            // SYSTEM SWITCHES
             Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               child: Column(
@@ -78,7 +79,7 @@ class _SettingsView extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Контакты и график работы
+            // CONTACTS & BUSINESS HOURS
             Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               child: Padding(
@@ -127,7 +128,7 @@ class _SettingsView extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Режим обслуживания
+            // MAINTENANCE MODE
             Card(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               child: Padding(

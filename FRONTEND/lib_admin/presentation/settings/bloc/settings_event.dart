@@ -32,37 +32,27 @@ class SettingsTestModeToggled extends SettingsEvent {
   List<Object?> get props => [enabled];
 }
 
-class SettingsMaintenanceToggled extends SettingsEvent {
-  final bool enabled;
-  const SettingsMaintenanceToggled(this.enabled);
-  @override
-  List<Object?> get props => [enabled];
-}
-
 class SettingsSupportPhoneChanged extends SettingsEvent {
   final String value;
   const SettingsSupportPhoneChanged(this.value);
-  @override
-  List<Object?> get props => [value];
 }
 
 class SettingsEmailChanged extends SettingsEvent {
   final String value;
   const SettingsEmailChanged(this.value);
-  @override
-  List<Object?> get props => [value];
 }
 
 class SettingsBusinessHoursChanged extends SettingsEvent {
   final String value;
   const SettingsBusinessHoursChanged(this.value);
-  @override
-  List<Object?> get props => [value];
+}
+
+class SettingsMaintenanceToggled extends SettingsEvent {
+  final bool enabled;
+  const SettingsMaintenanceToggled(this.enabled);
 }
 
 class SettingsMaintenanceMessageChanged extends SettingsEvent {
   final String value;
   const SettingsMaintenanceMessageChanged(this.value);
-  @override
-  List<Object?> get props => [value];
 }

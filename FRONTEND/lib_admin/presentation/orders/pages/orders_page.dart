@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../data/models/orders_models.dart';
 import '../../../data/repos/orders_repo.dart';
+
 import '../../orders/bloc/orders_bloc.dart';
 import '../../orders/bloc/orders_event.dart';
 import '../../orders/bloc/orders_state.dart';
-
-import '../../../data/repos/mock_orders_repo.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -21,27 +21,28 @@ class _OrdersPageState extends State<OrdersPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<OrdersBloc>(
-      create: (_) => OrdersBloc(MockOrdersRepo())..add(const OrdersLoaded()),
+  create: (ctx) =>
+      OrdersBloc(ctx.read<OrdersRepo>())..add(const OrdersLoaded()),
       child: BlocConsumer<OrdersBloc, OrdersState>(
         listenWhen: (p, n) => p.error != n.error,
         listener: (context, state) {
           if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.error!)));
           }
         },
         builder: (context, state) {
-          // بحث محلي (ID/اسم العميل)
           final q = _searchCtrl.text.trim().toLowerCase();
-          final visible =
-              (q.isEmpty
-                      ? state.filtered
-                      : state.filtered.where((o) {
-                          return o.id.toLowerCase().contains(q) ||
-                              o.customer.toLowerCase().contains(q);
-                        }))
-                  .toList();
+
+          // --- search ---
+          final visible = (q.isEmpty
+                  ? state.filtered
+                  : state.filtered.where((o) {
+                      final idStr = o.id.toString();
+                      return idStr.contains(q) ||
+                          o.customer.toLowerCase().contains(q);
+                    }))
+              .toList();
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -92,18 +93,18 @@ class _OrdersPageState extends State<OrdersPage> {
                             DataColumn(label: Text('Тип')),
                             DataColumn(label: Text('Сумма')),
                             DataColumn(label: Text('Оплата')),
-                            DataColumn(label: Text('Состав')), // ← جديد
+                            DataColumn(label: Text('Состав')),
                             DataColumn(label: Text('Статус')),
                             DataColumn(label: Text('Действия')),
                           ],
                           rows: visible.map((o) {
                             return DataRow(
                               cells: [
-                                DataCell(Text(o.id)),
+                                DataCell(Text(o.id.toString())),
                                 DataCell(Text(o.customer)),
                                 const DataCell(Text('Самовывоз')),
                                 DataCell(Text('${o.total} ₽')),
-                                DataCell(_PaidPill(paid: o.paid)), // ستايل قديم
+                                DataCell(_PaidPill(paid: o.paid)),
                                 DataCell(
                                   TextButton.icon(
                                     icon: const Icon(Icons.list_alt),
@@ -125,48 +126,47 @@ class _OrdersPageState extends State<OrdersPage> {
                                     children: [
                                       IconButton(
                                         tooltip: 'В готовку',
-                                        onPressed:
-                                            (o.paid && o.status == 'pending')
+                                        onPressed: (o.paid &&
+                                                o.status == 'pending')
                                             ? () => context
-                                                  .read<OrdersBloc>()
-                                                  .add(
-                                                    OrderStatusChanged(
-                                                      o.id,
-                                                      'preparing',
-                                                    ),
-                                                  )
+                                                .read<OrdersBloc>()
+                                                .add(
+                                                  OrderStatusChanged(
+                                                    o.id,
+                                                    'preparing',
+                                                  ),
+                                                )
                                             : null,
                                         icon: const Icon(Icons.restaurant),
                                       ),
                                       IconButton(
                                         tooltip: 'Готов к выдаче',
-                                        onPressed:
-                                            (o.paid &&
+                                        onPressed: (o.paid &&
                                                 (o.status == 'pending' ||
                                                     o.status == 'preparing'))
                                             ? () => context
-                                                  .read<OrdersBloc>()
-                                                  .add(
-                                                    OrderStatusChanged(
-                                                      o.id,
-                                                      'ready',
-                                                    ),
-                                                  )
+                                                .read<OrdersBloc>()
+                                                .add(
+                                                  OrderStatusChanged(
+                                                    o.id,
+                                                    'ready',
+                                                  ),
+                                                )
                                             : null,
                                         icon: const Icon(Icons.checklist_rtl),
                                       ),
                                       IconButton(
                                         tooltip: 'Завершён',
-                                        onPressed:
-                                            (o.paid && o.status == 'ready')
+                                        onPressed: (o.paid &&
+                                                o.status == 'ready')
                                             ? () => context
-                                                  .read<OrdersBloc>()
-                                                  .add(
-                                                    OrderStatusChanged(
-                                                      o.id,
-                                                      'completed',
-                                                    ),
-                                                  )
+                                                .read<OrdersBloc>()
+                                                .add(
+                                                  OrderStatusChanged(
+                                                    o.id,
+                                                    'completed',
+                                                  ),
+                                                )
                                             : null,
                                         icon: const Icon(Icons.check_circle),
                                       ),
@@ -193,6 +193,7 @@ class _OrdersPageState extends State<OrdersPage> {
       isScrollControlled: true,
       builder: (_) {
         final sum = o.items.fold<double>(0, (p, it) => p + it.lineTotal);
+
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Column(
@@ -222,7 +223,8 @@ class _OrdersPageState extends State<OrdersPage> {
                     return ListTile(
                       dense: true,
                       title: Text('${it.qty} × ${it.name}'),
-                      trailing: Text('${it.lineTotal.toStringAsFixed(0)} ₽'),
+                      trailing:
+                          Text('${it.lineTotal.toStringAsFixed(0)} ₽'),
                       subtitle: Text(
                         'Цена: ${it.unitPrice.toStringAsFixed(0)} ₽',
                       ),
@@ -272,6 +274,10 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 }
 
+// ──────────────────────────────────────────
+// SMALL WIDGETS (no design changes)
+// ──────────────────────────────────────────
+
 class _PaidPill extends StatelessWidget {
   final bool paid;
   const _PaidPill({required this.paid});
@@ -282,6 +288,7 @@ class _PaidPill extends StatelessWidget {
     final border = paid ? const Color(0xFF1E8E64) : const Color(0xFFB24A4A);
     final text = paid ? const Color(0xFF8EF3C5) : const Color(0xFFFFB1B1);
     final label = paid ? 'Оплачено' : 'Не оплачено';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -289,10 +296,8 @@ class _PaidPill extends StatelessWidget {
         border: Border.all(color: border),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        label,
-        style: TextStyle(color: text, fontWeight: FontWeight.w700),
-      ),
+      child: Text(label,
+          style: TextStyle(color: text, fontWeight: FontWeight.w700)),
     );
   }
 }
@@ -338,6 +343,7 @@ class _OrderStatusPill extends StatelessWidget {
       'completed': 'Завершён',
       'cancelled': 'Отменён',
     };
+
     return PopupMenuButton<String>(
       onSelected: onChange,
       itemBuilder: (_) => labels.entries

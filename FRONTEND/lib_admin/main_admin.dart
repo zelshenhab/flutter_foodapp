@@ -1,12 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'data/repos/menu_repo_supabase.dart' as menu_repo_sb;
+import 'data/admin_api_client.dart';
 
-// Menu
-import 'presentation/menu/bloc/menu_admin_bloc.dart' as admin_menu_bloc;
-import 'presentation/menu/bloc/menu_admin_event.dart' as admin_menu_event;
+// repos
+import 'data/repos/menu_repo.dart';
+import 'data/repos/orders_repo.dart';
+import 'data/repos/promos_repo.dart';
+import 'data/repos/users_repo.dart';
+import 'data/repos/tickets_repo.dart';
+import 'data/repos/settings_repo.dart';
+
+// blocs
+import 'presentation/menu/bloc/menu_admin_bloc.dart';
+import 'presentation/menu/bloc/menu_admin_event.dart';
+
+import 'presentation/users/bloc/users_bloc.dart';
+import 'presentation/users/bloc/users_event.dart';
 
 import 'presentation/common/admin_theme.dart';
 import 'presentation/root/admin_shell.dart';
@@ -14,29 +25,53 @@ import 'presentation/root/admin_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53YXBoZ3ZteHRhYWx5eHBnZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTQzNjMsImV4cCI6MjA3NjE5MDM2M30.2XsCt3ZIhyTciJrWKmer6-YAWM9uMSu0IyVdrZeVqzM',
+  /// IMPORTANT:
+  /// Web uses "localhost"
+  /// Emulator uses "10.0.2.2"
+  final api = AdminApiClient(
+    baseUrl: kIsWeb
+        ? "http://localhost:4000/api/admin"
+        : "http://10.0.2.2:4000/api/admin",
   );
 
-  runApp(const AdminApp());
+  runApp(AdminApp(api: api));
 }
 
 class AdminApp extends StatelessWidget {
-  const AdminApp({super.key});
+  final AdminApiClient api;
+
+  const AdminApp({super.key, required this.api});
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider<menu_repo_sb.MenuRepoSupabase>(
-      create: (_) => menu_repo_sb.MenuRepoSupabase(),
-      child: BlocProvider<admin_menu_bloc.MenuAdminBloc>(
-        create: (ctx) => admin_menu_bloc.MenuAdminBloc.withSupabase(
-          repo: ctx.read<menu_repo_sb.MenuRepoSupabase>(),
-        )..add(const admin_menu_event.MenuAdminLoaded()),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<MenuRepo>(create: (_) => MenuRepo(api)),
+        RepositoryProvider<OrdersRepo>(create: (_) => OrdersRepo(api)),
+        RepositoryProvider<PromosRepo>(create: (_) => PromosRepo(api)),
+        RepositoryProvider<UsersRepo>(create: (_) => UsersRepo(api)),
+        RepositoryProvider<TicketsRepo>(create: (_) => TicketsRepo(api)),
+        RepositoryProvider<SettingsRepo>(create: (_) => SettingsRepo(api)),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          /// MENU
+          BlocProvider<MenuAdminBloc>(
+            create: (ctx) => MenuAdminBloc(
+              repo: ctx.read<MenuRepo>(),
+            )..add(const MenuAdminLoaded()),
+          ),
+
+          /// USERS - pagination-enabled BLoC
+          BlocProvider<UsersBloc>(
+            create: (ctx) => UsersBloc(
+              ctx.read<UsersRepo>(),
+            )..add(const UsersLoaded()),
+          ),
+        ],
         child: MaterialApp(
-          title: 'Admin • Адам и Ева',
           debugShowCheckedModeBanner: false,
+          title: "Admin Dashboard",
           theme: buildAdminTheme(),
           home: const AdminShell(),
         ),

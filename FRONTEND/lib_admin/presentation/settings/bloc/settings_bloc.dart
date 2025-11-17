@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../data/models/settings_model.dart';
 import '../../../data/repos/settings_repo.dart';
 import 'settings_event.dart';
 import 'settings_state.dart';
@@ -11,20 +12,26 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsSaved>(_onSaved);
     on<SettingsResetPressed>(_onReset);
 
-    on<SettingsNotifyAdminsToggled>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(notifyAdmins: e.enabled))));
-    on<SettingsTestModeToggled>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(testMode: e.enabled))));
-    on<SettingsMaintenanceToggled>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(maintenanceMode: e.enabled))));
-    on<SettingsSupportPhoneChanged>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(supportPhone: e.value))));
-    on<SettingsEmailChanged>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(restaurantEmail: e.value))));
-    on<SettingsBusinessHoursChanged>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(businessHours: e.value))));
-    on<SettingsMaintenanceMessageChanged>(
-        (e, emit) => emit(state.copyWith(settings: state.settings.copyWith(maintenanceMessage: e.value))));
+    on<SettingsNotifyAdminsToggled>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(notifyAdmins: e.enabled))));
+
+    on<SettingsTestModeToggled>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(testMode: e.enabled))));
+
+    on<SettingsSupportPhoneChanged>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(supportPhone: e.value))));
+
+    on<SettingsEmailChanged>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(restaurantEmail: e.value))));
+
+    on<SettingsBusinessHoursChanged>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(businessHours: e.value))));
+
+    on<SettingsMaintenanceToggled>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(maintenanceMode: e.enabled))));
+
+    on<SettingsMaintenanceMessageChanged>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(maintenanceMessage: e.value))));
   }
 
   Future<void> _onLoaded(SettingsLoaded e, Emitter<SettingsState> emit) async {

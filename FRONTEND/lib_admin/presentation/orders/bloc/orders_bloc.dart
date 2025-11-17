@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../data/models/orders_models.dart';
 import '../../../data/repos/orders_repo.dart';
 import 'orders_event.dart';
 import 'orders_state.dart';
@@ -9,16 +11,22 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
   OrdersBloc(this.repo) : super(const OrdersState()) {
     on<OrdersLoaded>(_onLoaded);
     on<OrdersFilterChanged>(_onFilter);
-    on<OrderStatusChanged>(_onStatus);
+    on<OrderStatusChanged>(_onStatusChanged);
   }
 
-  Future<void> _onLoaded(OrdersLoaded e, Emitter<OrdersState> emit) async {
+  Future<void> _onLoaded(
+    OrdersLoaded e,
+    Emitter<OrdersState> emit,
+  ) async {
     emit(state.copyWith(loading: true, error: null));
     try {
-      final list = await repo.fetchOrders();
-      emit(state.copyWith(loading: false, data: list));
-    } catch (_) {
-      emit(state.copyWith(loading: false, error: 'Не удалось загрузить заказы'));
+      final orders = await repo.fetchOrders();
+      emit(state.copyWith(loading: false, data: orders));
+    } catch (err) {
+      emit(state.copyWith(
+        loading: false,
+        error: "Не удалось загрузить заказы",
+      ));
     }
   }
 
@@ -29,31 +37,34 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     emit(state.copyWith(filter: e.filter));
   }
 
-  Future<void> _onStatus(
+  Future<void> _onStatusChanged(
     OrderStatusChanged e,
     Emitter<OrdersState> emit,
   ) async {
-    // ابحث بأمان (من غير null-cast)
-    final currentIndex = state.data.indexWhere((o) => o.id == e.orderId);
-    if (currentIndex == -1) return;
-    final current = state.data[currentIndex];
-    if (current.status == e.status) return;
+    final index = state.data.indexWhere((o) => o.id == e.orderId);
+    if (index == -1) return;
 
-    // خزّن نسخة قبل التحديث (rollback)
-    final prevData = List<AdminOrder>.from(state.data);
+    final oldList = List<AdminOrder>.from(state.data);
+    final updated = oldList[index].copyWith(status: e.status);
 
-    // تحديث متفائل
-    final optimistic = List<AdminOrder>.from(state.data);
-    optimistic[currentIndex] = current.copyWith(status: e.status);
-    emit(state.copyWith(data: optimistic, error: null));
+    // optimistic update
+    List<AdminOrder> optimistic = List.from(state.data);
+    optimistic[index] = updated;
+    emit(state.copyWith(data: optimistic));
 
     try {
       final ok = await repo.updateOrderStatus(e.orderId, e.status);
       if (!ok) {
-        emit(state.copyWith(data: prevData, error: 'Не удалось обновить статус'));
+        emit(state.copyWith(
+          data: oldList,
+          error: "Не удалось обновить статус",
+        ));
       }
-    } catch (_) {
-      emit(state.copyWith(data: prevData, error: 'Не удалось обновить статус'));
+    } catch (err) {
+      emit(state.copyWith(
+        data: oldList,
+        error: "Не удалось обновить статус",
+      ));
     }
   }
 }

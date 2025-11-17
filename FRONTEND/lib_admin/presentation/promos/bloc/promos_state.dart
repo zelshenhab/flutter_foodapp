@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../../data/repos/promos_repo.dart';
+import '../../../data/models/admin_promo.dart';
 
 class PromosState extends Equatable {
   final bool loading;

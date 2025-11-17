@@ -1,12 +1,10 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter_foodapp/presentation/menu/models/category.dart';
-import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 
 class MenuAdminState extends Equatable {
   final bool loading;
-  final List<Category> categories;
+  final List<Map<String, dynamic>> categories;
   final String selectedCategoryId;
-  final List<MenuItemModel> items;
+  final List<Map<String, dynamic>> items;
   final String? error;
 
   const MenuAdminState({
@@ -19,9 +17,9 @@ class MenuAdminState extends Equatable {
 
   MenuAdminState copyWith({
     bool? loading,
-    List<Category>? categories,
+    List<Map<String, dynamic>>? categories,
     String? selectedCategoryId,
-    List<MenuItemModel>? items,
+    List<Map<String, dynamic>>? items,
     String? error,
   }) {
     return MenuAdminState(

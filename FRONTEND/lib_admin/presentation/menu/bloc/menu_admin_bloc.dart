@@ -1,125 +1,160 @@
-// lib_admin/presentation/menu/bloc/menu_admin_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 
-import '../../../data/repos/menu_repo_supabase.dart';
+import '../../../data/repos/menu_repo.dart';
 import 'menu_admin_event.dart';
 import 'menu_admin_state.dart';
 
 class MenuAdminBloc extends Bloc<MenuAdminEvent, MenuAdminState> {
-  final MenuRepoSupabase repo;
+  final MenuRepo repo;
 
-  MenuAdminBloc(this.repo) : super(const MenuAdminState()) {
+  MenuAdminBloc({required this.repo}) : super(const MenuAdminState()) {
     on<MenuAdminLoaded>(_onLoaded);
-    on<MenuCategoryChanged>(_onCategory);
-    on<MenuItemAdded>(_onAdd);
-    on<MenuItemUpdated>(_onUpdate);
-    on<MenuItemDeleted>(_onDelete);
+    on<MenuCategoryChanged>(_onCategoryChanged);
+    on<MenuItemAdded>(_onAddItem);
+    on<MenuItemUpdated>(_onUpdateItem);
+    on<MenuItemDeleted>(_onDeleteItem);
   }
 
-  MenuAdminBloc.withSupabase({required MenuRepoSupabase repo}) : this(repo);
-
+  /* ──────────────────────────────────────────────
+     1) LOAD all (categories + items)
+     ────────────────────────────────────────────── */
   Future<void> _onLoaded(
-    MenuAdminLoaded e,
+    MenuAdminLoaded event,
     Emitter<MenuAdminState> emit,
   ) async {
     emit(state.copyWith(loading: true, error: null));
+
     try {
-      final cats = await repo.fetchCategories();
-      final firstId = cats.isNotEmpty ? cats.first.id : '';
-      final items = firstId.isEmpty
-          ? <MenuItemModel>[]
-          : await repo.fetchDishesByCategory(firstId);
+      // Cast to List<Map<String, dynamic>>
+      final categories = List<Map<String, dynamic>>.from(
+        await repo.fetchCategories(),
+      );
+      final allItems = List<Map<String, dynamic>>.from(
+        await repo.fetchMenu(),
+      );
+
+      final selectedCategoryId =
+          categories.isNotEmpty ? categories.first["id"].toString() : "";
+
+      final filtered = allItems
+          .where((i) => i["categoryId"].toString() == selectedCategoryId)
+          .toList();
+
       emit(
         state.copyWith(
           loading: false,
-          categories: cats,
-          selectedCategoryId: firstId,
-          items: items,
+          categories: categories,
+          selectedCategoryId: selectedCategoryId,
+          items: filtered,
         ),
       );
     } catch (err) {
-      // ignore: avoid_print
-      debugPrint('ADMIN MENU LOAD ERROR: $err');
-      emit(state.copyWith(loading: false, error: '$err'));
+      debugPrint("ADMIN MENU LOAD ERROR: $err");
+      emit(state.copyWith(loading: false, error: "$err"));
     }
   }
 
-  Future<void> _onCategory(
-    MenuCategoryChanged e,
+  /* ──────────────────────────────────────────────
+     2) CATEGORY changed
+     ────────────────────────────────────────────── */
+  Future<void> _onCategoryChanged(
+    MenuCategoryChanged event,
     Emitter<MenuAdminState> emit,
   ) async {
-    if (e.categoryId.isEmpty) {
-      emit(state.copyWith(selectedCategoryId: '', items: const []));
-      return;
-    }
     emit(
       state.copyWith(
         loading: true,
-        selectedCategoryId: e.categoryId,
+        selectedCategoryId: event.categoryId,
         error: null,
       ),
     );
+
     try {
-      final items = await repo.fetchDishesByCategory(e.categoryId);
-      emit(state.copyWith(loading: false, items: items));
+      final allItems = List<Map<String, dynamic>>.from(
+        await repo.fetchMenu(),
+      );
+
+      final filtered = allItems
+          .where((i) => i["categoryId"].toString() == event.categoryId)
+          .toList();
+
+      emit(
+        state.copyWith(
+          loading: false,
+          items: filtered,
+        ),
+      );
     } catch (err) {
-      // ignore: avoid_print
-      debugPrint('ADMIN DISHES LOAD ERROR: $err');
-      emit(state.copyWith(loading: false, error: '$err'));
+      debugPrint("CATEGORY LOAD ERROR: $err");
+      emit(state.copyWith(loading: false, error: "$err"));
     }
   }
 
-  Future<void> _onAdd(MenuItemAdded e, Emitter<MenuAdminState> emit) async {
+  /* ──────────────────────────────────────────────
+     3) ADD item
+     ────────────────────────────────────────────── */
+  Future<void> _onAddItem(
+    MenuItemAdded event,
+    Emitter<MenuAdminState> emit,
+  ) async {
     emit(state.copyWith(loading: true, error: null));
+
     try {
-      await repo.addDish(e.dish);
-      final items = await repo.fetchDishesByCategory(state.selectedCategoryId);
-      emit(state.copyWith(loading: false, items: items));
+      await repo.createMenuItem(event.dish);
+      add(const MenuAdminLoaded()); // reload all
     } catch (err) {
-      // ignore: avoid_print
-      debugPrint('ADMIN DISH ADD ERROR: $err');
-      emit(state.copyWith(loading: false, error: '$err'));
+      debugPrint("ADD ITEM ERROR: $err");
+      emit(state.copyWith(loading: false, error: "$err"));
     }
   }
 
-  Future<void> _onUpdate(
-    MenuItemUpdated e,
+  /* ──────────────────────────────────────────────
+     4) UPDATE item
+     ────────────────────────────────────────────── */
+  Future<void> _onUpdateItem(
+    MenuItemUpdated event,
     Emitter<MenuAdminState> emit,
   ) async {
-    final optimistic = state.items
-        .map((d) => d.id == e.dish.id ? e.dish : d)
-        .toList();
-    emit(state.copyWith(items: optimistic, error: null));
+    final id = event.dish["id"];
+
+    // Optimistic UI update
+    final optimistic = state.items.map((item) {
+      return item["id"] == id ? event.dish : item;
+    }).toList();
+
+    emit(state.copyWith(items: optimistic));
+
     try {
-      await repo.updateDish(e.dish);
+      await repo.updateItem(id, event.dish);
     } catch (err) {
-      final refreshed = await repo.fetchDishesByCategory(
-        state.selectedCategoryId,
-      );
-      // ignore: avoid_print
-      debugPrint('ADMIN DISH UPDATE ERROR: $err');
-      emit(state.copyWith(items: refreshed, error: '$err'));
+      debugPrint("UPDATE ERROR: $err");
+      add(const MenuAdminLoaded());
+      emit(state.copyWith(error: "$err"));
     }
   }
 
-  Future<void> _onDelete(
-    MenuItemDeleted e,
+  /* ──────────────────────────────────────────────
+     5) DELETE item
+     ────────────────────────────────────────────── */
+  Future<void> _onDeleteItem(
+    MenuItemDeleted event,
     Emitter<MenuAdminState> emit,
   ) async {
-    final before = state.items;
-    final after = before.where((d) => d.id != e.dish.id).toList();
-    emit(state.copyWith(items: after, error: null)); // optimistic
+    final id = event.dish["id"];
+
+    // Optimistic removal
+    final optimistic =
+        state.items.where((i) => i["id"] != id).toList();
+
+    emit(state.copyWith(items: optimistic));
+
     try {
-      await repo.deleteDish(e.dish);
+      await repo.deleteMenuItem(id);
     } catch (err) {
-      final refreshed = await repo.fetchDishesByCategory(
-        state.selectedCategoryId,
-      );
-      // ignore: avoid_print
-      debugPrint('ADMIN DISH DELETE ERROR: $err');
-      emit(state.copyWith(items: refreshed, error: '$err'));
+      debugPrint("DELETE ERROR: $err");
+      add(const MenuAdminLoaded());
+      emit(state.copyWith(error: "$err"));
     }
   }
 }

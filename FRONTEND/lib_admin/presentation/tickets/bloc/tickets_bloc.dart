@@ -5,6 +5,7 @@ import 'tickets_state.dart';
 
 class TicketsBloc extends Bloc<TicketsEvent, TicketsState> {
   final TicketsRepo repo;
+
   TicketsBloc(this.repo) : super(const TicketsState()) {
     on<TicketsLoaded>(_onLoaded);
     on<TicketsFilterChanged>(_onFilter);
@@ -13,14 +14,12 @@ class TicketsBloc extends Bloc<TicketsEvent, TicketsState> {
     on<TicketReopened>(_onReopen);
   }
 
-  TicketsBloc.withRepo({required TicketsRepo repo}) : this(repo);
-
   Future<void> _onLoaded(TicketsLoaded e, Emitter<TicketsState> emit) async {
     emit(state.copyWith(loading: true));
     try {
       final list = await repo.fetchTickets();
       emit(state.copyWith(loading: false, data: list));
-    } catch (_) {
+    } catch (err) {
       emit(state.copyWith(loading: false, error: 'Не удалось загрузить обращения'));
     }
   }
@@ -30,7 +29,7 @@ class TicketsBloc extends Bloc<TicketsEvent, TicketsState> {
   }
 
   Future<void> _onReply(TicketReplySent e, Emitter<TicketsState> emit) async {
-    final ok = await repo.reply(e.ticketId, e.message);
+    final ok = await repo.respondToTicket(e.ticketId, e.message);
     if (!ok) {
       emit(state.copyWith(error: 'Не удалось отправить ответ'));
       return;

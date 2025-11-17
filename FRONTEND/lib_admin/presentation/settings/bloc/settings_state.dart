@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../../data/repos/settings_repo.dart';
+
+import '../../../data/models/settings_model.dart';
 
 class SettingsState extends Equatable {
   final bool loading;

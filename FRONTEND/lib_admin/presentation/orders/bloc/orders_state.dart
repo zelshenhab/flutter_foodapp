@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../../../data/repos/orders_repo.dart';
+
+import '../../../data/models/orders_models.dart';
 
 class OrdersState extends Equatable {
   final bool loading;
@@ -29,7 +30,9 @@ class OrdersState extends Equatable {
   }
 
   List<AdminOrder> get filtered =>
-      filter == 'all' ? data : data.where((o) => o.status == filter).toList();
+      filter == 'all'
+          ? data
+          : data.where((o) => o.status == filter).toList();
 
   @override
   List<Object?> get props => [loading, data, filter, error];
