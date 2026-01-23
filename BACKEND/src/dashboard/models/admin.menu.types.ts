@@ -15,12 +15,15 @@ export interface AdminCategoryUpdate {
 export interface AdminMenuItemCreate {
   categoryId: number;
   title: string;
-  slug: string;
+  slug?: string;
   description?: string;
   imageUrl?: string;
   basePrice: number;
   isActive: boolean;
   isPopular: boolean;
+
+  // ✅ REQUIRED for online payment
+  iikoProductId: string;
 }
 
 export interface AdminMenuItemUpdate {
@@ -32,6 +35,9 @@ export interface AdminMenuItemUpdate {
   basePrice?: number;
   isActive?: boolean;
   isPopular?: boolean;
+
+  // ✅ optional update
+  iikoProductId?: string | null;
 }
 
 export interface AdminMenuItemFilters {

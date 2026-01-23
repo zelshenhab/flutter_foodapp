@@ -119,7 +119,15 @@ export async function createItem(payload: AdminMenuItemCreate) {
     basePrice,
     isActive,
     isPopular,
+    iikoProductId,
   } = payload;
+
+  if (!iikoProductId || !iikoProductId.trim()) {
+    throw {
+      status: 400,
+      message: "iikoProductId is required. Create product in iiko first.",
+    };
+  }
 
   const slug = slugify(title);
 
@@ -129,12 +137,13 @@ export async function createItem(payload: AdminMenuItemCreate) {
       {
         categoryId,
         title,
-        slug, // ← Auto-generated
+        slug,
         description: description ?? null,
         imageUrl: imageUrl ?? null,
         basePrice,
         isActive: isActive ?? true,
         isPopular: isPopular ?? false,
+        iikoProductId, // ✅ SAVE REAL IIKO ID
       },
     ])
     .select()
@@ -178,6 +187,11 @@ export async function updateItem(id: number, payload: AdminMenuItemUpdate) {
   if (typeof payload.isPopular === "boolean") {
     patch.isPopular = payload.isPopular;
   }
+
+  if (payload.iikoProductId !== undefined) {
+    patch.iikoProductId = payload.iikoProductId;
+  }
+
 
   const { data, error } = await supabase
     .from("MenuItem")

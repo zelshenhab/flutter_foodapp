@@ -1,4 +1,4 @@
-// src/mobile_application/controllers/payment.webhook.ts
+// /mobile_application/modules/payment/payment.webhook.ts
 
 import { Request, Response } from "express";
 import { paymentService } from "../payment/payment.service";

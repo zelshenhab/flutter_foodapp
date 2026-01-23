@@ -1,33 +1,34 @@
 // src/core/iiko/iiko.client.ts
 import axios from "axios";
+import {
+  IIKO_API_LOGIN,
+  IIKO_BASE_URL,
+} from "./iiko.constants";
 
 export class IikoClient {
-  private apiLogin = "demo-login-123456789";   // replace later
   private token: string | null = null;
-  private tokenExpiresAt: number = 0;
-
-  private baseUrl = "https://api-ru.iiko.services/api/1";
+  private tokenExpiresAt = 0;
 
   /** -------------------------------------------
-   *  Get new token from iikoCloud
+   *  Refresh access token
    * ------------------------------------------- */
   private async refreshToken() {
-    const url = `${this.baseUrl}/access_token`;
-
-    const res = await axios.post(url, {
-      apiLogin: this.apiLogin,
-    });
+    const res = await axios.post(
+      `${IIKO_BASE_URL}/access_token`,
+      { apiLogin: IIKO_API_LOGIN },
+      { timeout: 10000 }
+    );
 
     this.token = res.data.token;
-    this.tokenExpiresAt = Date.now() + 1000 * 60 * 50; // token valid for 60 min
+    this.tokenExpiresAt = Date.now() + 1000 * 60 * 50;
 
-    console.log("🔐 New IIKO token acquired");
+    console.log("🔐 IIKO token refreshed");
   }
 
   /** -------------------------------------------
-   *  Ensure token is valid
+   *  Get valid token
    * ------------------------------------------- */
-  private async getToken() {
+  private async getToken(): Promise<string> {
     if (!this.token || Date.now() > this.tokenExpiresAt) {
       await this.refreshToken();
     }
@@ -35,26 +36,28 @@ export class IikoClient {
   }
 
   /** -------------------------------------------
-   *  Make authenticated request to iiko
+   *  Authenticated request
    * ------------------------------------------- */
-  async request(method: "GET" | "POST", endpoint: string, body?: any) {
+  async request<T>(
+    method: "GET" | "POST",
+    endpoint: string,
+    body?: unknown
+  ): Promise<T> {
     const token = await this.getToken();
-
-    const url = `${this.baseUrl}${endpoint}`;
 
     const res = await axios({
       method,
-      url,
+      url: `${IIKO_BASE_URL}${endpoint}`,
       data: body,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      timeout: 15000,
     });
 
-    return res.data;
+    return res.data as T;
   }
 }
 
-// export singleton
 export const iikoClient = new IikoClient();

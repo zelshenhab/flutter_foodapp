@@ -16,6 +16,18 @@ export const adminRouter = Router();
    Put simple /:id routes LAST
 ==============================*/
 // USERS
+
+adminRouter.use((req, res, next) => {
+  console.log('🔐 ADMIN ROUTE ACCESSED:', {
+    method: req.method,
+    path: req.path,
+    url: req.url,
+    headers: req.headers,
+    timestamp: new Date().toISOString()
+  });
+  next();
+});
+
 adminRouter.get("/users", userController.getUsers);
 adminRouter.get("/users/:id", userController.getUser);
 adminRouter.put("/users/:id/block", userController.blockUserController);

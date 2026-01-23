@@ -1,24 +1,33 @@
 ﻿import { supabase } from "../../../core/config/supabase";
 import * as cartSvc from "../cart/cart.service";
+import { iikoClient } from "../../../core/iiko/iiko.client";
+import { IIKO_ORGANIZATION_ID } from "../../../core/iiko/iiko.constants";
 
-/** -------- Already implemented (Phase 3) ---------- */
-type Preview = {
-  subtotal: number;
-  discount: number;
-  deliveryFee: number;
-  total: number;
-  promoCode?: string | null;
-  items: Array<{
-    title: string;
-    quantity: number;
-    unitPrice: number;
-    lineTotal: number;
-  }>;
-};
+/* ======================================================
+   HELPERS
+====================================================== */
 
-export async function preview(userId: number): Promise<Preview> {
+function getMenuItem(ci: any) {
+  if (!Array.isArray(ci.MenuItem) || ci.MenuItem.length === 0) {
+    throw {
+      status: 400,
+      message: "One or more items are no longer available",
+    };
+  }
+  return ci.MenuItem[0];
+}
+
+/* ======================================================
+   PREVIEW
+====================================================== */
+
+export async function preview(userId: number) {
   return cartSvc.getCart(userId);
 }
+
+/* ======================================================
+   CREATE ORDER
+====================================================== */
 
 export async function createOrder(
   userId: number,
@@ -28,13 +37,21 @@ export async function createOrder(
     notes?: string;
   }
 ) {
+  /* -----------------------------------------
+   * 1️⃣ LOAD CART
+   * --------------------------------------- */
   const cartRec = await cartSvc.getCartRecord(userId);
   const cart = await cartSvc.getCart(userId);
-  if (cart.items.length === 0) throw { status: 400, message: "Cart is empty" };
 
-  // Create order
+  if (!cart.items.length) {
+    throw { status: 400, message: "Cart is empty" };
+  }
+
+  /* -----------------------------------------
+   * 2️⃣ CREATE ORDER (SUPABASE)
+   * --------------------------------------- */
   const { data: order, error: orderError } = await supabase
-    .from('Order')
+    .from("Order")
     .insert({
       userId,
       status: "pending",
@@ -44,59 +61,136 @@ export async function createOrder(
       discount: cart.discount,
       deliveryFee: cart.deliveryFee,
       total: cart.total,
-      addressSnapshot: input.address || { text: "N/A" },
-      promoCode: cart.promoCode || null,
-      notes: input.notes || null,
+      addressSnapshot: input.address ?? { text: "N/A" },
+      promoCode: cart.promoCode ?? null,
+      notes: input.notes ?? null,
     })
     .select()
     .single();
 
-  if (orderError) {
+  if (orderError || !order) {
+    console.error("❌ ORDER INSERT ERROR:", orderError);
     throw { status: 500, message: "Failed to create order" };
   }
 
-  // Get cart items with menu items
+  /* -----------------------------------------
+   * 3️⃣ LOAD CART ITEMS + MENU ITEMS
+   * --------------------------------------- */
   const { data: cartItems, error: cartItemsError } = await supabase
-    .from('CartItem')
-    .select(`
-      *,
-      MenuItem!inner(*)
-    `)
-    .eq('cartId', cartRec.id)
-    .order('id', { ascending: true });
+    .from("CartItem")
+    .select(
+      `
+      id,
+      menuItemId,
+      quantity,
+      unitPriceSnapshot,
+      lineTotal,
+      MenuItem!inner (
+        id,
+        title,
+        iikoProductId
+      )
+    `
+    )
+    .eq("cartId", cartRec.id)
+    .order("id", { ascending: true });
 
-  if (cartItemsError) {
+  if (cartItemsError || !cartItems?.length) {
+    console.error("❌ CART ITEMS ERROR:", cartItemsError);
     throw { status: 500, message: "Failed to fetch cart items" };
   }
 
-  // Create order items
-  const orderItems = cartItems?.map(ci => ({
-    orderId: order.id,
-    menuItemId: ci.menuItemId,
-    titleSnap: ci.MenuItem.title,
-    optionsSnap: ci.optionsJson,
-    unitPrice: Number(ci.unitPriceSnapshot),
-    quantity: ci.quantity,
-    lineTotal: Number(ci.lineTotal),
-  })) || [];
+  /* -----------------------------------------
+   * 4️⃣ VALIDATE MENU ITEMS (IMPORTANT)
+   * --------------------------------------- */
+  for (const ci of cartItems) {
+    const menuItem = getMenuItem(ci);
 
-  if (orderItems.length > 0) {
-    const { error: orderItemsError } = await supabase
-      .from('OrderItem')
-      .insert(orderItems);
-
-    if (orderItemsError) {
-      throw { status: 500, message: "Failed to create order items" };
+    if (!menuItem.iikoProductId) {
+      throw {
+        status: 400,
+        message: `Item "${menuItem.title}" is not available for online payment`,
+      };
     }
   }
 
-  // Clear cart
+  /* -----------------------------------------
+   * 5️⃣ CREATE ORDER ITEMS (SUPABASE)
+   * --------------------------------------- */
+  const orderItems = cartItems.map((ci) => {
+    const menuItem = getMenuItem(ci);
+
+    return {
+      orderId: order.id,
+      menuItemId: ci.menuItemId,
+      titleSnap: menuItem.title,
+      unitPrice: Number(ci.unitPriceSnapshot),
+      quantity: ci.quantity,
+      lineTotal: Number(ci.lineTotal),
+    };
+  });
+
+  const { error: orderItemsError } = await supabase
+    .from("OrderItem")
+    .insert(orderItems);
+
+  if (orderItemsError) {
+    console.error("❌ ORDER ITEMS ERROR:", orderItemsError);
+    throw { status: 500, message: "Failed to create order items" };
+  }
+
+  /* -----------------------------------------
+   * 6️⃣ SEND ORDER TO IIKO
+   * --------------------------------------- */
+  try {
+    const iikoResponse = await iikoClient.request<{
+      orderInfo: { id: string };
+    }>("POST", "/order/create", {
+      organizationId: IIKO_ORGANIZATION_ID,
+      order: {
+        externalNumber: `FOODAPP-${order.id}`,
+        items: cartItems.map((ci) => {
+          const menuItem = getMenuItem(ci);
+
+          return {
+            productId: menuItem.iikoProductId,
+            amount: ci.quantity,
+            price: Math.round(Number(ci.unitPriceSnapshot)),
+          };
+        }),
+      },
+    });
+
+    await supabase
+      .from("Order")
+      .update({ iikoOrderId: iikoResponse.orderInfo.id })
+      .eq("id", order.id);
+  } catch (e) {
+    console.error("❌ IIKO ORDER CREATE ERROR:", e);
+
+    await supabase
+      .from("Order")
+      .update({ status: "failed" })
+      .eq("id", order.id);
+
+    throw { status: 500, message: "Failed to send order to iiko" };
+  }
+
+  /* -----------------------------------------
+   * 7️⃣ CLEAR CART
+   * --------------------------------------- */
   await cartSvc.clearCart(cartRec.id);
 
-  return { orderId: order.id, status: order.status, total: Number(order.total) };
+  return {
+    orderId: order.id,
+    status: order.status,
+    total: Number(order.total),
+  };
 }
 
-/** -------- New: list & details (Phase 4) ---------- */
+/* ======================================================
+   LIST ORDERS
+====================================================== */
 
 export async function listOrders(
   userId: number,
@@ -107,114 +201,60 @@ export async function listOrders(
   const offset = (page - 1) * limit;
 
   let query = supabase
-    .from('Order')
-    .select('*')
-    .eq('userId', userId)
-    .order('createdAt', { ascending: false })
+    .from("Order")
+    .select("*")
+    .eq("userId", userId)
+    .order("createdAt", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (opts.status) {
-    query = query.eq('status', opts.status);
-  }
+  if (opts.status) query = query.eq("status", opts.status);
 
-  const { data: rows, error } = await query;
+  const { data, error } = await query;
+  if (error) throw { status: 500, message: "Failed to fetch orders" };
 
-  if (error) {
-    throw { status: 500, message: "Failed to fetch orders" };
-  }
-
-  // Get total count
-  let countQuery = supabase
-    .from('Order')
-    .select('*', { count: 'exact', head: true })
-    .eq('userId', userId);
-
-  if (opts.status) {
-    countQuery = countQuery.eq('status', opts.status);
-  }
-
-  const { count: totalCount, error: countError } = await countQuery;
-
-  if (countError) {
-    throw { status: 500, message: "Failed to count orders" };
-  }
-
-  return {
-    data: rows?.map((o) => ({
-      ...o,
-      total: Number(o.total),
-      subtotal: Number(o.subtotal),
-      discount: Number(o.discount),
-      deliveryFee: Number(o.deliveryFee),
-    })) || [],
-    page,
-    limit,
-    totalCount: totalCount || 0,
-    totalPages: Math.ceil((totalCount || 0) / limit),
-  };
+  return data ?? [];
 }
+
+/* ======================================================
+   GET ORDER DETAIL
+====================================================== */
 
 export async function getOrderDetail(userId: number, orderId: number) {
   const { data: order, error } = await supabase
-    .from('Order')
-    .select('*')
-    .eq('id', orderId)
-    .eq('userId', userId)
+    .from("Order")
+    .select("*")
+    .eq("id", orderId)
+    .eq("userId", userId)
     .single();
 
-  if (error || !order) throw { status: 404, message: "Order not found" };
-
-  const { data: items, error: itemsError } = await supabase
-    .from('OrderItem')
-    .select('*')
-    .eq('orderId', orderId);
-
-  if (itemsError) throw { status: 500, message: "Failed to load items" };
-
-  return {
-    ...order,
-    items: (items ?? []).map(it => ({
-      ...it,
-      unitPrice: Number(it.unitPrice),
-      lineTotal: Number(it.lineTotal),
-    })),
-    total: Number(order.total),
-    subtotal: Number(order.subtotal),
-    discount: Number(order.discount),
-    deliveryFee: Number(order.deliveryFee),
-  };
-}
-
-
-export async function completeOrder(userId: number, orderId: number) {
-  // Make sure order belongs to this user
-  const { data: order, error: findError } = await supabase
-    .from('Order')
-    .select('id, userId, status')
-    .eq('id', orderId)
-    .eq('userId', userId)
-    .single();
-
-  if (findError || !order) {
+  if (error || !order) {
     throw { status: 404, message: "Order not found" };
   }
 
-  if (order.status === "completed") {
-    return { id: order.id, status: "completed" }; // already done
-  }
+  const { data: items } = await supabase
+    .from("OrderItem")
+    .select("*")
+    .eq("orderId", orderId);
 
-  const { data: updated, error: updateError } = await supabase
-    .from('Order')
+  return { ...order, items: items ?? [] };
+}
+
+/* ======================================================
+   COMPLETE ORDER
+====================================================== */
+
+export async function completeOrder(userId: number, orderId: number) {
+  const { data, error } = await supabase
+    .from("Order")
     .update({ status: "completed" })
-    .eq('id', orderId)
-    .eq('userId', userId)
+    .eq("id", orderId)
+    .eq("userId", userId)
     .select()
     .single();
 
-  if (updateError || !updated) {
-    throw { status: 500, message: "Failed to update order status" };
+  if (error || !data) {
+    throw { status: 500, message: "Failed to complete order" };
   }
 
-  return { id: updated.id, status: updated.status };
+  return data;
 }
-
