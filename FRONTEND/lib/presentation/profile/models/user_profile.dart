@@ -1,15 +1,13 @@
 class UserProfile {
   final String? name;
-  final String? phone;
-  final String? avatarPath;
   final String? email;
+  final String? avatarPath;
   final String? address;
   final bool? notifications;
   final String? languageCode;
 
   const UserProfile({
     this.name,
-    this.phone,
     this.avatarPath,
     this.email,
     this.address,
@@ -20,7 +18,6 @@ class UserProfile {
   factory UserProfile.fromJson(Map<String, dynamic> json) {
   return UserProfile(
     name: json['name'] as String?,
-    phone: json['phone'] as String?,
     avatarPath: json['avatarUrl'] as String?,
     email: json['email'] as String?,
     address: json['address'] as String?,
@@ -31,7 +28,7 @@ class UserProfile {
 
   Map<String, dynamic> toJson() => {
         'name': name,
-        'phone': phone,
+        'email': email,
         'avatarUrl': avatarPath,
       };
 }

@@ -3,7 +3,7 @@
 export interface AdminSettings {
   notifyAdmins: boolean;
   testMode: boolean;
-  supportPhone: string;
+  supportEmail: string;
   restaurantEmail: string;
   businessHours: string;
   maintenanceMode: boolean;
@@ -18,7 +18,7 @@ export interface AdminSettingsRow extends AdminSettings {
 export const defaultAdminSettings: AdminSettings = {
   notifyAdmins: true,
   testMode: false,
-  supportPhone: "",
+  supportEmail: "",
   restaurantEmail: "",
   businessHours: "",
   maintenanceMode: false,

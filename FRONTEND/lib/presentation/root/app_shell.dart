@@ -12,9 +12,9 @@ import '../profile/bloc/profile_event.dart';
 
 class AppShell extends StatefulWidget {
   final String? initialName;
-  final String? initialPhone;
+  final String? initialEmail;
 
-  const AppShell({super.key, this.initialName, this.initialPhone});
+  const AppShell({super.key, this.initialName, this.initialEmail});
 
   @override
   State<AppShell> createState() => _AppShellState();

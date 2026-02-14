@@ -55,11 +55,11 @@ Future<bool> unblockUser(int userId) async {
     }
   }
 
-  Future<bool> addUser(String name, String phone, {String role = "customer"}) async {
+  Future<bool> addUser(String name, String email, {String role = "customer"}) async {
     try {
       final res = await api.post("/users", body: {
         "name": name,
-        "phone": phone,
+        "email": email,
         "role": role,
       });
       return res["success"] == true;

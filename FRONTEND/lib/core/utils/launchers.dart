@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
-Future<void> openTel(String phone) async {
-  final uri = Uri(scheme: 'tel', path: phone);
+Future<void> openTel(String email) async {
+  final uri = Uri(scheme: 'tel', path: email);
   await launchUrl(uri);
 }
 
@@ -14,9 +14,9 @@ Future<void> openEmail(String email, {String? subject}) async {
   await launchUrl(uri);
 }
 
-Future<void> openWhatsApp(String phone, {String message = ''}) async {
+Future<void> openWhatsApp(String email, {String message = ''}) async {
   // wa.me يستخدم رقم دولي بدون +، ضع رقمك الدولي
-  final clean = phone.replaceAll('+', '');
+  final clean = email.replaceAll('+', '');
   final uri = Uri.parse('https://wa.me/$clean?text=${Uri.encodeComponent(message)}');
   await launchUrl(uri, mode: LaunchMode.externalApplication);
 }

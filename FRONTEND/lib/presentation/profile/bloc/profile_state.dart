@@ -5,7 +5,7 @@ class ProfileState extends Equatable {
   final String? error;
 
   final int? id;
-  final String? phone;
+  final String? email;
   final String name;
   final String? avatarUrl;
   final DateTime? createdAt;
@@ -14,7 +14,7 @@ class ProfileState extends Equatable {
     this.loading = false,
     this.error,
     this.id,
-    this.phone,
+    this.email,
     this.name = '',
     this.avatarUrl,
     this.createdAt,
@@ -24,7 +24,7 @@ class ProfileState extends Equatable {
     bool? loading,
     String? error,
     int? id,
-    String? phone,
+    String? email,
     String? name,
     String? avatarUrl,
     DateTime? createdAt,
@@ -33,7 +33,7 @@ class ProfileState extends Equatable {
       loading: loading ?? this.loading,
       error: error,
       id: id ?? this.id,
-      phone: phone ?? this.phone,
+      email: email ?? this.email,
       name: name ?? this.name,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt ?? this.createdAt,
@@ -41,5 +41,5 @@ class ProfileState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [loading, error, id, phone, name, avatarUrl, createdAt];
+  List<Object?> get props => [loading, error, id, email, name, avatarUrl, createdAt];
 }

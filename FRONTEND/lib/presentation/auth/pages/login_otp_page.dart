@@ -24,7 +24,7 @@ class LoginOtpPage extends StatelessWidget {
           }
 
           if (state.step == AuthStep.enterInfo) {
-            Navigator.pop(context); // back to edit phone/name
+            Navigator.pop(context); // back to edit email/name
           }
 
           if (state.step == AuthStep.success) {
@@ -36,7 +36,7 @@ class LoginOtpPage extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => AppShell(
                   initialName: fullName.isEmpty ? state.name : fullName,
-                  initialPhone: state.phone,
+                  initialEmail: state.email,
                 ),
               ),
               (_) => false,
@@ -65,7 +65,7 @@ class LoginOtpPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Код отправлен на ${state.phone}',
+                      'Код отправлен на ${state.email}',
                       style: const TextStyle(fontSize: 14, color: Color(0xFFA7A7A7)),
                     ),
                     const SizedBox(height: 24),

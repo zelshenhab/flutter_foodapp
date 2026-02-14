@@ -48,7 +48,7 @@ class UsersPage extends StatelessWidget {
               : state.data.where((user) {
                   final searchLower = state.search.toLowerCase();
                   return (user.name?.toLowerCase().contains(searchLower) ?? false) ||
-                         user.phone.toLowerCase().contains(searchLower);
+                         user.email.toLowerCase().contains(searchLower);
                 }).toList();
 
           return Scaffold(
@@ -169,7 +169,7 @@ class UsersPage extends StatelessWidget {
                                                 ),
                                               ),
                                             ),
-                                            DataCell(Text(user.phone)),
+                                            DataCell(Text(user.email)),
                                             DataCell(
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -4,24 +4,22 @@ enum AuthStep { enterInfo, verifyOtp, success, authorized }
 
 class AuthState extends Equatable {
   final String name;
-  final String phone;
+  final String email; // ✅ changed
   final String otp;
 
   final AuthStep step;
-
   final bool loading;
   final String? error;
 
-  final int resendIn; // ثواني حتى إعادة الإرسال
+  final int resendIn;
   final bool codeSent;
 
-  // 🆕 added for backend OTP flow
   final String? requestId;
   final String? devCode;
 
   const AuthState({
     this.name = '',
-    this.phone = '',
+    this.email = '', // ✅ changed
     this.otp = '',
     this.step = AuthStep.enterInfo,
     this.loading = false,
@@ -33,13 +31,16 @@ class AuthState extends Equatable {
   });
 
   bool get canGetCode =>
-      name.trim().isNotEmpty && phone.trim().isNotEmpty && !loading;
+      name.trim().isNotEmpty &&
+      email.trim().isNotEmpty &&
+      email.contains('@') && // basic validation
+      !loading;
 
   bool get canVerify => otp.trim().length >= 6 && !loading;
 
   AuthState copyWith({
     String? name,
-    String? phone,
+    String? email,
     String? otp,
     AuthStep? step,
     bool? loading,
@@ -51,7 +52,7 @@ class AuthState extends Equatable {
   }) {
     return AuthState(
       name: name ?? this.name,
-      phone: phone ?? this.phone,
+      email: email ?? this.email,
       otp: otp ?? this.otp,
       step: step ?? this.step,
       loading: loading ?? this.loading,
@@ -66,7 +67,7 @@ class AuthState extends Equatable {
   @override
   List<Object?> get props => [
         name,
-        phone,
+        email,
         otp,
         step,
         loading,

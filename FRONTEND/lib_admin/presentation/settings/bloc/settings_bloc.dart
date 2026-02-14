@@ -18,8 +18,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<SettingsTestModeToggled>((e, emit) =>
         emit(state.copyWith(settings: state.settings.copyWith(testMode: e.enabled))));
 
-    on<SettingsSupportPhoneChanged>((e, emit) =>
-        emit(state.copyWith(settings: state.settings.copyWith(supportPhone: e.value))));
+    on<SettingsSupportEmailChanged>((e, emit) =>
+        emit(state.copyWith(settings: state.settings.copyWith(supportEmail: e.value))));
 
     on<SettingsEmailChanged>((e, emit) =>
         emit(state.copyWith(settings: state.settings.copyWith(restaurantEmail: e.value))));

@@ -87,15 +87,15 @@ class _SettingsView extends StatelessWidget {
                 child: Column(
                   children: [
                     TextFormField(
-                      key: ValueKey('phone_${s.supportPhone}'),
-                      initialValue: s.supportPhone,
+                      key: ValueKey('email_${s.supportEmail}'),
+                      initialValue: s.supportEmail,
                       decoration: const InputDecoration(
-                        labelText: 'Телефон поддержки',
-                        hintText: '+7 (900) 000-00-00',
+                        labelText: 'Элек.почта поддержки',
+                        hintText: 'adamandeve@mail.ru',
                       ),
                       onChanged: (v) => context
                           .read<SettingsBloc>()
-                          .add(SettingsSupportPhoneChanged(v)),
+                          .add(SettingsSupportEmailChanged(v)),
                     ),
                     const SizedBox(height: 10),
                     TextFormField(

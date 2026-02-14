@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 class AdminSettings {
   final bool notifyAdmins;
   final bool testMode;
-  final String supportPhone;
+  final String supportEmail;
   final String restaurantEmail;
   final String businessHours;
   final bool maintenanceMode;
@@ -13,7 +13,7 @@ class AdminSettings {
   const AdminSettings({
     required this.notifyAdmins,
     required this.testMode,
-    required this.supportPhone,
+    required this.supportEmail,
     required this.restaurantEmail,
     required this.businessHours,
     required this.maintenanceMode,
@@ -24,7 +24,7 @@ class AdminSettings {
   const AdminSettings.defaults()
       : notifyAdmins = true,
         testMode = false,
-        supportPhone = "",
+        supportEmail = "adamandeve@mail.ru",
         restaurantEmail = "",
         businessHours = "",
         maintenanceMode = false,
@@ -33,7 +33,7 @@ class AdminSettings {
   AdminSettings copyWith({
     bool? notifyAdmins,
     bool? testMode,
-    String? supportPhone,
+    String? supportEmail,
     String? restaurantEmail,
     String? businessHours,
     bool? maintenanceMode,
@@ -42,7 +42,7 @@ class AdminSettings {
     return AdminSettings(
       notifyAdmins: notifyAdmins ?? this.notifyAdmins,
       testMode: testMode ?? this.testMode,
-      supportPhone: supportPhone ?? this.supportPhone,
+      supportEmail: supportEmail ?? this.supportEmail,
       restaurantEmail: restaurantEmail ?? this.restaurantEmail,
       businessHours: businessHours ?? this.businessHours,
       maintenanceMode: maintenanceMode ?? this.maintenanceMode,
@@ -54,7 +54,7 @@ class AdminSettings {
     return AdminSettings(
       notifyAdmins: j["notifyAdmins"] ?? true,
       testMode: j["testMode"] ?? false,
-      supportPhone: j["supportPhone"] ?? "",
+      supportEmail: j["supportEmail"] ?? "",
       restaurantEmail: j["restaurantEmail"] ?? "",
       businessHours: j["businessHours"] ?? "",
       maintenanceMode: j["maintenanceMode"] ?? false,
@@ -66,7 +66,7 @@ class AdminSettings {
     return {
       "notifyAdmins": notifyAdmins,
       "testMode": testMode,
-      "supportPhone": supportPhone,
+      "supportEmail": supportEmail,
       "restaurantEmail": restaurantEmail,
       "businessHours": businessHours,
       "maintenanceMode": maintenanceMode,

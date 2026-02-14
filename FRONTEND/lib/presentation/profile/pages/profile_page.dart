@@ -51,12 +51,11 @@ class ProfilePage extends StatelessWidget {
 
           // ✅ Build the actual profile content
           final name = state.name.isNotEmpty ? state.name : '-';
-          final phone = state.phone ?? '-';
+          final email = state.email ?? '-';
 
           final headerProfile = UserProfile(
             name: name,
-            phone: phone,
-            email: null,
+            email: email,
             address: 'ул. Пушкина 15',
             notifications: true,
             languageCode: 'ru',
@@ -70,10 +69,10 @@ class ProfilePage extends StatelessWidget {
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                /// ===== Header (Avatar + name + phone)
+                /// ===== Header (Avatar + name + email)
                 ProfileHeader(
                   profile: headerProfile,
-                  onEdit: () => _showEditDataSheet(context, name, phone),
+                  onEdit: () => _showEditDataSheet(context, name, email),
                   onChangeAvatar: () => _pickAvatar(context),
                 ),
 
@@ -90,14 +89,14 @@ class ProfilePage extends StatelessWidget {
                       title: Text("Имя: $name"),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.phone),
-                      title: Text("Телефон: $phone"),
+                      leading: const Icon(Icons.email),
+                      title: Text("Элек.почта: $email"),
                     ),
                     const SizedBox(height: 4),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
-                        onPressed: () => _showEditDataSheet(context, name, phone),
+                        onPressed: () => _showEditDataSheet(context, name, email),
                         icon: const Icon(Icons.edit),
                         label: const Text('Редактировать'),
                       ),
@@ -177,14 +176,14 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  /// 🧾 Bottom Sheet — Edit Name + Phone
+  /// 🧾 Bottom Sheet — Edit Name + email
   void _showEditDataSheet(
     BuildContext context,
     String currentName,
-    String currentPhone,
+    String currentEmail,
   ) {
     final nameCtrl = TextEditingController(text: currentName != '-' ? currentName : '');
-    final phoneCtrl = TextEditingController(text: currentPhone != '-' ? currentPhone : '');
+    final emailCtrl = TextEditingController(text: currentEmail != '-' ? currentEmail : '');
 
     const fieldBg = Color(0xFF1E1E1E);
 
@@ -220,12 +219,12 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              _buildLabel("Телефон"),
+              _buildLabel("Элек,почта"),
               TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
                 style: const TextStyle(color: Color(0xFFEDEDED)),
-                decoration: _inputDecoration("+7 999 123-45-67", fieldBg),
+                decoration: _inputDecoration("jhon@mail.ru", fieldBg),
               ),
               const SizedBox(height: 16),
 
@@ -235,9 +234,9 @@ class ProfilePage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     final name = nameCtrl.text.trim();
-                    final phone = phoneCtrl.text.trim();
+                    final email = emailCtrl.text.trim();
 
-                    if (name.isEmpty || phone.isEmpty) {
+                    if (name.isEmpty || email.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Заполните имя и телефон')),
                       );

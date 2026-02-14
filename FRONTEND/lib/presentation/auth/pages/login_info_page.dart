@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/presentation/auth/data/real_auth_service.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -29,17 +28,12 @@ class _LoginInfoView extends StatefulWidget {
 
 class _LoginInfoViewState extends State<_LoginInfoView> {
   final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-
-  final _mask = MaskTextInputFormatter(
-    mask: '+7 (###) ###-##-##',
-    filter: { "#": RegExp(r'\d') },
-  );
+  final _emailCtrl = TextEditingController(); // ✅ changed
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -77,7 +71,6 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                   children: [
                     const _BrandTitle(),
                     const SizedBox(height: 28),
-
                     const Text(
                       'Добро пожаловать!',
                       style: TextStyle(
@@ -95,14 +88,14 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                           context.read<AuthBloc>().add(AuthNameChanged(v)),
                     ),
                     const SizedBox(height: 14),
-                    
+
+                    // ✅ Email field (same style)
                     _darkField(
-                      controller: _phoneCtrl,
-                      label: 'Телефон',
-                      keyboardType: TextInputType.phone,
-                      inputFormatters: [_mask],
+                      controller: _emailCtrl,
+                      label: 'Email',
+                      keyboardType: TextInputType.emailAddress,
                       onChanged: (v) =>
-                          context.read<AuthBloc>().add(AuthPhoneChanged(v)),
+                          context.read<AuthBloc>().add(AuthEmailChanged(v)),
                     ),
 
                     const SizedBox(height: 24),
@@ -134,7 +127,6 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                             : const Text('Получить код'),
                       ),
                     ),
-
                     const SizedBox(height: 12),
                     const _ConsentNote(),
                   ],
@@ -151,7 +143,6 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
     required TextEditingController controller,
     String? label,
     TextInputType? keyboardType,
-    List<dynamic>? inputFormatters,
     ValueChanged<String>? onChanged,
   }) {
     const fieldBg = Color(0xFF1E1E1E);
@@ -162,7 +153,6 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
       onChanged: onChanged,
       keyboardType: keyboardType,
       style: const TextStyle(color: Color(0xFFEDEDED)),
-      inputFormatters: inputFormatters?.cast(),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Color(0xFFA7A7A7)),
@@ -183,7 +173,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
   }
 }
 
-/// عنوان البراند بخط Montserrat وتدرّج برتقالي
+/// Brand title
 class _BrandTitle extends StatelessWidget {
   const _BrandTitle();
 
@@ -210,16 +200,16 @@ class _BrandTitle extends StatelessWidget {
   }
 }
 
-/// نص الموافقة أسفل زر الإرسال
+/// Consent note
 class _ConsentNote extends StatelessWidget {
   const _ConsentNote();
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return const Text(
       'Нажимая кнопку, вы соглашаетесь с\nусловиями использования сервиса',
       textAlign: TextAlign.center,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12.5,
         color: Color(0xFFA7A7A7),
       ),

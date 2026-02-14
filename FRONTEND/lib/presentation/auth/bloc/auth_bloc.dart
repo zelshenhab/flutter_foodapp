@@ -20,8 +20,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     super.on<AuthNameChanged>(
       (e, emit) => emit(state.copyWith(name: e.name, error: null)),
     );
-    super.on<AuthPhoneChanged>(
-      (e, emit) => emit(state.copyWith(phone: e.phone, error: null)),
+    super.on<AuthEmailChanged>(
+      (e, emit) => emit(state.copyWith(email: e.email, error: null)),
     );
 
     super.on<AuthRequestCodePressed>(_onRequestCode);
@@ -34,7 +34,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     super.on<AuthResendCode>(_onResend);
 
     super.on<AuthResendTick>(_onResendTick);
-    super.on<AuthEditPhone>(_onEditPhone);
   }
 
   // Request OTP
@@ -45,10 +44,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (!state.canGetCode) return;
 
     emit(state.copyWith(loading: true, error: null));
-
+    
     try {
       final res = await service.requestCode(
-        phone: state.phone,
+        email: state.email,
         name: state.name.trim().isEmpty ? null : state.name.trim(),
       );
 
@@ -95,7 +94,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(state.copyWith(loading: true, error: null));
     try {
       final res = await service.requestCode(
-        phone: state.phone,
+        email: state.email,
         name: state.name,
       );
 
@@ -133,7 +132,7 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
 
     try {
       final res = await service.verifyCode(
-        phone: state.phone,
+        email: state.email,
         requestId: state.requestId!,
         code: state.otp,
       );
@@ -142,7 +141,7 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
       const storage = FlutterSecureStorage();
       await storage.write(key: 'auth_token', value: res.accessToken);
       await storage.write(key: 'refresh_token', value: res.refreshToken);
-      await storage.write(key: 'user_phone', value: state.phone);
+      await storage.write(key: 'user_email', value: state.email);
 
       // ✅ Set Authorization header for the global dio instance (for immediate use)
       dio.options.headers['Authorization'] = 'Bearer ${res.accessToken}';
@@ -159,20 +158,6 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
     } catch (err) {
       emit(state.copyWith(loading: false, error: 'Неверный код'));
     }
-  }
-
-  // Back to phone edit
-  void _onEditPhone(AuthEditPhone e, Emitter<AuthState> emit) {
-    _timer?.cancel();
-    emit(
-      state.copyWith(
-        step: AuthStep.enterInfo,
-        otp: '',
-        error: null,
-        resendIn: 0,
-        requestId: null,
-      ),
-    );
   }
 
   @override

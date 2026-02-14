@@ -3,7 +3,7 @@
 export async function getMe(userId: number) {
   const { data, error } = await supabase
     .from("User")
-    .select("id, phone, name, avatarUrl, createdAt")
+    .select("id, email, name, avatarUrl, createdAt")
     .eq("id", userId)
     .single();
 
@@ -21,7 +21,7 @@ export async function updateMe(
     .from("User")
     .update(patch)
     .eq("id", userId)
-    .select("id, phone, name, avatarUrl, createdAt")
+    .select("id, email, name, avatarUrl, createdAt")
     .single();
 
   if (error || !data) throw { status: 500, message: "Profile update failed" };

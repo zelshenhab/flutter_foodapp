@@ -72,7 +72,7 @@ A Node.js/Express backend for the Flutter food delivery app with Supabase integr
 ## Database Schema
 
 The app uses PostgreSQL with the following main entities:
-- Users (phone-based authentication)
+- Users (email-based authentication)
 - Categories and MenuItems
 - Cart and CartItems
 - Orders and OrderItems
@@ -81,7 +81,7 @@ The app uses PostgreSQL with the following main entities:
 
 ## Features
 
-- Phone-based authentication with OTP
+- Email-based authentication with OTP
 - Menu browsing with categories
 - Shopping cart functionality
 - Order management

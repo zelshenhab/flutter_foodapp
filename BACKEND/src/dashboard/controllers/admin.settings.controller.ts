@@ -18,7 +18,7 @@ export async function getSettingsHandler(
     res.json({
       notifyAdmins: settings.notifyAdmins,
       testMode: settings.testMode,
-      supportPhone: settings.supportPhone,
+      supportEmail: settings.supportEmail,
       restaurantEmail: settings.restaurantEmail,
       businessHours: settings.businessHours,
       maintenanceMode: settings.maintenanceMode,
@@ -41,7 +41,7 @@ export async function updateSettingsHandler(
       // defaults (so partial body still works)
       notifyAdmins: body.notifyAdmins ?? true,
       testMode: body.testMode ?? false,
-      supportPhone: body.supportPhone ?? "",
+      supportEmail: body.supportEmail ?? "",
       restaurantEmail: body.restaurantEmail ?? "",
       businessHours: body.businessHours ?? "",
       maintenanceMode: body.maintenanceMode ?? false,
@@ -53,7 +53,7 @@ export async function updateSettingsHandler(
     res.json({
       notifyAdmins: saved.notifyAdmins,
       testMode: saved.testMode,
-      supportPhone: saved.supportPhone,
+      supportEmail: saved.supportEmail,
       restaurantEmail: saved.restaurantEmail,
       businessHours: saved.businessHours,
       maintenanceMode: saved.maintenanceMode,

@@ -32,9 +32,9 @@ class SettingsTestModeToggled extends SettingsEvent {
   List<Object?> get props => [enabled];
 }
 
-class SettingsSupportPhoneChanged extends SettingsEvent {
+class SettingsSupportEmailChanged extends SettingsEvent {
   final String value;
-  const SettingsSupportPhoneChanged(this.value);
+  const SettingsSupportEmailChanged(this.value);
 }
 
 class SettingsEmailChanged extends SettingsEvent {

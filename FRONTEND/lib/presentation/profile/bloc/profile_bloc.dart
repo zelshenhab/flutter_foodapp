@@ -30,7 +30,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(
       loading: false,
       id: (m['id'] as num?)?.toInt(),
-      phone: m['phone'] as String?,
+      email: m['email'] as String?,
       name: name,
       avatarUrl: m['avatarUrl'] as String?,
       createdAt: m['createdAt'] != null

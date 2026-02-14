@@ -1,1 +1,1 @@
-﻿export type JwtUser = { id: number; phone: string };
+﻿export type JwtUser = { id: number; email: string };

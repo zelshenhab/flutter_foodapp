@@ -1,7 +1,7 @@
 class AdminUser {
   final int id;
   final String? name; // ← Change to nullable
-  final String phone;
+  final String email;
   final String? avatarUrl;
   final String role;
   final bool blocked;
@@ -10,7 +10,7 @@ class AdminUser {
   const AdminUser({
     required this.id,
     this.name, // ← Remove required
-    required this.phone,
+    required this.email,
     this.avatarUrl,
     required this.role,
     required this.blocked,
@@ -21,7 +21,7 @@ class AdminUser {
     return AdminUser(
       id: (j['id'] as num).toInt(), // Safer conversion
       name: j['name'] as String?, // Can be null
-      phone: (j['phone'] as String?) ?? '', // Handle null phone
+      email: (j['email'] as String?) ?? '', // Handle null email
       avatarUrl: j['avatarUrl'] as String?,
       role: (j['role'] as String?) ?? 'customer',
       blocked: (j['blocked'] as bool?) ?? false,
@@ -40,7 +40,7 @@ class AdminUser {
     return {
       'id': id,
       'name': name,
-      'phone': phone,
+      'email': email,
       'avatarUrl': avatarUrl,
       'role': role,
       'blocked': blocked,
@@ -51,7 +51,7 @@ class AdminUser {
   AdminUser copyWith({
     int? id,
     String? name,
-    String? phone,
+    String? email,
     String? avatarUrl,
     String? role,
     bool? blocked,
@@ -60,7 +60,7 @@ class AdminUser {
     return AdminUser(
       id: id ?? this.id,
       name: name ?? this.name,
-      phone: phone ?? this.phone,
+      email: email ?? this.email,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       role: role ?? this.role,
       blocked: blocked ?? this.blocked,
@@ -70,6 +70,6 @@ class AdminUser {
 
   @override
   String toString() {
-    return 'AdminUser(id: $id, name: $name, phone: $phone, role: $role)';
+    return 'AdminUser(id: $id, name: $name, email: $email, role: $role)';
   }
 }

@@ -16,12 +16,14 @@ class AuthNameChanged extends AuthEvent {
 }
 
 
-class AuthPhoneChanged extends AuthEvent {
-  final String phone;
-  const AuthPhoneChanged(this.phone);
+class AuthEmailChanged extends AuthEvent {
+  final String email;
+  const AuthEmailChanged(this.email);
+
   @override
-  List<Object?> get props => [phone];
+  List<Object?> get props => [email];
 }
+
 
 class AuthRequestCodePressed extends AuthEvent {}
 
@@ -35,8 +37,6 @@ class AuthOtpChanged extends AuthEvent {
 class AuthVerifyPressed extends AuthEvent {}
 
 class AuthResendCode extends AuthEvent {}
-
-class AuthEditPhone extends AuthEvent {}
 
 class AuthResendTick extends AuthEvent {
   const AuthResendTick();

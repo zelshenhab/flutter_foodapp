@@ -42,8 +42,8 @@ class UsersState extends Equatable {
 
     return data.where((u) {
       final name = (u.name ?? '').toLowerCase();
-      final phone = u.phone.toLowerCase();
-      return name.contains(q) || phone.contains(q);
+      final email = u.email.toLowerCase();
+      return name.contains(q) || email.contains(q);
     }).toList();
   }
 

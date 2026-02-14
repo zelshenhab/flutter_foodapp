@@ -1,7 +1,7 @@
 export interface AdminUser {
   id: number;
   name: string | null;
-  phone: string;
+  email: string;
   avatarUrl?: string | null;
   role: string;     // "customer" | "admin" | "manager"
   blocked: boolean;

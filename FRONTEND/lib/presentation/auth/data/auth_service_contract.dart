@@ -14,13 +14,14 @@ class VerifyOtpResult {
 
 abstract class IAuthService {
   Future<RequestOtpResult> requestCode({
-    required String phone,
+    required String email,
     String? name,
   });
 
   Future<VerifyOtpResult> verifyCode({
-    required String phone,
+    required String email,
     required String requestId,
     required String code,
   });
 }
+

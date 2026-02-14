@@ -86,7 +86,7 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  profile.phone ?? '',
+                  profile.email ?? '',
                   style: const TextStyle(color: Colors.grey),
                 ),
               ],

@@ -7,7 +7,7 @@ const USER_TABLE = "User";
 export async function fetchUsers(limit: number, offset: number) {
   const { data, error } = await supabase
     .from(USER_TABLE)
-    .select("id, name, phone, avatarUrl, role, blocked, createdAt")
+    .select("id, name, email, avatarUrl, role, blocked, createdAt")
     .order("createdAt", { ascending: false })
     .range(offset, offset + limit - 1);
 
