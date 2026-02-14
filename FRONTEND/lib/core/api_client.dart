@@ -6,7 +6,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 class Env {
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:4000/api',
+    defaultValue: 'https://adameve-gamma.vercel.app/api',
   );
 }
 

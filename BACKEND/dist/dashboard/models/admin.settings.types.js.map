@@ -1,0 +1,1 @@
+{"version":3,"file":"admin.settings.types.js","sourceRoot":"","sources":["../../../src/dashboard/models/admin.settings.types.ts"],"names":[],"mappings":";AAAA,uDAAuD;;;AAgBvD,oDAAoD;AACvC,QAAA,oBAAoB,GAAkB;IACjD,YAAY,EAAE,IAAI;IAClB,QAAQ,EAAE,KAAK;IACf,YAAY,EAAE,EAAE;IAChB,eAAe,EAAE,EAAE;IACnB,aAAa,EAAE,EAAE;IACjB,eAAe,EAAE,KAAK;IACtB,kBAAkB,EAAE,EAAE;CACvB,CAAC"}

@@ -3,20 +3,20 @@ import { randomBytes } from "crypto";
 import { addMinutes, isBefore } from "date-fns";
 import { signAccess, signRefresh } from "../../../core/utils/jwt";
 import { sendOtpEmail } from "../../../core/config/sendgrid";
+import { sendOtpEmailSMTP } from "../../../core/config/smtp";
 
-const OTP_TTL_MIN = 2;
+const OTP_TTL_MIN = 15;
 const MAX_ATTEMPTS = 5;
 
 export async function requestOtp(email: string) {
   const requestId = randomBytes(12).toString("hex");
 
-  // Always generate real random code
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
   console.log("📧 Sending OTP to:", email);
   console.log("🔐 Generated OTP:", code);
 
-  // Store OTP in database
+  // Save OTP
   const { error } = await supabase.from("OtpRequest").insert({
     email,
     code,
@@ -30,19 +30,27 @@ export async function requestOtp(email: string) {
     throw { status: 500, message: "Failed to create OTP request" };
   }
 
-  // Send email via SendGrid
+  // Choose provider
+  const provider = process.env.EMAIL_PROVIDER || "sendgrid";
+
   try {
-    await sendOtpEmail({
-      to: email,
-      code,
-      ttlMinutes: OTP_TTL_MIN,
-    });
-    console.log("✅ OTP email sent successfully");
+    if (provider === "smtp") {
+      await sendOtpEmailSMTP({
+        to: email,
+        code,
+        ttlMinutes: OTP_TTL_MIN,
+      });
+      console.log("✅ OTP email sent via SMTP");
+    } else {
+      await sendOtpEmail({
+        to: email,
+        code,
+        ttlMinutes: OTP_TTL_MIN,
+      });
+      console.log("✅ OTP email sent via SendGrid");
+    }
   } catch (e: any) {
-    console.error(
-      "❌ SendGrid error:",
-      e?.response?.body || e?.message || e
-    );
+    console.error("❌ Email send error:", e?.message || e);
     throw { status: 500, message: "Failed to send OTP email" };
   }
 
@@ -110,7 +118,6 @@ export async function verifyOtp(
   return { accessToken, refreshToken, user };
 }
 
-
 export async function me(userId: number) {
   const { data, error } = await supabase
     .from("User")
@@ -125,9 +132,6 @@ export async function me(userId: number) {
   return data;
 }
 
-// =============================
-// REFRESH TOKEN
-// =============================
 export async function refresh(oldToken: string) {
   const { data: rec } = await supabase
     .from("RefreshToken")
