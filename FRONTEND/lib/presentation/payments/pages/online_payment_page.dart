@@ -8,6 +8,7 @@ import '../bloc/payment_state.dart';
 
 import 'payment_success_page.dart';
 import 'payment_failed_page.dart';
+import 'payment_in_development_page.dart';
 
 class OnlinePaymentPage extends StatelessWidget {
   final double amount;
@@ -29,7 +30,7 @@ class OnlinePaymentPage extends StatelessWidget {
       create: (_) => PaymentBloc(
         dio: Dio(
           BaseOptions(
-            baseUrl: 'http://10.0.2.2:4000', // Android emulator → localhost
+            baseUrl: 'https://adameve-gamma.vercel.app/api', 
             connectTimeout: const Duration(seconds: 10),
             receiveTimeout: const Duration(seconds: 10),
           ),
@@ -171,7 +172,12 @@ class OnlinePaymentPage extends StatelessWidget {
         icon: const Icon(Icons.qr_code),
         label: const Text('Перейти к оплате'),
         onPressed: () {
-          context.read<PaymentBloc>().add(const PaymentPayPressed());
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const PaymentInDevelopmentPage(),
+            ),
+          );
         },
       ),
     );
