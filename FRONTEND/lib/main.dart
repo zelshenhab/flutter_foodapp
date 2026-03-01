@@ -5,37 +5,28 @@ import 'core/api_client.dart';
 import 'presentation/auth/pages/login_info_page.dart';
 import 'presentation/root/app_shell.dart';
 
-final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> appNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
-    anonKey:
+  // 🔥 DO NOT BLOCK UI — protect Supabase with timeout
+  try {
+    await Supabase.initialize(
+      url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
+      anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53YXBoZ3ZteHRhYWx5eHBnZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTQzNjMsImV4cCI6MjA3NjE5MDM2M30.MgK0G5bmvZJ6yT1vNnzn4Qz0OiIhtWde2kLx7KAG3wo',
-  );
-
-  const storage = FlutterSecureStorage();
-  final token = await storage.read(key: 'auth_token');
-
-  // 🧩 Setup interceptors (pass global navigator)
-  setupInterceptors(navigatorKey: appNavigatorKey);
-
-  // Add token to headers if valid
-  if (token != null && token.isNotEmpty) {
-    dio.options.headers['Authorization'] = 'Bearer $token';
-    debugPrint('✅ Token restored from secure storage');
-  } else {
-    debugPrint('ℹ️ No token found — login required');
+    ).timeout(const Duration(seconds: 10));
+  } catch (e) {
+    debugPrint("Supabase init failed: $e");
   }
 
-  runApp(MyApp(isLoggedIn: token != null && token.isNotEmpty));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -79,11 +70,61 @@ class MyApp extends StatelessWidget {
               displayColor: text,
             ),
       ),
-      initialRoute: isLoggedIn ? '/app' : '/login',
-      routes: {
-        '/login': (_) => const LoginInfoPage(),
-        '/app': (_) => const AppShell(),
-      },
+      home: const SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    const storage = FlutterSecureStorage();
+
+    try {
+      final token = await storage.read(key: 'auth_token');
+
+      setupInterceptors(navigatorKey: appNavigatorKey);
+
+      if (token != null && token.isNotEmpty) {
+        dio.options.headers['Authorization'] = 'Bearer $token';
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AppShell()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginInfoPage()),
+        );
+      }
+    } catch (e) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginInfoPage()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF121212),
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }

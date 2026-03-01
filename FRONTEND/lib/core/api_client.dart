@@ -18,35 +18,55 @@ final dio = Dio(
   ),
 );
 
-/// ✅ Setup Dio interceptors globally
+bool _isRedirecting = false;
+
+/// ✅ Setup Dio interceptors globally (SAFE VERSION)
 void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
   const storage = FlutterSecureStorage();
+
+  // 🔥 VERY IMPORTANT — prevent stacking interceptors
+  dio.interceptors.clear();
 
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await storage.read(key: 'auth_token');
-        if (token != null && !JwtDecoder.isExpired(token)) {
-          options.headers['Authorization'] = 'Bearer $token';
+        try {
+          final token = await storage.read(key: 'auth_token');
+
+          if (token != null &&
+              token.isNotEmpty &&
+              !JwtDecoder.isExpired(token)) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+        } catch (_) {
+          // Ignore storage errors
         }
+
         handler.next(options);
       },
       onError: (DioException e, handler) async {
         final msg = e.response?.data.toString() ?? e.message ?? '';
 
-        if (e.response?.statusCode == 401 ||
+        final isUnauthorized =
+            e.response?.statusCode == 401 ||
             msg.contains('jwt expired') ||
-            msg.contains('TokenExpiredError')) {
-          debugPrint('⚠️ JWT expired — redirecting to login');
+            msg.contains('TokenExpiredError');
 
-          await storage.delete(key: 'auth_token');
+        if (isUnauthorized && !_isRedirecting) {
+          _isRedirecting = true;
 
-          if (navigatorKey?.currentState != null) {
-            navigatorKey!.currentState!.pushNamedAndRemoveUntil(
+          try {
+            await storage.delete(key: 'auth_token');
+          } catch (_) {}
+
+          // 🔥 Navigate SAFELY after frame
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            navigatorKey?.currentState?.pushNamedAndRemoveUntil(
               '/login',
               (route) => false,
             );
-          }
+            _isRedirecting = false;
+          });
         }
 
         handler.next(e);
