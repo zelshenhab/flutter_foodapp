@@ -26,10 +26,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartCleared>(_clear);
   }
 
-  // ===============================
-  // MAP API -> UI MODEL
-  // ===============================
-
   List<CartItem> _mapApiItemsToCartItems(List<dynamic> apiItems) {
     return apiItems.map<CartItem>((raw) {
       final m = Map<String, dynamic>.from(raw as Map);
@@ -53,9 +49,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }).toList();
   }
 
-  // ===============================
-  // LOAD CART
-  // ===============================
 
   Future<void> _load(CartEvent e, Emitter<CartState> emit) async {
     emit(state.copyWith(loading: true, error: null));
@@ -96,10 +89,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // ===============================
-  // ADD ITEM
-  // ===============================
-
   Future<void> _addById(
       CartAddItem e,
       Emitter<CartState> emit,
@@ -131,10 +120,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     add(CartAddItem(itemId: id, quantity: e.quantity));
   }
 
-  // ===============================
-  // REMOVE ITEM
-  // ===============================
-
   Future<void> _removeItem(
       CartItemRemoved e,
       Emitter<CartState> emit,
@@ -149,10 +134,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       emit(state.copyWith(error: 'Не удалось удалить товар'));
     }
   }
-
-  // ===============================
-  // INCREASE QTY
-  // ===============================
 
   Future<void> _increaseQty(
       CartItemQtyIncreased e,
@@ -178,10 +159,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // ===============================
-  // DECREASE QTY
-  // ===============================
-
   Future<void> _decreaseQty(
       CartItemQtyDecreased e,
       Emitter<CartState> emit,
@@ -205,10 +182,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           error: 'Не удалось уменьшить количество'));
     }
   }
-
-  // ===============================
-  // PROMO
-  // ===============================
 
   Future<void> _applyPromo(
       CartPromoApplied e,
@@ -249,20 +222,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // ===============================
-  // PAYMENT
-  // ===============================
-
   void _changeMethod(
       CartPaymentMethodChanged e,
       Emitter<CartState> emit,
       ) {
     emit(state.copyWith(paymentMethod: e.method));
   }
-
-  // ===============================
-  // CLEAR
-  // ===============================
 
   Future<void> _clear(
       CartCleared e,
