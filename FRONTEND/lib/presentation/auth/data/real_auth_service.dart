@@ -1,5 +1,3 @@
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import '../../../core/api_client.dart';
 import 'auth_service_contract.dart';
 

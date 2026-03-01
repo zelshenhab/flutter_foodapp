@@ -18,7 +18,7 @@ class SupportPage extends StatelessWidget {
 }
 
 class _SupportView extends StatefulWidget {
-  const _SupportView({super.key});
+  const _SupportView();
 
   @override
   State<_SupportView> createState() => _SupportViewState();
@@ -37,7 +37,6 @@ class _SupportViewState extends State<_SupportView> {
 
   @override
   Widget build(BuildContext context) {
-    const cardColor = Color(0xFF1A1A1A);
     const border = Color(0xFF2A2A2A);
 
     return Scaffold(

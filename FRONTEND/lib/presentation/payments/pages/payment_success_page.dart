@@ -33,7 +33,7 @@ class PaymentSuccessPage extends StatelessWidget {
                 height: 86,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.green.withOpacity(.15),
+                  color: Colors.green.withValues(alpha: .15),
                 ),
                 child: const Icon(
                   Icons.check_rounded,

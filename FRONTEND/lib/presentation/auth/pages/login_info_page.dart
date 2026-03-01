@@ -20,7 +20,7 @@ class LoginInfoPage extends StatelessWidget {
 }
 
 class _LoginInfoView extends StatefulWidget {
-  const _LoginInfoView({super.key});
+  const _LoginInfoView();
 
   @override
   State<_LoginInfoView> createState() => _LoginInfoViewState();
@@ -28,7 +28,7 @@ class _LoginInfoView extends StatefulWidget {
 
 class _LoginInfoViewState extends State<_LoginInfoView> {
   final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController(); // ✅ changed
+  final _emailCtrl = TextEditingController(); 
 
   @override
   void dispose() {

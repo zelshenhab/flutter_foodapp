@@ -28,7 +28,7 @@ class LoginOtpPage extends StatelessWidget {
           }
 
           if (state.step == AuthStep.success) {
-            final fullName = '${state.name}'.trim();
+            final fullName = state.name.trim();
             // IMPORTANT: pass surname separately too
             if (!context.mounted) return;
             Navigator.pushAndRemoveUntil(

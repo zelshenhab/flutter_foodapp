@@ -20,11 +20,9 @@ final dio = Dio(
 
 bool _isRedirecting = false;
 
-/// ✅ Setup Dio interceptors globally (SAFE VERSION)
 void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
   const storage = FlutterSecureStorage();
 
-  // 🔥 VERY IMPORTANT — prevent stacking interceptors
   dio.interceptors.clear();
 
   dio.interceptors.add(

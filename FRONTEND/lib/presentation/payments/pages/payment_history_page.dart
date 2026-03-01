@@ -135,15 +135,15 @@ class _PaymentTile extends StatelessWidget {
     late final String text;
     switch (s) {
       case PaymentStatus.success:
-        c = Colors.greenAccent.withOpacity(.15);
+        c = Colors.greenAccent.withValues(alpha:.15);
         text = 'Успешно';
         break;
       case PaymentStatus.failed:
-        c = Colors.redAccent.withOpacity(.15);
+        c = Colors.redAccent.withValues(alpha:.15);
         text = 'Ошибка';
         break;
       case PaymentStatus.pending:
-        c = Colors.orangeAccent.withOpacity(.15);
+        c = Colors.orangeAccent.withValues(alpha:.15);
         text = 'Ожидает';
         break;
     }

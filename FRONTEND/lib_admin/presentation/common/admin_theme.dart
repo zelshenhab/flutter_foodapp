@@ -12,7 +12,6 @@ ThemeData buildAdminTheme() {
     colorScheme: const ColorScheme.dark(
       primary: accent,
       secondary: accent,
-      background: bg,
       surface: surface,
     ),
     appBarTheme: const AppBarTheme(

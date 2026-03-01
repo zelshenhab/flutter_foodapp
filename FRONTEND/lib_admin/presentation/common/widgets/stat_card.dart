@@ -117,9 +117,9 @@ class _TrendChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(.12),
+        color: color.withValues(alpha:.12),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(.35)),
+        border: Border.all(color: color.withValues(alpha:.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

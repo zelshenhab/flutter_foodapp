@@ -148,7 +148,7 @@ class _PromosView extends StatelessWidget {
               const SizedBox(height: 8),
 
               DropdownButtonFormField<String>(
-                value: type,
+                initialValue: type,
                 decoration: const InputDecoration(labelText: "Тип скидки"),
                 items: const [
                   DropdownMenuItem(value: "percent", child: Text("Процент")),

@@ -9,7 +9,6 @@ class CartRepository {
     return Map<String, dynamic>.from(res.data['data'] as Map);
   }
 
-  /// POST /cart/items  ->  { id: <int> }
   Future<int> addItem({
     required int itemId,
     int quantity = 1,

@@ -39,7 +39,7 @@ class MenuAdminPage extends StatelessWidget {
                   SizedBox(
                     width: 280,
                     child: DropdownButtonFormField<String>(
-                      value: state.selectedCategoryId.isEmpty
+                      initialValue: state.selectedCategoryId.isEmpty
                           ? state.categories.first["id"].toString()
                           : state.selectedCategoryId,
                       items: state.categories

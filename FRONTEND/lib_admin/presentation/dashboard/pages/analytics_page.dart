@@ -48,7 +48,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ),
           StatCard(
             title: 'Самовывоз (7 дней)',
-            value: '—', // TODO: real endpoint if needed
+            value: '—', 
             icon: Icons.store_mall_directory,
             sub: 'Среднее: —',
           ),

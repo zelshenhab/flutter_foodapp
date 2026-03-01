@@ -22,7 +22,7 @@ class TicketsPage extends StatelessWidget {
 }
 
 class _TicketsView extends StatefulWidget {
-  const _TicketsView({super.key});
+  const _TicketsView();
 
   @override
   State<_TicketsView> createState() => _TicketsViewState();
@@ -286,7 +286,7 @@ class _TicketFilter extends StatelessWidget {
     return SizedBox(
       width: 160,
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         items: items,
         onChanged: (v) => onChanged(v ?? 'all'),
         decoration: const InputDecoration(labelText: 'Статус'),
