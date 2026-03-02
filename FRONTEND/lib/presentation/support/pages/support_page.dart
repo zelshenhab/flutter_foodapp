@@ -85,13 +85,6 @@ class _SupportViewState extends State<_SupportView> {
                     ),
                     const Divider(color: border),
                     _contactTile(
-                      icon: Icons.send,
-                      title: 'Telegram',
-                      subtitle: '@strgtr01',
-                      onTap: () => openTelegram('adam_eva_support'),
-                    ),
-                    const Divider(color: border),
-                    _contactTile(
                       icon: Icons.email_outlined,
                       title: 'Email',
                       subtitle: 'kauroah@gmail.com',
