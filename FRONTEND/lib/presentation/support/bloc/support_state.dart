@@ -5,10 +5,10 @@ class SupportState extends Equatable {
   final String orderId;
   final String message;
 
-  final bool loading;   // لتحميل أولي لو محتاج (مش مستخدم قوي هنا)
-  final bool sending;   // أثناء إرسال التذكرة
-  final String? error;  // خطأ إرسال
-  final String? successMessage; // نجاح (مثلاً: تم إنشاء تذكرة №1234)
+  final bool loading;   
+  final bool sending;   
+  final String? error;  
+  final String? successMessage; 
 
   const SupportState({
     this.topic = 'Проблема с заказом',

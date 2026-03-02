@@ -12,12 +12,25 @@ const sendgrid_1 = require("../../../core/config/sendgrid");
 const smtp_1 = require("../../../core/config/smtp");
 const OTP_TTL_MIN = 15;
 const MAX_ATTEMPTS = 5;
+// --------------------
+// REQUEST OTP
+// --------------------
 async function requestOtp(email) {
+    const moderatorEnabled = process.env.ENABLE_MODERATOR_BYPASS === "true";
+    const moderatorEmail = process.env.MODERATOR_EMAIL;
+    const moderatorCode = process.env.MODERATOR_CODE || "915287";
+    // 🛡 Moderator bypass (NO email sending)
+    if (moderatorEnabled && email === moderatorEmail) {
+        console.log("Moderator OTP bypass activated");
+        return {
+            requestId: "moderator-request",
+            ttl: OTP_TTL_MIN * 60,
+        };
+    }
+    // -------- Normal OTP Flow --------
     const requestId = (0, crypto_1.randomBytes)(12).toString("hex");
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("📧 Sending OTP to:", email);
-    console.log("🔐 Generated OTP:", code);
-    // Save OTP
+    console.log("Sending OTP to:", email);
     const { error } = await supabase_1.supabase.from("OtpRequest").insert({
         email,
         code,
@@ -26,10 +39,9 @@ async function requestOtp(email) {
         expiresAt: (0, date_fns_1.addMinutes)(new Date(), OTP_TTL_MIN).toISOString(),
     });
     if (error) {
-        console.error("❌ Supabase OTP insert error:", error);
+        console.error("Supabase OTP insert error:", error);
         throw { status: 500, message: "Failed to create OTP request" };
     }
-    // Choose provider
     const provider = process.env.EMAIL_PROVIDER || "sendgrid";
     try {
         if (provider === "smtp") {
@@ -38,7 +50,7 @@ async function requestOtp(email) {
                 code,
                 ttlMinutes: OTP_TTL_MIN,
             });
-            console.log("✅ OTP email sent via SMTP");
+            console.log("OTP email sent via SMTP");
         }
         else {
             await (0, sendgrid_1.sendOtpEmail)({
@@ -46,11 +58,11 @@ async function requestOtp(email) {
                 code,
                 ttlMinutes: OTP_TTL_MIN,
             });
-            console.log("✅ OTP email sent via SendGrid");
+            console.log("OTP email sent via SendGrid");
         }
     }
     catch (e) {
-        console.error("❌ Email send error:", e?.message || e);
+        console.error("Email send error:", e?.message || e);
         throw { status: 500, message: "Failed to send OTP email" };
     }
     return {
@@ -59,6 +71,32 @@ async function requestOtp(email) {
     };
 }
 async function verifyOtp(email, requestId, code) {
+    const moderatorEnabled = process.env.ENABLE_MODERATOR_BYPASS === "true";
+    const moderatorEmail = process.env.MODERATOR_EMAIL;
+    const moderatorCode = process.env.MODERATOR_CODE || "123456";
+    // Moderator bypass login
+    if (moderatorEnabled &&
+        email === moderatorEmail &&
+        code === moderatorCode) {
+        console.log("Moderator login successful");
+        const { data: user, error: userError } = await supabase_1.supabase
+            .from("User")
+            .upsert({ email }, { onConflict: "email" })
+            .select()
+            .single();
+        if (userError || !user) {
+            throw { status: 500, message: "Failed to create/update user" };
+        }
+        const payload = { id: user.id, email: user.email };
+        const accessToken = (0, jwt_1.signAccess)(payload);
+        const refreshToken = (0, jwt_1.signRefresh)(payload);
+        await supabase_1.supabase.from("RefreshToken").insert({
+            userId: user.id,
+            token: refreshToken,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+        return { accessToken, refreshToken, user };
+    }
     const { data: rec, error: fetchError } = await supabase_1.supabase
         .from("OtpRequest")
         .select("*")
