@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'core/api_client.dart';
 import 'presentation/auth/pages/login_info_page.dart';
 import 'presentation/root/app_shell.dart';
 
-final GlobalKey<NavigatorState> appNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 DO NOT BLOCK UI — protect Supabase with timeout
+  /// setup Dio interceptors FIRST
+  setupInterceptors(navigatorKey: appNavigatorKey);
+
   try {
     await Supabase.initialize(
       url: 'https://nwaphgvmxtaalyxpgfdt.supabase.co',
       anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53YXBoZ3ZteHRhYWx5eHBnZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTQzNjMsImV4cCI6MjA3NjE5MDM2M30.MgK0G5bmvZJ6yT1vNnzn4Qz0OiIhtWde2kLx7KAG3wo',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53YXBoZ3ZteHRhYWx5eHBnZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTQzNjMsImV4cCI6MjA3NjE5MDM2M30.MgK0G5bmvZJ6yT1vNnzn4Qz0OiIhtWde2kLx7KAG3wo',
     ).timeout(const Duration(seconds: 10));
   } catch (e) {
     debugPrint("Supabase init failed: $e");
@@ -39,6 +41,13 @@ class MyApp extends StatelessWidget {
       navigatorKey: appNavigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Адам и Ева',
+
+      /// 🔑 important for interceptor redirects
+      routes: {
+        '/login': (_) => const LoginInfoPage(),
+        '/home': (_) => const AppShell(),
+      },
+
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: bg,
         cardColor: const Color(0xFF1A1A1A),
@@ -69,6 +78,7 @@ class MyApp extends StatelessWidget {
               displayColor: text,
             ),
       ),
+
       home: const SplashScreen(),
     );
   }
@@ -94,26 +104,13 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       final token = await storage.read(key: 'auth_token');
 
-      setupInterceptors(navigatorKey: appNavigatorKey);
-
       if (token != null && token.isNotEmpty) {
-        dio.options.headers['Authorization'] = 'Bearer $token';
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AppShell()),
-        );
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginInfoPage()),
-        );
+        Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginInfoPage()),
-      );
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
