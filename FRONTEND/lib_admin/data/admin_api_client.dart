@@ -5,7 +5,7 @@ class AdminApiClient {
   final String baseUrl;
 
   AdminApiClient({
-    this.baseUrl = "http://localhost:4000/api/admin",
+    this.baseUrl = "https://adameve-gamma.vercel.app/api/admin",
   });
 
   Future<dynamic> get(String endpoint) async {
