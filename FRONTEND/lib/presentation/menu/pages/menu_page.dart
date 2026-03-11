@@ -40,6 +40,7 @@ class MenuPage extends StatelessWidget {
                 'main': 'assets/images/Chicken-Shawarma-8.jpg',
                 'breakfast': 'assets/images/Chicken-Shawarma-8.jpg',
                 'sauces': 'assets/images/Chicken-Shawarma-8.jpg',
+                'desserts': 'assets/images/kunafa.jpg',
               };
 
               if (state.loading && state.items.isEmpty) {

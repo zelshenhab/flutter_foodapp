@@ -102,17 +102,15 @@ void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
             if (!_isRedirecting) {
               _isRedirecting = true;
 
-              Future.microtask(() {
-                navigatorKey?.currentState?.pushNamedAndRemoveUntil(
+              if (navigatorKey?.currentState != null) {
+                navigatorKey!.currentState!.pushNamedAndRemoveUntil(
                   '/login',
                   (route) => false,
                 );
-                _isRedirecting = false;
-              });
+              }
             }
           }
         }
-
         handler.next(e);
       },
     ),
