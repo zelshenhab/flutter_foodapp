@@ -143,7 +143,7 @@ class _PaymentTile extends StatelessWidget {
         text = 'Ошибка';
         break;
       case PaymentStatus.pending:
-        c = Colors.orangeAccent.withValues(alpha:.15);
+        c = Color.fromARGB(255, 199, 160, 34).withValues(alpha:.15);
         text = 'Ожидает';
         break;
     }

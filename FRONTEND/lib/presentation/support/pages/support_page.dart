@@ -238,7 +238,7 @@ class _SupportViewState extends State<_SupportView> {
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: Colors.orangeAccent),
+      leading: Icon(icon, color: Color.fromARGB(255, 199, 160, 34)),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.chevron_right),

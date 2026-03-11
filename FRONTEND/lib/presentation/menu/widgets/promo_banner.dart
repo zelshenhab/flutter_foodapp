@@ -11,7 +11,7 @@ class PromoBanner extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF3D6E), Color(0xFFFF7A00)],
+            colors: [Color.fromARGB(255, 251, 206, 58), Color.fromARGB(255, 168, 135, 28)],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -26,7 +26,7 @@ class PromoBanner extends StatelessWidget {
                   Text(
                     'Скидка 30%',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                     ),
@@ -35,7 +35,7 @@ class PromoBanner extends StatelessWidget {
                   Text(
                     'На первый заказ от 3000₽',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 13,
                     ),
                   ),

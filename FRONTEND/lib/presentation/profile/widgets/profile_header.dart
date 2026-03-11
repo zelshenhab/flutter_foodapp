@@ -64,7 +64,7 @@ class ProfileHeader extends StatelessWidget {
                     child: const Icon(
                       Icons.camera_alt,
                       size: 16,
-                      color: Colors.orangeAccent,
+                      color: Color.fromARGB(255, 199, 160, 34),
                     ),
                   ),
                 ),
@@ -94,7 +94,7 @@ class ProfileHeader extends StatelessWidget {
           ),
           IconButton(
             onPressed: onEdit,
-            icon: const Icon(Icons.edit, color: Colors.orangeAccent),
+            icon: const Icon(Icons.edit, color: Color.fromARGB(255, 199, 160, 34)),
           ),
         ],
       ),

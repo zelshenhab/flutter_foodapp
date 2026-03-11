@@ -143,7 +143,7 @@ class UsersPage extends StatelessWidget {
                                     child: DataTable(
                                       headingTextStyle: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.orangeAccent,
+                                        color: Color.fromARGB(255, 199, 160, 34),
                                       ),
                                       dataTextStyle: const TextStyle(color: Colors.white),
                                       columns: const [
@@ -331,7 +331,7 @@ class UsersPage extends StatelessWidget {
   Color _getRoleColor(String role) {
     switch (role) {
       case 'admin':
-        return Colors.orange;
+        return Color.fromARGB(255, 199, 160, 34);
       case 'manager':
         return Colors.purple;
       case 'customer':

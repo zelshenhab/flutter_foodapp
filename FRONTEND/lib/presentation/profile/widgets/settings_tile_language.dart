@@ -12,7 +12,7 @@ class SettingsTileLanguage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const Icon(Icons.language, color: Colors.orange),
+      leading: const Icon(Icons.language, color: Color.fromARGB(255, 199, 160, 34)),
       title: const Text("Язык"),
       trailing: DropdownButton<String>(
         value: currentCode,

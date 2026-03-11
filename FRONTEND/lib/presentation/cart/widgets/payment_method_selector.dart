@@ -17,7 +17,7 @@ class PaymentMethodSelector extends StatelessWidget {
         ),
         child: Row(
           children: const [
-            Icon(Icons.credit_card, color: Color(0xFFFF7A00)),
+            Icon(Icons.credit_card, color: Color.fromARGB(255, 199, 160, 34)),
             SizedBox(width: 12),
             Expanded(
               child: Text(

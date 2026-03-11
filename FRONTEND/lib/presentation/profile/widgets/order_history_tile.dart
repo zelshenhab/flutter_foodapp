@@ -11,7 +11,7 @@ class OrderHistoryTile extends StatelessWidget {
     final itemsText = order.items.join(", ");
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      leading: const Icon(Icons.receipt_long, color: Colors.orangeAccent),
+      leading: const Icon(Icons.receipt_long, color: Color.fromARGB(255, 199, 160, 34)),
       title: Text("Заказ №${order.id} — ${order.restaurant}",
           style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(

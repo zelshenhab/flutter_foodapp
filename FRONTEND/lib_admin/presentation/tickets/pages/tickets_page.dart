@@ -146,7 +146,7 @@ class _TicketsViewState extends State<_TicketsView> {
         const SizedBox(width: 8),
         _KpiCard(label: 'Открыты', value: '${s.openCount}', color: Colors.green),
         const SizedBox(width: 8),
-        _KpiCard(label: 'Закрыты', value: '${s.closedCount}', color: Colors.orange),
+        _KpiCard(label: 'Закрыты', value: '${s.closedCount}', color: Color.fromARGB(255, 199, 160, 34)),
       ],
     );
   }

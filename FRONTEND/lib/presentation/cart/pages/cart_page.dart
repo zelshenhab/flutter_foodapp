@@ -94,7 +94,7 @@ class _CartScaffold extends StatelessWidget {
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha:.25),
+                            color: Color.fromARGB(255, 255, 206, 44),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.delete, color: Colors.white),

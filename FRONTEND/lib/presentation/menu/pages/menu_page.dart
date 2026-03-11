@@ -40,7 +40,13 @@ class MenuPage extends StatelessWidget {
                 'main': 'assets/images/Chicken-Shawarma-8.jpg',
                 'breakfast': 'assets/images/Chicken-Shawarma-8.jpg',
                 'sauces': 'assets/images/Chicken-Shawarma-8.jpg',
-                'desserts': 'assets/images/kunafa.jpg',
+                'kunafa': 'assets/images/kunafa.jpg',
+                'nuts': 'assets/images/mixnuts.jpg',
+                'gift-boxes': 'assets/images/Gift pistachios.jpg',
+                'dried-fruits': 'assets/images/Assorted dried fruits.jpg',
+                'assorted-sweets': 'assets/images/Assorted Nest1.jpg',
+                'cookies': 'assets/images/COOKIES BARAZE.jpg',
+                'baklava': 'assets/images/Turkish baklava with walnuts.jpg',
               };
 
               if (state.loading && state.items.isEmpty) {

@@ -136,7 +136,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                       height: 48,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF7A00),
+                          backgroundColor: const Color.fromARGB(255, 199, 160, 34),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -209,7 +209,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
-          borderSide: BorderSide(color: Colors.orangeAccent),
+          borderSide: BorderSide(color: Color.fromARGB(255, 199, 160, 34)),
         ),
       ),
     );
@@ -223,7 +223,7 @@ class _BrandTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShaderMask(
       shaderCallback: (bounds) => const LinearGradient(
-        colors: [Color(0xFFFF7A00), Color(0xFFFFA24D)],
+        colors: [Color.fromARGB(255, 199, 160, 34), Color.fromARGB(255, 116, 94, 20)],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
       ).createShader(bounds),
@@ -279,7 +279,7 @@ class _TermsConsentRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.5,
                     decoration: TextDecoration.underline,
-                    color: Color(0xFFFF7A00),
+                    color: Color.fromARGB(255, 199, 160, 34),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -295,7 +295,7 @@ class _TermsConsentRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.5,
                     decoration: TextDecoration.underline,
-                    color: Color(0xFFFF7A00),
+                    color: Color.fromARGB(255, 199, 160, 34),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
