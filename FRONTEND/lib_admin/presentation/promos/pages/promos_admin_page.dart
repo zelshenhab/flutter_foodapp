@@ -22,7 +22,7 @@ class PromosAdminPage extends StatelessWidget {
 }
 
 class _PromosView extends StatelessWidget {
-  const _PromosView({super.key});
+  const _PromosView();
 
   @override
   Widget build(BuildContext context) {
