@@ -56,10 +56,10 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
         listenWhen: (p, c) => p.step != c.step || p.error != c.error,
         listener: (context, state) {
           if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error!)),
-            );
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.error!)));
           }
+
           if (state.step == AuthStep.verifyOtp) {
             Navigator.push(
               context,
@@ -85,6 +85,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                   children: [
                     const _BrandTitle(),
                     const SizedBox(height: 28),
+
                     const Text(
                       'Добро пожаловать!',
                       style: TextStyle(
@@ -93,6 +94,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                         color: Color(0xFFEDEDED),
                       ),
                     ),
+
                     const SizedBox(height: 20),
 
                     _darkField(
@@ -101,6 +103,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                       onChanged: (v) =>
                           context.read<AuthBloc>().add(AuthNameChanged(v)),
                     ),
+
                     const SizedBox(height: 14),
 
                     _darkField(
@@ -157,7 +160,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                       ),
                     ),
 
-                    if (! _agreed)
+                    if (!_agreed)
                       const Padding(
                         padding: EdgeInsets.only(top: 10),
                         child: Text(
@@ -213,7 +216,6 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
   }
 }
 
-/// Brand title
 class _BrandTitle extends StatelessWidget {
   const _BrandTitle();
 

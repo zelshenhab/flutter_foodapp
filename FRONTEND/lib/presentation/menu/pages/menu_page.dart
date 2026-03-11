@@ -76,7 +76,13 @@ class MenuPage extends StatelessWidget {
                 slivers: [
                   const SliverToBoxAdapter(child: MenuHeader()),
                   const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                  const SliverToBoxAdapter(child: MenuSearchBar()),
+                  SliverToBoxAdapter(
+                      child: MenuSearchBar(
+                        onChanged: (q) {
+                          context.read<MenuBloc>().add(MenuSearchChanged(q));
+                        },
+                      ),
+                    ),
                   const SliverToBoxAdapter(child: PromoBanner()),
 
                   const SliverPadding(

@@ -33,8 +33,8 @@ Future<void> main() async {
   /// Emulator uses "10.0.2.2"
   final api = AdminApiClient(
     baseUrl: kIsWeb
-        ? "https://adameve-gamma.vercel.app/api"
-        : "https://adameve-gamma.vercel.app/api",
+        ? "https://adameve-gamma.vercel.app/api/admin"
+        : "https://adameve-gamma.vercel.app/api/admin",
   );
 
   runApp(AdminApp(api: api));

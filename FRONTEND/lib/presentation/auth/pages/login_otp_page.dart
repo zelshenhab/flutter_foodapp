@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinput/pinput.dart';
-
+import '../../../core/services/notification_service.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -16,7 +16,7 @@ class LoginOtpPage extends StatelessWidget {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
         listenWhen: (p, c) => p.step != c.step || p.error != c.error,
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state.error != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.error!)),
@@ -28,8 +28,9 @@ class LoginOtpPage extends StatelessWidget {
           }
 
           if (state.step == AuthStep.success) {
+
+            await NotificationService.showLoginNotification();
             final fullName = state.name.trim();
-            // IMPORTANT: pass surname separately too
             if (!context.mounted) return;
             Navigator.pushAndRemoveUntil(
               context,

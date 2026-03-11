@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -23,6 +24,7 @@ Future<void> main() async {
   } catch (e) {
     debugPrint("Supabase init failed: $e");
   }
+  await NotificationService.init();
 
   runApp(const MyApp());
 }
@@ -104,12 +106,15 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       final token = await storage.read(key: 'auth_token');
 
+      if (!mounted) return;
+
       if (token != null && token.isNotEmpty) {
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         Navigator.pushReplacementNamed(context, '/login');
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/login');
     }
   }

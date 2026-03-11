@@ -22,6 +22,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+
+        // ✅ REQUIRED for flutter_local_notifications
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -52,6 +55,13 @@ android {
             isShrinkResources = false
         }
     }
+}
+
+dependencies {
+
+    // ✅ REQUIRED for notification plugin
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
 }
 
 flutter {
