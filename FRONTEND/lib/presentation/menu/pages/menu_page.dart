@@ -142,7 +142,7 @@ class MenuPage extends StatelessWidget {
 
                             // Dispatch to CartBloc -> will call POST /cart/items
                             context.read<CartBloc>().add(
-                              CartAddItem(itemId: numericId, quantity: 1),
+                              CartItemAdded(item, quantity: 1),
                             );
                           },
                         );
