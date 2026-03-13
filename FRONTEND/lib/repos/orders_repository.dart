@@ -8,7 +8,7 @@ class OrdersRepository {
   const OrdersRepository();
 
   static const _storage = FlutterSecureStorage();
-  static const _baseUrl = 'https://adameve-gamma.vercel.app/api';
+  static const _baseUrl = 'https://adam-eve-ebon.vercel.app/api';
 
   Dio _createDio(String token) {
     return Dio(

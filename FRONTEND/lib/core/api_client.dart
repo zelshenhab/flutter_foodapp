@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class Env {
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://adameve-gamma.vercel.app/api',
+    defaultValue: 'https://adam-eve-ebon.vercel.app/api',
   );
 }
 

@@ -30,7 +30,7 @@ class OnlinePaymentPage extends StatelessWidget {
       create: (_) => PaymentBloc(
         dio: Dio(
           BaseOptions(
-            baseUrl: 'https://adameve-gamma.vercel.app/api', 
+            baseUrl: 'https://adam-eve-ebon.vercel.app/api', 
             connectTimeout: const Duration(seconds: 10),
             receiveTimeout: const Duration(seconds: 10),
           ),
