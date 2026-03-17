@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/api_client.dart';
 import '../bloc/payment_bloc.dart';
 import '../bloc/payment_event.dart';
 import '../bloc/payment_state.dart';
-
-import 'payment_success_page.dart';
 import 'payment_failed_page.dart';
+import 'payment_success_page.dart';
 import 'payment_webview_page.dart';
 
 class OnlinePaymentPage extends StatelessWidget {
@@ -36,83 +34,76 @@ class OnlinePaymentPage extends StatelessWidget {
           ),
         ),
       child: BlocConsumer<PaymentBloc, PaymentState>(
-        listenWhen: (p, n) => p.step != n.step,
+        listenWhen: (p, n) =>
+            p.step != n.step || p.paymentUrl != n.paymentUrl,
         listener: (context, state) async {
-          /// OPEN PAYMENT PAGE
-          if (state.step == PaymentStep.openingPayment) {
-            final url = state.paymentUrl!;
-
-            final success = await Navigator.push<bool>(
+          if (state.step == PaymentStep.openingPayment &&
+              state.paymentUrl != null &&
+              state.orderId != null) {
+            final result = await Navigator.push<PaymentWebResult>(
               context,
               MaterialPageRoute(
-                builder: (_) => PaymentWebViewPage(url: url),
+                builder: (_) => PaymentWebViewPage(url: state.paymentUrl!),
               ),
             );
 
-            if (success == true) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PaymentSuccessPage(
-                    orderId: state.orderId!,
-                    total: state.amount,
+            if (!context.mounted) return;
+
+            switch (result) {
+              case PaymentWebResult.success:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PaymentSuccessPage(
+                      orderId: state.orderId!,
+                      total: state.amount,
+                    ),
                   ),
-                ),
-              );
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PaymentFailedPage(),
-                ),
-              );
-            }
-          }
+                );
+                break;
 
-          /// FAILED
-          if (state.step == PaymentStep.failed) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PaymentFailedPage(
-                  reason: state.error,
-                ),
-              ),
-            );
+              case PaymentWebResult.failed:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PaymentFailedPage(
+                      reason: 'Платёж был отклонён.',
+                    ),
+                  ),
+                );
+                break;
+
+              case PaymentWebResult.cancelled:
+              case null:
+                context.read<PaymentBloc>().add(const PaymentReset());
+                break;
+            }
           }
         },
         builder: (context, state) {
+          final isBusy = state.loading ||
+              state.step == PaymentStep.creatingOrder ||
+              state.step == PaymentStep.openingPayment;
+
           return Scaffold(
             appBar: AppBar(
               title: const Text('Онлайн-оплата'),
             ),
-            body: state.loading
+            body: isBusy
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      /// Restaurant
                       _restaurantCard(),
-
                       const SizedBox(height: 12),
-
-                      /// Order summary
                       _summaryCard(state),
-
                       const SizedBox(height: 20),
-
-                      /// Pay button
-                      if (state.step == PaymentStep.idle ||
-                          state.step == PaymentStep.failed)
-                        _payButton(context),
-
-                      /// Error
+                      _payButton(context),
                       if (state.error != null) ...[
                         const SizedBox(height: 12),
                         Text(
                           state.error!,
-                          style:
-                              const TextStyle(color: Colors.redAccent),
+                          style: const TextStyle(color: Colors.redAccent),
                         ),
                       ],
                     ],
@@ -123,8 +114,6 @@ class OnlinePaymentPage extends StatelessWidget {
     );
   }
 
-  /// ---------------- Restaurant Card ----------------
-
   Widget _restaurantCard() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -133,10 +122,12 @@ class OnlinePaymentPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF2A2A2A)),
       ),
-      child: Row(
-        children: const [
-          Icon(Icons.restaurant,
-              color: Color.fromARGB(255, 199, 160, 34)),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.restaurant,
+            color: Color.fromARGB(255, 199, 160, 34),
+          ),
           SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -148,8 +139,6 @@ class OnlinePaymentPage extends StatelessWidget {
       ),
     );
   }
-
-  /// ---------------- Summary ----------------
 
   Widget _summaryCard(PaymentState state) {
     return Container(
@@ -185,8 +174,6 @@ class OnlinePaymentPage extends StatelessWidget {
       ),
     );
   }
-
-  /// ---------------- PAY BUTTON ----------------
 
   Widget _payButton(BuildContext context) {
     return SizedBox(

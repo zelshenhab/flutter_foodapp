@@ -1,7 +1,8 @@
 import 'dart:developer' as dev;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/api_client.dart'; // use global dio
+import '../../../core/api_client.dart';
 import '../../../data/api/order_api_service.dart';
 import '../data/api/payment_api_service.dart';
 import 'payment_event.dart';
@@ -11,11 +12,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   PaymentBloc() : super(const PaymentState()) {
     on<PaymentStarted>(_onStarted);
     on<PaymentPayPressed>(_onPay);
-    on<PaymentReset>((_, emit) => emit(const PaymentState()));
+    on<PaymentReset>(_onReset);
   }
 
   final OrderApiService _orderApi = OrderApiService();
-  PaymentApiService get _paymentApi => PaymentApiService(dio); // <-- global dio
+  PaymentApiService get _paymentApi => PaymentApiService(dio);
 
   Future<void> _onStarted(
     PaymentStarted e,
@@ -24,11 +25,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     emit(
       state.copyWith(
         step: PaymentStep.idle,
+        loading: false,
+        error: null,
         amount: e.amount,
         currency: e.currency,
         description: e.description ?? 'Онлайн-оплата',
-        error: null,
         orderId: null,
+        paymentId: null,
+        paymentUrl: null,
       ),
     );
   }
@@ -37,11 +41,16 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     PaymentPayPressed e,
     Emitter<PaymentState> emit,
   ) async {
+    if (state.loading) return;
+
     emit(
       state.copyWith(
         step: PaymentStep.creatingOrder,
         loading: true,
         error: null,
+        orderId: null,
+        paymentId: null,
+        paymentUrl: null,
       ),
     );
 
@@ -53,19 +62,24 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       );
 
       final orderId = (order['orderId'] as num).toInt();
-
       dev.log('🟢 ORDER CREATED: $orderId');
 
-      final paymentUrl = await _paymentApi.createPayment(orderId);
+      final payment = await _paymentApi.createPayment(orderId);
+      dev.log('🟢 PAYMENT CREATED: ${payment.paymentId}');
+      dev.log('🟢 PAYMENT URL: ${payment.confirmationUrl}');
 
-      dev.log('🟢 PAYMENT URL: $paymentUrl');
+      if (payment.confirmationUrl.isEmpty) {
+        throw Exception('Empty confirmationUrl');
+      }
 
       emit(
         state.copyWith(
           loading: false,
           step: PaymentStep.openingPayment,
           orderId: orderId,
-          paymentUrl: paymentUrl,
+          paymentId: payment.paymentId.isEmpty ? null : payment.paymentId,
+          paymentUrl: payment.confirmationUrl,
+          error: null,
         ),
       );
     } catch (e, st) {
@@ -74,10 +88,23 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       emit(
         state.copyWith(
           loading: false,
-          step: PaymentStep.failed,
-          error: 'Ошибка оплаты',
+          step: PaymentStep.idle,
+          error: 'Не удалось создать оплату. Попробуйте снова.',
         ),
       );
     }
+  }
+
+  void _onReset(
+    PaymentReset event,
+    Emitter<PaymentState> emit,
+  ) {
+    emit(
+      PaymentState(
+        amount: state.amount,
+        currency: state.currency,
+        description: state.description,
+      ),
+    );
   }
 }
