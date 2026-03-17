@@ -4,15 +4,13 @@ exports.paymentService = void 0;
 const supabase_1 = require("../../../core/config/supabase");
 const yookassa_client_1 = require("../../../core/yookassa/yookassa.client");
 class PaymentService {
-    /**
-     * Create YooKassa payment
-     */
+    /// 🔹 CREATE PAYMENT
     async createPayment(orderId, userId) {
         const { data: order, error } = await supabase_1.supabase
             .from("Order")
             .select("*")
             .eq("id", orderId)
-            .eq("userId", userId) // 🔐 important security check
+            .eq("userId", userId)
             .single();
         if (error || !order) {
             throw new Error("Order not found");
@@ -25,11 +23,17 @@ class PaymentService {
             yookassaPaymentId: payment.id,
         })
             .eq("id", orderId);
-        return payment.confirmation.confirmation_url;
+        return {
+            paymentId: payment.id,
+            confirmationUrl: payment.confirmation.confirmation_url,
+        };
     }
-    /**
-     * Called when payment confirmed
-     */
+    /// 🔥 CHECK PAYMENT STATUS (REAL SOURCE OF TRUTH)
+    async getPaymentStatus(paymentId) {
+        const payment = await (0, yookassa_client_1.getPayment)(paymentId);
+        return payment.status; // pending | succeeded | canceled
+    }
+    /// 🔥 MARK ORDER PAID (used by webhook)
     async markOrderPaid(paymentId) {
         const { data: order } = await supabase_1.supabase
             .from("Order")

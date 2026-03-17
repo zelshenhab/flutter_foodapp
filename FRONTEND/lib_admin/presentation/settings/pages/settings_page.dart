@@ -87,28 +87,30 @@ class _SettingsView extends StatelessWidget {
                 child: Column(
                   children: [
                     TextFormField(
-                      key: ValueKey('email_${s.supportEmail}'),
-                      initialValue: s.supportEmail,
-                      decoration: const InputDecoration(
-                        labelText: 'Элек.почта поддержки',
-                        hintText: 'adamandeve@mail.ru',
-                      ),
-                      onChanged: (v) => context
-                          .read<SettingsBloc>()
-                          .add(SettingsSupportEmailChanged(v)),
+                    key: const ValueKey('support_email'),
+                    initialValue: s.supportEmail,
+                    decoration: const InputDecoration(
+                      labelText: 'Элек.почта поддержки',
+                      hintText: 'adamandeve@mail.ru',
                     ),
-                    const SizedBox(height: 10),
-                    TextFormField(
-                      key: ValueKey('email_${s.restaurantEmail}'),
-                      initialValue: s.restaurantEmail,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'E-mail ресторана',
-                        hintText: 'info@restaurant.ru',
-                      ),
-                      onChanged: (v) =>
-                          context.read<SettingsBloc>().add(SettingsEmailChanged(v)),
+                    onChanged: (v) => context
+                        .read<SettingsBloc>()
+                        .add(SettingsSupportEmailChanged(v)),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  TextFormField(
+                    key: const ValueKey('restaurant_email'),
+                    initialValue: s.restaurantEmail,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'E-mail ресторана',
+                      hintText: 'info@restaurant.ru',
                     ),
+                    onChanged: (v) =>
+                        context.read<SettingsBloc>().add(SettingsEmailChanged(v)),
+                  ),
                     const SizedBox(height: 10),
                     TextFormField(
                       key: ValueKey('hours_${s.businessHours}'),

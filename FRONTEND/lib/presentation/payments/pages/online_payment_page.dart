@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
+import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
 
 import '../bloc/payment_bloc.dart';
 import '../bloc/payment_event.dart';
@@ -51,16 +53,22 @@ class OnlinePaymentPage extends StatelessWidget {
 
             switch (result) {
               case PaymentWebResult.success:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PaymentSuccessPage(
-                      orderId: state.orderId!,
-                      total: state.amount,
-                    ),
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PaymentSuccessPage(
+                    orderId: state.orderId!,
+                    total: state.amount,
                   ),
-                );
-                break;
+                ),
+              );
+
+              // 🔥 بعد navigation
+              Future.microtask(() {
+                context.read<CartBloc>().add(const CartRefreshed());
+              });
+
+              break;
 
               case PaymentWebResult.failed:
                 Navigator.pushReplacement(

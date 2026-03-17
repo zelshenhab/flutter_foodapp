@@ -12,7 +12,6 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  /// setup Dio interceptors FIRST
   setupInterceptors(navigatorKey: appNavigatorKey);
 
   try {
@@ -44,7 +43,6 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Адам и Ева',
 
-      /// 🔑 important for interceptor redirects
       routes: {
         '/login': (_) => const LoginInfoPage(),
         '/home': (_) => const AppShell(),

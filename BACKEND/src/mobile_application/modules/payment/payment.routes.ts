@@ -7,3 +7,8 @@ export const paymentRouter = Router();
 
 paymentRouter.post("/create", requireAuth, PaymentController.createPayment);
 paymentRouter.post("/webhook", PaymentController.webhook);
+paymentRouter.get(
+  "/status/:paymentId",
+  requireAuth,
+  PaymentController.getStatus
+);

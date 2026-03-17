@@ -15,7 +15,6 @@ class PaymentApiService {
 
   PaymentApiService(this._dio);
 
-  /// POST /api/payment/create
   Future<PaymentCreateResult> createPayment(int orderId) async {
     final res = await _dio.post(
       '/payment/create',
@@ -24,11 +23,17 @@ class PaymentApiService {
       },
     );
 
-    final data = res.data as Map<String, dynamic>;
+    final data = Map<String, dynamic>.from(res.data as Map);
 
     return PaymentCreateResult(
       paymentId: (data['paymentId'] ?? '').toString(),
       confirmationUrl: (data['confirmationUrl'] ?? '').toString(),
     );
+  }
+
+  Future<String> checkPaymentStatus(String paymentId) async {
+    final res = await _dio.get('/payment/status/$paymentId');
+    final data = Map<String, dynamic>.from(res.data as Map);
+    return (data['status'] ?? '').toString();
   }
 }

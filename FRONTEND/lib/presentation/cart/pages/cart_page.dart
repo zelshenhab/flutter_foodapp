@@ -135,14 +135,17 @@ class _CartScaffold extends StatelessWidget {
           final state = context.read<CartBloc>().state;
           final amount = state.grandTotal;
           Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OnlinePaymentPage(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<CartBloc>(), // 🔥 PASS SAME INSTANCE
+              child: OnlinePaymentPage(
                 amount: amount,
                 description: 'Самовывоз: заказ из корзины',
               ),
             ),
-          );
+          ),
+        );
         },
       ),
     );

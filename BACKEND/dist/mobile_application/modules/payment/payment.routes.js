@@ -7,4 +7,5 @@ const auth_middleware_1 = require("../../../core/middlewares/auth.middleware");
 exports.paymentRouter = (0, express_1.Router)();
 exports.paymentRouter.post("/create", auth_middleware_1.requireAuth, payment_controller_1.PaymentController.createPayment);
 exports.paymentRouter.post("/webhook", payment_controller_1.PaymentController.webhook);
+exports.paymentRouter.get("/status/:paymentId", auth_middleware_1.requireAuth, payment_controller_1.PaymentController.getStatus);
 //# sourceMappingURL=payment.routes.js.map

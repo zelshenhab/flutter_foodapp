@@ -1,18 +1,17 @@
 import { supabase } from "../../../core/config/supabase";
-import { createPayment } from "../../../core/yookassa/yookassa.client";
+import {
+  createPayment,
+  getPayment,
+} from "../../../core/yookassa/yookassa.client";
 
 class PaymentService {
-
-  /**
-   * Create YooKassa payment
-   */
+  /// 🔹 CREATE PAYMENT
   async createPayment(orderId: number, userId: number) {
-
     const { data: order, error } = await supabase
       .from("Order")
       .select("*")
       .eq("id", orderId)
-      .eq("userId", userId)   // 🔐 important security check
+      .eq("userId", userId)
       .single();
 
     if (error || !order) {
@@ -29,14 +28,21 @@ class PaymentService {
       })
       .eq("id", orderId);
 
-    return payment.confirmation.confirmation_url;
+    return {
+      paymentId: payment.id,
+      confirmationUrl: payment.confirmation.confirmation_url,
+    };
   }
 
-  /**
-   * Called when payment confirmed
-   */
-  async markOrderPaid(paymentId: string) {
+  /// 🔥 CHECK PAYMENT STATUS (REAL SOURCE OF TRUTH)
+  async getPaymentStatus(paymentId: string) {
+    const payment = await getPayment(paymentId);
 
+    return payment.status; // pending | succeeded | canceled
+  }
+
+  /// 🔥 MARK ORDER PAID (used by webhook)
+  async markOrderPaid(paymentId: string) {
     const { data: order } = await supabase
       .from("Order")
       .select("*")
