@@ -149,7 +149,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                 children: [
                   _row('Сумма заказа', money(order.subtotal)),
                   if (order.deliveryFee > 0)
-                    _row('Доставка', money(order.deliveryFee)),
+                    _row('Сервис', money(order.deliveryFee)),
                   if (order.discount > 0)
                     _row('Скидка', '-${money(order.discount)}'),
                   const Divider(color: Color(0xFF2A2A2A)),

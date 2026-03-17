@@ -154,7 +154,7 @@ class OrderCard extends StatelessWidget {
                         style: const TextStyle(color: Colors.grey),
                       ),
                       Text(
-                        'Доставка: ${money(order.deliveryFee)}',
+                        'Сервис: ${money(order.deliveryFee)}',
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],
