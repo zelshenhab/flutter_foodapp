@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/presentation/orders/models/order_model.dart';
+import 'package:flutter_foodapp/presentation/orders/pages/order_details_page.dart';
+import '../../../data/api/order_api_service.dart';
+
 
 class PaymentSuccessPage extends StatelessWidget {
-  /// The real order ID returned from backend (OrderApiService)
   final int orderId;
-
-  /// The total order amount returned from backend (Number)
   final double total;
 
   const PaymentSuccessPage({
@@ -61,9 +62,27 @@ class PaymentSuccessPage extends StatelessWidget {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Возврат на первый экран (например, меню)
-                    Navigator.popUntil(context, (r) => r.isFirst);
+                  onPressed: () async {
+                    try {
+                      final api = OrderApiService();
+                      final data = await api.getOrderDetails(orderId);
+                      debugPrint('ORDER DATA 👉 $data');
+
+                      final order = OrderModel.fromJson(data);
+
+                      if (!context.mounted) return;
+
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsPage(order: order),
+                        ),
+                        (route) => false,
+                      );
+                    } catch (e) {
+                      // fallback
+                      Navigator.popUntil(context, (r) => r.isFirst);
+                    }
                   },
                   child: const Text('Готово'),
                 ),

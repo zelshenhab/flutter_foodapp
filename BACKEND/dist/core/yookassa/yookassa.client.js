@@ -16,7 +16,6 @@ const api = axios_1.default.create({
         "Content-Type": "application/json",
     },
 });
-/// ✅ CREATE PAYMENT
 async function createPayment(amount, orderId) {
     const res = await api.post("/payments", {
         amount: {
@@ -26,7 +25,7 @@ async function createPayment(amount, orderId) {
         capture: true,
         confirmation: {
             type: "redirect",
-            return_url: process.env.YOOKASSA_RETURN_URL, // adamandeve://payment-success
+            return_url: process.env.YOOKASSA_RETURN_URL,
         },
         description: `Order #${orderId}`,
         metadata: {
@@ -39,7 +38,6 @@ async function createPayment(amount, orderId) {
     });
     return res.data;
 }
-/// ✅ GET PAYMENT STATUS
 async function getPayment(paymentId) {
     const res = await api.get(`/payments/${paymentId}`);
     return res.data;

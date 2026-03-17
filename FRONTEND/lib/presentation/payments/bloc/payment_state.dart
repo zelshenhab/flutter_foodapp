@@ -4,6 +4,7 @@ enum PaymentStep {
   idle,
   creatingOrder,
   openingPayment,
+  verifyingPayment,
   success,
   failed,
 }
@@ -39,26 +40,23 @@ class PaymentState extends Equatable {
     Object? error = _sentinel,
     int? orderId,
     Object? paymentId = _sentinel,
+    Object? paymentUrl = _sentinel,
     double? amount,
     String? currency,
     Object? description = _sentinel,
-    Object? paymentUrl = _sentinel,
   }) {
     return PaymentState(
       step: step ?? this.step,
       loading: loading ?? this.loading,
       error: identical(error, _sentinel) ? this.error : error as String?,
       orderId: orderId ?? this.orderId,
-      paymentId:
-          identical(paymentId, _sentinel) ? this.paymentId : paymentId as String?,
+      paymentId: identical(paymentId, _sentinel) ? this.paymentId : paymentId as String?,
+      paymentUrl: identical(paymentUrl, _sentinel) ? this.paymentUrl : paymentUrl as String?,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       description: identical(description, _sentinel)
           ? this.description
           : description as String?,
-      paymentUrl: identical(paymentUrl, _sentinel)
-          ? this.paymentUrl
-          : paymentUrl as String?,
     );
   }
 

@@ -25,4 +25,18 @@ class OrderApiService {
 
     return res.data as Map<String, dynamic>;
   }
+
+Future<Map<String, dynamic>> getOrderDetails(int id) async {
+  final token = await _storage.read(key: 'auth_token');
+  if (token == null) throw Exception('Not authenticated');
+
+  final res = await dio.get(
+    '/orders/$id',
+    options: Options(headers: {'Authorization': 'Bearer $token'}),
+  );
+
+  final data = res.data;
+
+  return Map<String, dynamic>.from(data['data']);
+  }
 }

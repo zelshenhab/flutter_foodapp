@@ -53,22 +53,8 @@ class OnlinePaymentPage extends StatelessWidget {
 
             switch (result) {
               case PaymentWebResult.success:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PaymentSuccessPage(
-                    orderId: state.orderId!,
-                    total: state.amount,
-                  ),
-                ),
-              );
-
-              // 🔥 بعد navigation
-              Future.microtask(() {
-                context.read<CartBloc>().add(const CartRefreshed());
-              });
-
-              break;
+                context.read<PaymentBloc>().add(const PaymentVerifyRequested());
+                break;
 
               case PaymentWebResult.failed:
                 Navigator.pushReplacement(
@@ -87,11 +73,39 @@ class OnlinePaymentPage extends StatelessWidget {
                 break;
             }
           }
+
+          if (state.step == PaymentStep.success && state.orderId != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PaymentSuccessPage(
+                  orderId: state.orderId!,
+                  total: state.amount,
+                ),
+              ),
+            );
+
+            Future.microtask(() {
+              try {
+                context.read<CartBloc>().add(const CartRefreshed());
+              } catch (_) {}
+            });
+          }
+
+          if (state.step == PaymentStep.failed && state.error != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PaymentFailedPage(reason: state.error),
+              ),
+            );
+          }
         },
         builder: (context, state) {
           final isBusy = state.loading ||
               state.step == PaymentStep.creatingOrder ||
-              state.step == PaymentStep.openingPayment;
+              state.step == PaymentStep.openingPayment ||
+              state.step == PaymentStep.verifyingPayment;
 
           return Scaffold(
             appBar: AppBar(
@@ -106,7 +120,7 @@ class OnlinePaymentPage extends StatelessWidget {
                       const SizedBox(height: 12),
                       _summaryCard(state),
                       const SizedBox(height: 20),
-                      _payButton(context),
+                      _payButton(context, state),
                       if (state.error != null) ...[
                         const SizedBox(height: 12),
                         Text(
@@ -183,16 +197,18 @@ class OnlinePaymentPage extends StatelessWidget {
     );
   }
 
-  Widget _payButton(BuildContext context) {
+  Widget _payButton(BuildContext context, PaymentState state) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton.icon(
         icon: const Icon(Icons.payment),
         label: const Text('Оплатить заказ'),
-        onPressed: () {
-          context.read<PaymentBloc>().add(const PaymentPayPressed());
-        },
+        onPressed: state.loading
+            ? null
+            : () {
+                context.read<PaymentBloc>().add(const PaymentPayPressed());
+              },
       ),
     );
   }

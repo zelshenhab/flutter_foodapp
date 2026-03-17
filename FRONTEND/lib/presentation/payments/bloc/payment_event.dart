@@ -26,6 +26,13 @@ class PaymentPayPressed extends PaymentEvent {
   const PaymentPayPressed();
 }
 
+class PaymentVerifyRequested extends PaymentEvent {
+  const PaymentVerifyRequested();
+
+  @override
+  List<Object?> get props => [];
+}
+
 class PaymentReset extends PaymentEvent {
   const PaymentReset();
 }
