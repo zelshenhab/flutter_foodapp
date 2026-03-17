@@ -72,12 +72,11 @@ class PaymentSuccessPage extends StatelessWidget {
 
                       if (!context.mounted) return;
 
-                      Navigator.pushAndRemoveUntil(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (_) => OrderDetailsPage(order: order),
                         ),
-                        (route) => false,
                       );
                     } catch (e) {
                       // fallback
