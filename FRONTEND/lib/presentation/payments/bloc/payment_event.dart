@@ -26,11 +26,6 @@ class PaymentPayPressed extends PaymentEvent {
   const PaymentPayPressed();
 }
 
-/// User confirms that payment was completed in bank app (SBP)
-class PaymentConfirmPressed extends PaymentEvent {
-  const PaymentConfirmPressed();
-}
-
 class PaymentReset extends PaymentEvent {
   const PaymentReset();
 }

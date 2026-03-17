@@ -60,13 +60,13 @@ void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
             }
 
             /// request new tokens
-            final response = await dio.post(
+            final refreshResponse = await dio.post(
               '/auth/refresh',
               data: {'refreshToken': refreshToken},
             );
 
-            final newAccessToken = response.data['accessToken'];
-            final newRefreshToken = response.data['refreshToken'];
+            final newAccessToken = refreshResponse.data['accessToken'];
+            final newRefreshToken = refreshResponse.data['refreshToken'];
 
             if (newAccessToken == null) {
               throw Exception("Invalid refresh response");
@@ -82,16 +82,27 @@ void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
               );
             }
 
-            /// retry original request
-            final options = e.requestOptions;
+            /// retry original request with new token
+            final requestOptions = e.requestOptions;
 
-            options.headers['Authorization'] = 'Bearer $newAccessToken';
+            final opts = Options(
+              method: requestOptions.method,
+              headers: {
+                ...requestOptions.headers,
+                'Authorization': 'Bearer $newAccessToken',
+              },
+            );
 
-            final cloneReq = await dio.fetch(options);
+            final response = await dio.request(
+              requestOptions.path,
+              data: requestOptions.data,
+              queryParameters: requestOptions.queryParameters,
+              options: opts,
+            );
 
             _isRefreshing = false;
 
-            return handler.resolve(cloneReq);
+            return handler.resolve(response);
           } catch (_) {
             _isRefreshing = false;
 
@@ -111,6 +122,7 @@ void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
             }
           }
         }
+
         handler.next(e);
       },
     ),

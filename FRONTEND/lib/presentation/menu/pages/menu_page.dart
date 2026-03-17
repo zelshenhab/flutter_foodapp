@@ -31,7 +31,7 @@ class MenuPage extends StatelessWidget {
           child: BlocBuilder<MenuBloc, MenuState>(
             builder: (context, state) {
               final iconMap = <String, String>{
-                'shawarma': 'assets/images/Chicken-Shawarma-8.jpg',
+               /* 'shawarma': 'assets/images/Chicken-Shawarma-8.jpg',
                 'box': 'assets/images/Chicken-Shawarma-8.jpg',
                 'roll': 'assets/images/Chicken-Shawarma-8.jpg',
                 'eurobox': 'assets/images/Chicken-Shawarma-8.jpg',
@@ -39,7 +39,7 @@ class MenuPage extends StatelessWidget {
                 'salads': 'assets/images/Chicken-Shawarma-8.jpg',
                 'main': 'assets/images/Chicken-Shawarma-8.jpg',
                 'breakfast': 'assets/images/Chicken-Shawarma-8.jpg',
-                'sauces': 'assets/images/Chicken-Shawarma-8.jpg',
+                'sauces': 'assets/images/Chicken-Shawarma-8.jpg',*/
                 'kunafa': 'assets/images/kunafa.jpg',
                 'nuts': 'assets/images/mixnuts.jpg',
                 'gift-boxes': 'assets/images/Gift pistachios.jpg',

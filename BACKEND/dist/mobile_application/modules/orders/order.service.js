@@ -40,19 +40,17 @@ exports.getOrderDetail = getOrderDetail;
 exports.completeOrder = completeOrder;
 const supabase_1 = require("../../../core/config/supabase");
 const cartSvc = __importStar(require("../cart/cart.service"));
-const iiko_client_1 = require("../../../core/iiko/iiko.client");
-const iiko_constants_1 = require("../../../core/iiko/iiko.constants");
 /* ======================================================
    HELPERS
 ====================================================== */
 function getMenuItem(ci) {
-    if (!Array.isArray(ci.MenuItem) || ci.MenuItem.length === 0) {
+    if (!ci.MenuItem || typeof ci.MenuItem !== "object") {
         throw {
             status: 400,
             message: "One or more items are no longer available",
         };
     }
-    return ci.MenuItem[0];
+    return ci.MenuItem;
 }
 /* ======================================================
    PREVIEW
@@ -69,11 +67,14 @@ async function createOrder(userId, input) {
      * --------------------------------------- */
     const cartRec = await cartSvc.getCartRecord(userId);
     const cart = await cartSvc.getCart(userId);
+    console.log("USER ID:", userId);
+    console.log("CREATE ORDER INPUT:", input);
+    console.log("CART:", cart);
     if (!cart.items.length) {
         throw { status: 400, message: "Cart is empty" };
     }
     /* -----------------------------------------
-     * 2️⃣ CREATE ORDER (SUPABASE)
+     * 2️⃣ CREATE ORDER
      * --------------------------------------- */
     const { data: order, error: orderError } = await supabase_1.supabase
         .from("Order")
@@ -97,7 +98,7 @@ async function createOrder(userId, input) {
         throw { status: 500, message: "Failed to create order" };
     }
     /* -----------------------------------------
-     * 3️⃣ LOAD CART ITEMS + MENU ITEMS
+     * 3️⃣ LOAD CART ITEMS
      * --------------------------------------- */
     const { data: cartItems, error: cartItemsError } = await supabase_1.supabase
         .from("CartItem")
@@ -107,32 +108,20 @@ async function createOrder(userId, input) {
       quantity,
       unitPriceSnapshot,
       lineTotal,
-      MenuItem!inner (
+      MenuItem (
         id,
-        title,
-        iikoProductId
+        title
       )
     `)
         .eq("cartId", cartRec.id)
         .order("id", { ascending: true });
+    console.log("CART ITEMS:", cartItems);
     if (cartItemsError || !cartItems?.length) {
         console.error("❌ CART ITEMS ERROR:", cartItemsError);
         throw { status: 500, message: "Failed to fetch cart items" };
     }
     /* -----------------------------------------
-     * 4️⃣ VALIDATE MENU ITEMS (IMPORTANT)
-     * --------------------------------------- */
-    for (const ci of cartItems) {
-        const menuItem = getMenuItem(ci);
-        if (!menuItem.iikoProductId) {
-            throw {
-                status: 400,
-                message: `Item "${menuItem.title}" is not available for online payment`,
-            };
-        }
-    }
-    /* -----------------------------------------
-     * 5️⃣ CREATE ORDER ITEMS (SUPABASE)
+     * 4️⃣ CREATE ORDER ITEMS
      * --------------------------------------- */
     const orderItems = cartItems.map((ci) => {
         const menuItem = getMenuItem(ci);
@@ -152,39 +141,10 @@ async function createOrder(userId, input) {
         console.error("❌ ORDER ITEMS ERROR:", orderItemsError);
         throw { status: 500, message: "Failed to create order items" };
     }
+    console.log("ORDER ITEMS CREATED:", orderItems);
+    console.log("CLEARING CART:", cartRec.id);
     /* -----------------------------------------
-     * 6️⃣ SEND ORDER TO IIKO
-     * --------------------------------------- */
-    try {
-        const iikoResponse = await iiko_client_1.iikoClient.request("POST", "/order/create", {
-            organizationId: iiko_constants_1.IIKO_ORGANIZATION_ID,
-            order: {
-                externalNumber: `FOODAPP-${order.id}`,
-                items: cartItems.map((ci) => {
-                    const menuItem = getMenuItem(ci);
-                    return {
-                        productId: menuItem.iikoProductId,
-                        amount: ci.quantity,
-                        price: Math.round(Number(ci.unitPriceSnapshot)),
-                    };
-                }),
-            },
-        });
-        await supabase_1.supabase
-            .from("Order")
-            .update({ iikoOrderId: iikoResponse.orderInfo.id })
-            .eq("id", order.id);
-    }
-    catch (e) {
-        console.error("❌ IIKO ORDER CREATE ERROR:", e);
-        await supabase_1.supabase
-            .from("Order")
-            .update({ status: "failed" })
-            .eq("id", order.id);
-        throw { status: 500, message: "Failed to send order to iiko" };
-    }
-    /* -----------------------------------------
-     * 7️⃣ CLEAR CART
+     * 5️⃣ CLEAR CART
      * --------------------------------------- */
     await cartSvc.clearCart(cartRec.id);
     return {
@@ -209,8 +169,10 @@ async function listOrders(userId, opts) {
     if (opts.status)
         query = query.eq("status", opts.status);
     const { data, error } = await query;
-    if (error)
+    if (error) {
+        console.error("❌ LIST ORDERS ERROR:", error);
         throw { status: 500, message: "Failed to fetch orders" };
+    }
     return data ?? [];
 }
 /* ======================================================
@@ -244,6 +206,7 @@ async function completeOrder(userId, orderId) {
         .select()
         .single();
     if (error || !data) {
+        console.error("❌ COMPLETE ORDER ERROR:", error);
         throw { status: 500, message: "Failed to complete order" };
     }
     return data;

@@ -3,8 +3,7 @@ import 'package:equatable/equatable.dart';
 enum PaymentStep {
   idle,
   creatingOrder,
-  waitingForExternalPayment, // SBP / bank app
-  confirmingPayment,
+  openingPayment,
   success,
   failed,
 }
@@ -20,6 +19,8 @@ class PaymentState extends Equatable {
   final String currency;
   final String? description;
 
+  final String? paymentUrl;
+
   const PaymentState({
     this.step = PaymentStep.idle,
     this.loading = false,
@@ -28,6 +29,7 @@ class PaymentState extends Equatable {
     this.amount = 0,
     this.currency = 'RUB',
     this.description,
+    this.paymentUrl,
   });
 
   PaymentState copyWith({
@@ -38,6 +40,7 @@ class PaymentState extends Equatable {
     double? amount,
     String? currency,
     String? description,
+    String? paymentUrl,
   }) {
     return PaymentState(
       step: step ?? this.step,
@@ -47,6 +50,7 @@ class PaymentState extends Equatable {
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       description: description ?? this.description,
+      paymentUrl: paymentUrl ?? this.paymentUrl,
     );
   }
 
@@ -59,5 +63,6 @@ class PaymentState extends Equatable {
         amount,
         currency,
         description,
+        paymentUrl,
       ];
 }

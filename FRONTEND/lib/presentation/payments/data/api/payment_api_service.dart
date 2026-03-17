@@ -2,13 +2,19 @@ import 'package:dio/dio.dart';
 
 class PaymentApiService {
   final Dio _dio;
+
   PaymentApiService(this._dio);
 
-  /// POST /api/payment/confirm
-  Future<void> confirmPayment(int orderId) async {
-    await _dio.post(
-      '/api/payment/confirm',
-      data: {'orderId': orderId},
+  /// Create YooKassa payment
+  /// POST /api/payment/create
+  Future<String> createPayment(int orderId) async {
+    final res = await _dio.post(
+      '/payment/create',
+      data: {
+        'orderId': orderId,
+      },
     );
+
+    return res.data['confirmationUrl'];
   }
 }

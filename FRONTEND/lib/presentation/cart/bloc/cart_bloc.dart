@@ -120,7 +120,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       );
     }
 
-    emit(state.copyWith(items: updatedItems));
+    emit(_recalculateTotals(updatedItems));
 
     // sync backend
     try {
@@ -150,7 +150,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     // remove locally first (instant UI update)
     updatedItems.removeAt(index);
 
-    emit(state.copyWith(items: updatedItems));
+    emit(_recalculateTotals(updatedItems));
 
     try {
       await repo.removeItem(
@@ -162,6 +162,25 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       ));
     }
   }
+
+
+  CartState _recalculateTotals(List<CartItem> items) {
+  final subtotal = items.fold<double>(
+    0,
+    (sum, item) => sum + (item.item.price * item.qty),
+  );
+
+  final discount = state.discount;
+  final deliveryFee = state.deliveryFee;
+
+  final total = subtotal - discount + deliveryFee;
+
+  return state.copyWith(
+    items: items,
+    subtotal: subtotal,
+    total: total,
+  );
+}
 
   Future<void> _increaseQty(
     CartItemQtyIncreased e,
@@ -181,7 +200,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     updatedItems[index] = item.copyWith(qty: newQty);
 
-    emit(state.copyWith(items: updatedItems));
+    emit(_recalculateTotals(updatedItems));
 
     try {
       await repo.updateQuantity(
@@ -217,7 +236,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       updatedItems[index] = item.copyWith(qty: newQty);
     }
 
-    emit(state.copyWith(items: updatedItems));
+    emit(_recalculateTotals(updatedItems));
 
     try {
       await repo.updateQuantity(
