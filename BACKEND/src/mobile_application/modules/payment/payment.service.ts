@@ -5,7 +5,9 @@ import {
 } from "../../../core/yookassa/yookassa.client";
 
 class PaymentService {
+  /// ================= CREATE PAYMENT =================
   async createPayment(orderId: number, userId: number) {
+    ///  Get order
     const { data: order, error } = await supabase
       .from("Order")
       .select("*")
@@ -17,8 +19,42 @@ class PaymentService {
       throw new Error("Order not found");
     }
 
-    const payment = await createPayment(Number(order.total), orderId);
+    /// Get user email (REQUIRED for receipt)
+    const { data: user } = await supabase
+      .from("User")
+      .select("email")
+      .eq("id", userId)
+      .single();
 
+    const email = user?.email || "test@example.com";
+
+    /// Build receipt items
+    /// (for now: single item = whole order)
+    const items = [
+      {
+        description: `Order #${orderId}`,
+        quantity: "1.00",
+        amount: {
+          value: Number(order.total).toFixed(2),
+          currency: "RUB",
+        },
+        vat_code: 1, // safe default
+        
+            /// REQUIRED
+        payment_mode: "full_prepayment",
+        payment_subject: "commodity",
+      },
+    ];
+
+    /// Create YooKassa payment
+    const payment = await createPayment({
+      amount: Number(order.total),
+      orderId,
+      email,
+      items,
+    });
+
+    /// Save payment info
     await supabase
       .from("Order")
       .update({
@@ -34,11 +70,13 @@ class PaymentService {
     };
   }
 
+  /// ================= GET STATUS =================
   async getPaymentStatus(paymentId: string) {
     const payment = await getPayment(paymentId);
-    return payment.status as string; // pending | succeeded | canceled
+    return payment.status as string;
   }
 
+  /// ================= SYNC =================
   async syncOrderWithPayment(paymentId: string) {
     const payment = await getPayment(paymentId);
 
@@ -80,6 +118,7 @@ class PaymentService {
     return payment.status as string;
   }
 
+  /// ================= WEBHOOK =================
   async markOrderPaid(paymentId: string) {
     const { data: order, error } = await supabase
       .from("Order")

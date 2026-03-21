@@ -16,28 +16,43 @@ const api = axios_1.default.create({
         "Content-Type": "application/json",
     },
 });
-async function createPayment(amount, orderId) {
-    const res = await api.post("/payments", {
-        amount: {
-            value: amount.toFixed(2),
-            currency: "RUB",
-        },
-        capture: true,
-        confirmation: {
-            type: "redirect",
-            return_url: process.env.YOOKASSA_RETURN_URL,
-        },
-        description: `Order #${orderId}`,
-        metadata: {
-            orderId,
-        },
-    }, {
-        headers: {
-            "Idempotence-Key": `${Date.now()}-${orderId}`,
-        },
-    });
-    return res.data;
+/// ================= CREATE PAYMENT =================
+async function createPayment({ amount, orderId, email, items, }) {
+    try {
+        const res = await api.post("/payments", {
+            amount: {
+                value: amount.toFixed(2),
+                currency: "RUB",
+            },
+            capture: true,
+            confirmation: {
+                type: "redirect",
+                return_url: process.env.YOOKASSA_RETURN_URL,
+            },
+            description: `Order #${orderId}`,
+            metadata: {
+                orderId,
+            },
+            /// 🔥 REQUIRED FOR LIVE MODE
+            receipt: {
+                customer: {
+                    email,
+                },
+                items,
+            },
+        }, {
+            headers: {
+                "Idempotence-Key": `${Date.now()}-${orderId}`,
+            },
+        });
+        return res.data;
+    }
+    catch (error) {
+        console.error("❌ YooKassa ERROR:", error?.response?.data || error.message);
+        throw error;
+    }
 }
+/// ================= GET PAYMENT =================
 async function getPayment(paymentId) {
     const res = await api.get(`/payments/${paymentId}`);
     return res.data;
