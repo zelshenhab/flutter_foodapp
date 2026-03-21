@@ -20,7 +20,7 @@ class ProfileRepository {
       throw Exception('Unexpected response format: $data');
     }
 
-    return Map<String, dynamic>.from(data as Map);
+    return Map<String, dynamic>.from(data);
   }
 
   Future<Map<String, dynamic>> updateMe({
@@ -39,7 +39,7 @@ class ProfileRepository {
       throw Exception('Unexpected updateMe format: $data');
     }
 
-    return Map<String, dynamic>.from(data as Map);
+    return Map<String, dynamic>.from(data);
   }
 
   Future<Map<String, dynamic>> setAvatarUrl(String avatarUrl) async {
@@ -49,7 +49,7 @@ class ProfileRepository {
     if (data is! Map) {
       throw Exception('Unexpected avatar response: $data');
     }
-    return Map<String, dynamic>.from(data as Map);
+    return Map<String, dynamic>.from(data);
   }
 
   // Public profile
@@ -60,6 +60,6 @@ class ProfileRepository {
     if (data is! Map) {
       throw Exception('Unexpected profileById format: $data');
     }
-    return Map<String, dynamic>.from(data as Map);
+    return Map<String, dynamic>.from(data);
   }
 }

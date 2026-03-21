@@ -54,13 +54,16 @@ class AdminOrder extends Equatable {
   });
 
   factory AdminOrder.fromApi(Map<String, dynamic> json) {
+    final paymentStatus =
+        (json['paymentStatus'] ?? '').toString().toLowerCase();
+
     return AdminOrder(
       id: json['id'] as int,
       customer: json['user']?['name'] ?? "Клиент",
       total: (json['total'] as num).toDouble(),
       status: json['status'] as String,
       createdAt: DateTime.parse(json['createdAt']),
-      paid: json['paymentStatus'] == "paid",
+      paid: paymentStatus == "paid", // ✅ FIXED
       paymentMethod: json['paymentMethod'] ?? "card",
       items: (json['items'] ?? [])
           .map<AdminOrderItem>((e) => AdminOrderItem.fromApi(e))

@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 
 export function errorMiddleware(err: any, _req: Request, res: Response, _next: NextFunction) {
   console.error("[Error Middleware]", err);

@@ -4,7 +4,7 @@ ThemeData buildAdminTheme() {
   const bg = Color(0xFF121212);
   const surface = Color(0xFF1E1E1E);
   const text = Color(0xFFEDEDED);
-  const accent = Color(0xFFFF7A00);
+  const accent = Color.fromARGB(255, 199, 160, 34);
 
   return ThemeData.dark().copyWith(
     scaffoldBackgroundColor: bg,
@@ -12,7 +12,6 @@ ThemeData buildAdminTheme() {
     colorScheme: const ColorScheme.dark(
       primary: accent,
       secondary: accent,
-      background: bg,
       surface: surface,
     ),
     appBarTheme: const AppBarTheme(

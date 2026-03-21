@@ -1,6 +1,5 @@
 // lib/presentation/cart/bloc/cart_state.dart
 import 'package:equatable/equatable.dart';
-import '../../menu/models/menu_item.dart';
 import '../models/cart_item.dart';
 import '../models/payment_method.dart';
 

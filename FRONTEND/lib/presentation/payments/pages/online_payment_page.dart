@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:dio/dio.dart';
+import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
+import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
 
 import '../bloc/payment_bloc.dart';
 import '../bloc/payment_event.dart';
 import '../bloc/payment_state.dart';
-
-import 'payment_success_page.dart';
 import 'payment_failed_page.dart';
-import 'payment_in_development_page.dart';
+import 'payment_success_page.dart';
+import 'payment_webview_page.dart';
 
 class OnlinePaymentPage extends StatelessWidget {
   final double amount;
@@ -27,15 +27,8 @@ class OnlinePaymentPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PaymentBloc(
-        dio: Dio(
-          BaseOptions(
-            baseUrl: 'https://adameve-gamma.vercel.app/api', 
-            connectTimeout: const Duration(seconds: 10),
-            receiveTimeout: const Duration(seconds: 10),
-          ),
-        ),
-      )..add(
+      create: (_) => PaymentBloc()
+        ..add(
           PaymentStarted(
             amount: amount,
             currency: currency,
@@ -43,9 +36,45 @@ class OnlinePaymentPage extends StatelessWidget {
           ),
         ),
       child: BlocConsumer<PaymentBloc, PaymentState>(
-        listenWhen: (p, n) => p.step != n.step,
-        listener: (context, state) {
-          if (state.step == PaymentStep.success) {
+        listenWhen: (p, n) =>
+            p.step != n.step || p.paymentUrl != n.paymentUrl,
+        listener: (context, state) async {
+          if (state.step == PaymentStep.openingPayment &&
+              state.paymentUrl != null &&
+              state.orderId != null) {
+            final result = await Navigator.push<PaymentWebResult>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PaymentWebViewPage(url: state.paymentUrl!),
+              ),
+            );
+
+            if (!context.mounted) return;
+
+            switch (result) {
+              case PaymentWebResult.success:
+                context.read<PaymentBloc>().add(const PaymentVerifyRequested());
+                break;
+
+              case PaymentWebResult.failed:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PaymentFailedPage(
+                      reason: 'Платёж был отклонён.',
+                    ),
+                  ),
+                );
+                break;
+
+              case PaymentWebResult.cancelled:
+              case null:
+                context.read<PaymentBloc>().add(const PaymentReset());
+                break;
+            }
+          }
+
+          if (state.step == PaymentStep.success && state.orderId != null) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -55,23 +84,34 @@ class OnlinePaymentPage extends StatelessWidget {
                 ),
               ),
             );
+
+            Future.microtask(() {
+              try {
+                context.read<CartBloc>().add(const CartRefreshed());
+              } catch (_) {}
+            });
           }
 
-          if (state.step == PaymentStep.failed) {
+          if (state.step == PaymentStep.failed && state.error != null) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (_) => PaymentFailedPage(
-                  reason: state.error,
-                ),
+                builder: (_) => PaymentFailedPage(reason: state.error),
               ),
             );
           }
         },
         builder: (context, state) {
+          final isBusy = state.loading ||
+              state.step == PaymentStep.creatingOrder ||
+              state.step == PaymentStep.openingPayment ||
+              state.step == PaymentStep.verifyingPayment;
+
           return Scaffold(
-            appBar: AppBar(title: const Text('Онлайн-оплата')),
-            body: state.loading
+            appBar: AppBar(
+              title: const Text('Онлайн-оплата'),
+            ),
+            body: isBusy
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(
                     padding: const EdgeInsets.all(16),
@@ -79,21 +119,13 @@ class OnlinePaymentPage extends StatelessWidget {
                       _restaurantCard(),
                       const SizedBox(height: 12),
                       _summaryCard(state),
-                      const SizedBox(height: 16),
-
-                      if (state.step == PaymentStep.waitingForExternalPayment)
-                        _sbpBlock(context),
-
-                      if (state.step == PaymentStep.idle ||
-                          state.step == PaymentStep.failed)
-                        _payButton(context),
-
+                      const SizedBox(height: 20),
+                      _payButton(context, state),
                       if (state.error != null) ...[
                         const SizedBox(height: 12),
                         Text(
                           state.error!,
-                          style:
-                              const TextStyle(color: Colors.redAccent),
+                          style: const TextStyle(color: Colors.redAccent),
                         ),
                       ],
                     ],
@@ -104,8 +136,6 @@ class OnlinePaymentPage extends StatelessWidget {
     );
   }
 
-  /// ---------------- UI blocks ----------------
-
   Widget _restaurantCard() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -114,9 +144,12 @@ class OnlinePaymentPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF2A2A2A)),
       ),
-      child: Row(
-        children: const [
-          Icon(Icons.restaurant, color: Color(0xFFFF7A00)),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.restaurant,
+            color: Color.fromARGB(255, 199, 160, 34),
+          ),
           SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -156,7 +189,7 @@ class OnlinePaymentPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Оплата через СБП / банковское приложение',
+            'Онлайн-оплата банковской картой',
             style: TextStyle(color: Color(0xFFA7A7A7)),
           ),
         ],
@@ -164,60 +197,19 @@ class OnlinePaymentPage extends StatelessWidget {
     );
   }
 
-  Widget _payButton(BuildContext context) {
+  Widget _payButton(BuildContext context, PaymentState state) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton.icon(
-        icon: const Icon(Icons.qr_code),
-        label: const Text('Перейти к оплате'),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const PaymentInDevelopmentPage(),
-            ),
-          );
-        },
+        icon: const Icon(Icons.payment),
+        label: const Text('Оплатить заказ'),
+        onPressed: state.loading
+            ? null
+            : () {
+                context.read<PaymentBloc>().add(const PaymentPayPressed());
+              },
       ),
-    );
-  }
-
-  Widget _sbpBlock(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2A2A2A)),
-          ),
-          child: Column(
-            children: const [
-              Icon(Icons.account_balance, size: 48, color: Colors.greenAccent),
-              SizedBox(height: 12),
-              Text(
-                'Оплатите заказ через СБП\nв вашем банковском приложении',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 48,
-          child: ElevatedButton(
-            onPressed: () {
-              context
-                  .read<PaymentBloc>()
-                  .add(const PaymentConfirmPressed());
-            },
-            child: const Text('Я оплатил'),
-          ),
-        ),
-      ],
     );
   }
 }

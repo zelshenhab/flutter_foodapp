@@ -31,7 +31,7 @@ class MenuPage extends StatelessWidget {
           child: BlocBuilder<MenuBloc, MenuState>(
             builder: (context, state) {
               final iconMap = <String, String>{
-                'shawarma': 'assets/images/Chicken-Shawarma-8.jpg',
+               /* 'shawarma': 'assets/images/Chicken-Shawarma-8.jpg',
                 'box': 'assets/images/Chicken-Shawarma-8.jpg',
                 'roll': 'assets/images/Chicken-Shawarma-8.jpg',
                 'eurobox': 'assets/images/Chicken-Shawarma-8.jpg',
@@ -39,7 +39,14 @@ class MenuPage extends StatelessWidget {
                 'salads': 'assets/images/Chicken-Shawarma-8.jpg',
                 'main': 'assets/images/Chicken-Shawarma-8.jpg',
                 'breakfast': 'assets/images/Chicken-Shawarma-8.jpg',
-                'sauces': 'assets/images/Chicken-Shawarma-8.jpg',
+                'sauces': 'assets/images/Chicken-Shawarma-8.jpg',*/
+                'kunafa': 'assets/images/kunafa.jpg',
+                'nuts': 'assets/images/mixnuts.jpg',
+                'gift-boxes': 'assets/images/Gift pistachios.jpg',
+                'dried-fruits': 'assets/images/Assorted dried fruits.jpg',
+                'assorted-sweets': 'assets/images/Assorted Nest1.jpg',
+                'cookies': 'assets/images/COOKIES BARAZE.jpg',
+                'baklava': 'assets/images/Turkish baklava with walnuts.jpg',
               };
 
               if (state.loading && state.items.isEmpty) {
@@ -76,7 +83,13 @@ class MenuPage extends StatelessWidget {
                 slivers: [
                   const SliverToBoxAdapter(child: MenuHeader()),
                   const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                  const SliverToBoxAdapter(child: MenuSearchBar()),
+                  SliverToBoxAdapter(
+                      child: MenuSearchBar(
+                        onChanged: (q) {
+                          context.read<MenuBloc>().add(MenuSearchChanged(q));
+                        },
+                      ),
+                    ),
                   const SliverToBoxAdapter(child: PromoBanner()),
 
                   const SliverPadding(
@@ -129,7 +142,7 @@ class MenuPage extends StatelessWidget {
 
                             // Dispatch to CartBloc -> will call POST /cart/items
                             context.read<CartBloc>().add(
-                              CartAddItem(itemId: numericId, quantity: 1),
+                              CartItemAdded(item, quantity: 1),
                             );
                           },
                         );

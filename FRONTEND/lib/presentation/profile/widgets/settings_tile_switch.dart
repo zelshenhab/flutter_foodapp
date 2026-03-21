@@ -17,7 +17,7 @@ class SettingsTileSwitch extends StatelessWidget {
       title: Text(title),
       value: value,
       onChanged: onChanged,
-      activeThumbColor: Colors.orange,
+      activeThumbColor: Color.fromARGB(255, 199, 160, 34),
     );
   }
 }

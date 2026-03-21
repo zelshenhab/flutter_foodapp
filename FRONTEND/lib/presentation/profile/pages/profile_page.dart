@@ -111,7 +111,7 @@ class ProfilePage extends StatelessWidget {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.history,
-                          color: Colors.orangeAccent),
+                          color: Color.fromARGB(255, 199, 160, 34)),
                       title: const Text("Посмотреть заказы"),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
@@ -155,7 +155,7 @@ class ProfilePage extends StatelessWidget {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.support_agent,
-                          color: Colors.orangeAccent),
+                          color: Color.fromARGB(255, 199, 160, 34)),
                       title: const Text("Связаться с поддержкой"),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
@@ -286,7 +286,7 @@ class ProfilePage extends StatelessWidget {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.orangeAccent),
+        borderSide: const BorderSide(color: Color.fromARGB(255, 199, 160, 34)),
       ),
     );
   }

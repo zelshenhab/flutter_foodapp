@@ -24,7 +24,7 @@ String _statusText(String status) {
 Color _statusColor(String status) {
   switch (status) {
     case 'pending':
-      return Colors.orangeAccent;
+      return Color.fromARGB(255, 199, 160, 34);
     case 'completed':
       return Colors.greenAccent;
     case 'cancelled':
@@ -102,7 +102,7 @@ class OrderCard extends StatelessWidget {
                 Text(
                   order.paymentMethod.toUpperCase(),
                   style: const TextStyle(
-                    color: Colors.orangeAccent,
+                    color: Color.fromARGB(255, 199, 160, 34),
                     fontSize: 12,
                   ),
                 ),
@@ -154,7 +154,7 @@ class OrderCard extends StatelessWidget {
                         style: const TextStyle(color: Colors.grey),
                       ),
                       Text(
-                        'Доставка: ${money(order.deliveryFee)}',
+                        'Сервис: ${money(order.deliveryFee)}',
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],

@@ -16,3 +16,12 @@ class MenuCategorySelected extends MenuEvent {
 }
 
 class MenuRefreshed extends MenuEvent {}
+
+class MenuSearchChanged extends MenuEvent {
+  final String query;
+
+  const MenuSearchChanged(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}

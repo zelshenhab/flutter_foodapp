@@ -22,7 +22,7 @@ class TicketsPage extends StatelessWidget {
 }
 
 class _TicketsView extends StatefulWidget {
-  const _TicketsView({super.key});
+  const _TicketsView();
 
   @override
   State<_TicketsView> createState() => _TicketsViewState();
@@ -146,7 +146,7 @@ class _TicketsViewState extends State<_TicketsView> {
         const SizedBox(width: 8),
         _KpiCard(label: 'Открыты', value: '${s.openCount}', color: Colors.green),
         const SizedBox(width: 8),
-        _KpiCard(label: 'Закрыты', value: '${s.closedCount}', color: Colors.orange),
+        _KpiCard(label: 'Закрыты', value: '${s.closedCount}', color: Color.fromARGB(255, 199, 160, 34)),
       ],
     );
   }
@@ -286,7 +286,7 @@ class _TicketFilter extends StatelessWidget {
     return SizedBox(
       width: 160,
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         items: items,
         onChanged: (v) => onChanged(v ?? 'all'),
         decoration: const InputDecoration(labelText: 'Статус'),

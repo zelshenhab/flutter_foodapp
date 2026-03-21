@@ -1,12 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
 
 class Env {
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://adameve-gamma.vercel.app/api',
+    defaultValue: 'https://adam-eve-ebon.vercel.app/api',
   );
 }
 
@@ -18,55 +17,110 @@ final dio = Dio(
   ),
 );
 
+final storage = const FlutterSecureStorage();
+
+bool _isRefreshing = false;
 bool _isRedirecting = false;
 
-/// ✅ Setup Dio interceptors globally (SAFE VERSION)
 void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
-  const storage = FlutterSecureStorage();
-
-  // 🔥 VERY IMPORTANT — prevent stacking interceptors
   dio.interceptors.clear();
 
   dio.interceptors.add(
     InterceptorsWrapper(
+      /// Attach access token
       onRequest: (options, handler) async {
         try {
           final token = await storage.read(key: 'auth_token');
 
-          if (token != null &&
-              token.isNotEmpty &&
-              !JwtDecoder.isExpired(token)) {
+          if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
-        } catch (_) {
-          // Ignore storage errors
-        }
+        } catch (_) {}
 
         handler.next(options);
       },
+
+      /// Handle errors
       onError: (DioException e, handler) async {
-        final msg = e.response?.data.toString() ?? e.message ?? '';
+        final statusCode = e.response?.statusCode;
 
-        final isUnauthorized =
-            e.response?.statusCode == 401 ||
-            msg.contains('jwt expired') ||
-            msg.contains('TokenExpiredError');
-
-        if (isUnauthorized && !_isRedirecting) {
-          _isRedirecting = true;
-
+        if (statusCode == 401) {
           try {
-            await storage.delete(key: 'auth_token');
-          } catch (_) {}
+            /// prevent multiple refresh calls
+            if (_isRefreshing) {
+              return handler.next(e);
+            }
 
-          // 🔥 Navigate SAFELY after frame
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            navigatorKey?.currentState?.pushNamedAndRemoveUntil(
-              '/login',
-              (route) => false,
+            _isRefreshing = true;
+
+            final refreshToken = await storage.read(key: 'refresh_token');
+
+            if (refreshToken == null) {
+              throw Exception("No refresh token");
+            }
+
+            /// request new tokens
+            final refreshResponse = await dio.post(
+              '/auth/refresh',
+              data: {'refreshToken': refreshToken},
             );
-            _isRedirecting = false;
-          });
+
+            final newAccessToken = refreshResponse.data['accessToken'];
+            final newRefreshToken = refreshResponse.data['refreshToken'];
+
+            if (newAccessToken == null) {
+              throw Exception("Invalid refresh response");
+            }
+
+            /// save new tokens
+            await storage.write(key: 'auth_token', value: newAccessToken);
+
+            if (newRefreshToken != null) {
+              await storage.write(
+                key: 'refresh_token',
+                value: newRefreshToken,
+              );
+            }
+
+            /// retry original request with new token
+            final requestOptions = e.requestOptions;
+
+            final opts = Options(
+              method: requestOptions.method,
+              headers: {
+                ...requestOptions.headers,
+                'Authorization': 'Bearer $newAccessToken',
+              },
+            );
+
+            final response = await dio.request(
+              requestOptions.path,
+              data: requestOptions.data,
+              queryParameters: requestOptions.queryParameters,
+              options: opts,
+            );
+
+            _isRefreshing = false;
+
+            return handler.resolve(response);
+          } catch (_) {
+            _isRefreshing = false;
+
+            /// refresh failed → logout
+            await storage.delete(key: 'auth_token');
+            await storage.delete(key: 'refresh_token');
+
+            if (!_isRedirecting) {
+              _isRedirecting = true;
+
+              if (navigatorKey?.currentState != null) {
+                navigatorKey!.currentState!.pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              }
+            }
+          }
         }
 
         handler.next(e);

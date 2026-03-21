@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:maps_launcher/maps_launcher.dart';
 
 class MenuHeader extends StatelessWidget {
   const MenuHeader({super.key});
+
+  void _openMap() {
+    MapsLauncher.launchQuery("ул. Пушкина 15, Казань");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,42 +19,52 @@ class MenuHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // اسم المطعم + أيقونة الحساب (placeholder)
           Row(
             children: [
               const Expanded(
                 child: Text(
                   'Адам и Ева',
                   style: TextStyle(
-                    color: text, fontSize: 22, fontWeight: FontWeight.w800),
+                      color: text,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800),
                 ),
               ),
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: const BoxDecoration(
-                  color: chipBg, shape: BoxShape.circle),
-                child: const Icon(Icons.person_outline, color: text, size: 20),
+                    color: chipBg, shape: BoxShape.circle),
+                child:
+                    const Icon(Icons.person_outline, color: text, size: 20),
               ),
             ],
           ),
           const SizedBox(height: 10),
 
-          // الموقع
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: chipBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF2A2A2A)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.location_on_outlined, size: 16, color: muted),
-                SizedBox(width: 6),
-                Text('Kazan, Russia',
-                    style: TextStyle(color: muted, fontSize: 13)),
-              ],
+          /// LOCATION BUTTON
+          GestureDetector(
+            onTap: _openMap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: chipBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_on_outlined,
+                      size: 16, color: muted),
+                  SizedBox(width: 6),
+                  Text(
+                    'Kazan, Russia',
+                    style: TextStyle(color: muted, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

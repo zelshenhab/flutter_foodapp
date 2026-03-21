@@ -28,7 +28,7 @@ export async function sendOtpEmailSMTP(params: {
   const { to, code, ttlMinutes } = params;
 
   await transporter.sendMail({
-    from: smtpFrom,
+    from: `"Adam&Eva" <${smtpFrom}>`,
     to,
     subject: "Your verification code",
     text: `Your verification code is ${code}. It expires in ${ttlMinutes} minutes.`,

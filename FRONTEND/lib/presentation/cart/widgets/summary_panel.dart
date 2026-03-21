@@ -39,7 +39,7 @@ class SummaryPanel extends StatelessWidget {
 
               // Доставка (покажем только если НЕ pickup ولها قيمة > 0)
               if (!pickup && state.deliveryFee > 0)
-                _row('Доставка', money(state.deliveryFee)),
+                _row('Сервис', money(state.deliveryFee)),
 
               const Divider(color: Color(0xFF2A2A2A)),
 

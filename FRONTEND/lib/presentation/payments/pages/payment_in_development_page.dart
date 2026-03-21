@@ -13,7 +13,7 @@ class PaymentInDevelopmentPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              Icon(Icons.construction, size: 64, color: Colors.orange),
+              Icon(Icons.construction, size: 64, color: Color.fromARGB(255, 236, 192, 48)),
               SizedBox(height: 16),
               Text(
                 'Функция оплаты ещё в разработке',

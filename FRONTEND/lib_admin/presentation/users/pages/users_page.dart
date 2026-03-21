@@ -143,7 +143,7 @@ class UsersPage extends StatelessWidget {
                                     child: DataTable(
                                       headingTextStyle: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.orangeAccent,
+                                        color: Color.fromARGB(255, 199, 160, 34),
                                       ),
                                       dataTextStyle: const TextStyle(color: Colors.white),
                                       columns: const [
@@ -192,8 +192,8 @@ class UsersPage extends StatelessWidget {
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                 decoration: BoxDecoration(
                                                   color: user.blocked 
-                                                      ? Colors.red.withOpacity(0.2) 
-                                                      : Colors.green.withOpacity(0.2),
+                                                      ? Colors.red.withValues(alpha:0.2) 
+                                                      : Colors.green.withValues(alpha:0.2),
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
@@ -296,10 +296,10 @@ class UsersPage extends StatelessWidget {
   }
 
   Widget _buildStatCard(String title, String value, Color color) {
-    return Container(
+    return SizedBox(
       width: 180,
       child: Card(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -331,7 +331,7 @@ class UsersPage extends StatelessWidget {
   Color _getRoleColor(String role) {
     switch (role) {
       case 'admin':
-        return Colors.orange;
+        return Color.fromARGB(255, 199, 160, 34);
       case 'manager':
         return Colors.purple;
       case 'customer':
@@ -368,7 +368,7 @@ class UsersPage extends StatelessWidget {
             const Text('Выберите новую роль:'),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: currentRole,
+              initialValue: currentRole,
               items: const [
                 DropdownMenuItem(value: 'customer', child: Text('Клиент')),
                 DropdownMenuItem(value: 'manager', child: Text('Менеджер')),

@@ -18,7 +18,7 @@ class SupportPage extends StatelessWidget {
 }
 
 class _SupportView extends StatefulWidget {
-  const _SupportView({super.key});
+  const _SupportView();
 
   @override
   State<_SupportView> createState() => _SupportViewState();
@@ -37,7 +37,6 @@ class _SupportViewState extends State<_SupportView> {
 
   @override
   Widget build(BuildContext context) {
-    const cardColor = Color(0xFF1A1A1A);
     const border = Color(0xFF2A2A2A);
 
     return Scaffold(
@@ -71,33 +70,26 @@ class _SupportViewState extends State<_SupportView> {
                     _contactTile(
                       icon: Icons.call,
                       title: 'Позвонить',
-                      subtitle: '+7 999 000-00-00',
-                      onTap: () => openTel('+7 999 000-00-00'),
+                      subtitle: '+7 (987) 291-33-66',
+                      onTap: () => openTel('+7 (987) 291-33-66'),
                     ),
                     const Divider(color: border),
                     _contactTile(
                       icon: Icons.chat,
                       title: 'WhatsApp',
-                      subtitle: 'Быстрый чат',
+                      subtitle: '+7 (987) 291-33-66',
                       onTap: () => openWhatsApp(
-                        '+79990000000',
+                        '+7 (987) 291-33-66',
                         message: 'Здравствуйте!',
                       ),
                     ),
                     const Divider(color: border),
                     _contactTile(
-                      icon: Icons.send,
-                      title: 'Telegram',
-                      subtitle: '@adam_eva_support',
-                      onTap: () => openTelegram('adam_eva_support'),
-                    ),
-                    const Divider(color: border),
-                    _contactTile(
                       icon: Icons.email_outlined,
                       title: 'Email',
-                      subtitle: 'support@adam-eva.ru',
+                      subtitle: 'kauroah@gmail.com',
                       onTap: () => openEmail(
-                        'support@adam-eva.ru',
+                        'kauroah@gmail.com',
                         subject: 'Поддержка',
                       ),
                     ),
@@ -246,7 +238,7 @@ class _SupportViewState extends State<_SupportView> {
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: Colors.orangeAccent),
+      leading: Icon(icon, color: Color.fromARGB(255, 199, 160, 34)),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.chevron_right),

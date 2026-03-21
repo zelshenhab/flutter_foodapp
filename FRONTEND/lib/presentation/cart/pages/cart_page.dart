@@ -94,7 +94,7 @@ class _CartScaffold extends StatelessWidget {
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(.25),
+                            color: Color.fromARGB(255, 255, 206, 44),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.delete, color: Colors.white),
@@ -135,14 +135,17 @@ class _CartScaffold extends StatelessWidget {
           final state = context.read<CartBloc>().state;
           final amount = state.grandTotal;
           Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => OnlinePaymentPage(
+          context,
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<CartBloc>(), // 🔥 PASS SAME INSTANCE
+              child: OnlinePaymentPage(
                 amount: amount,
                 description: 'Самовывоз: заказ из корзины',
               ),
             ),
-          );
+          ),
+        );
         },
       ),
     );

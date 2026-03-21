@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinput/pinput.dart';
-
+import '../../../core/services/notification_service.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -16,7 +16,7 @@ class LoginOtpPage extends StatelessWidget {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
         listenWhen: (p, c) => p.step != c.step || p.error != c.error,
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state.error != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.error!)),
@@ -28,8 +28,9 @@ class LoginOtpPage extends StatelessWidget {
           }
 
           if (state.step == AuthStep.success) {
-            final fullName = '${state.name}'.trim();
-            // IMPORTANT: pass surname separately too
+
+            await NotificationService.showLoginNotification();
+            final fullName = state.name.trim();
             if (!context.mounted) return;
             Navigator.pushAndRemoveUntil(
               context,
@@ -98,7 +99,7 @@ class LoginOtpPage extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E1E1E),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.orangeAccent),
+                          border: Border.all(color: Color.fromARGB(255, 199, 160, 34)),
                         ),
                       ),
                     ),
@@ -110,7 +111,7 @@ class LoginOtpPage extends StatelessWidget {
                       height: 48,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF7A00),
+                          backgroundColor: const Color.fromARGB(255, 199, 160, 34),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -166,7 +167,7 @@ class _BrandTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShaderMask(
       shaderCallback: (bounds) => const LinearGradient(
-        colors: [Color(0xFFFF7A00), Color(0xFFFFA24D)],
+        colors: [Color.fromARGB(255, 199, 160, 34), Color.fromARGB(255, 198, 167, 66)],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
       ).createShader(bounds),

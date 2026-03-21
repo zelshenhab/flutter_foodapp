@@ -20,7 +20,7 @@ class BonusesCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            const Icon(Icons.stars_rounded, size: 28, color: Colors.orangeAccent),
+            const Icon(Icons.stars_rounded, size: 28, color: Color.fromARGB(255, 199, 160, 34)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

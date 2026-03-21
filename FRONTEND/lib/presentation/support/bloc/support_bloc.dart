@@ -16,7 +16,6 @@ class SupportBloc extends Bloc<SupportEvent, SupportState> {
     emit(state.copyWith(sending: true, error: null, successMessage: null));
 
     try {
-      // TODO: استبدل بهذا نداء API الحقيقي لإرسال التذكرة
       await Future.delayed(const Duration(seconds: 1));
       // مثال رقم تذكرة مولد:
       final ticketId = DateTime.now().millisecondsSinceEpoch.toString().substring(7);

@@ -40,7 +40,6 @@ class _AppShellState extends State<AppShell> {
         BlocProvider(create: (_) => ProfileBloc()..add(const ProfileStarted())),
       ],
       child: Builder(builder: (context) {
-        // Apply initial name if coming from OTP registration
         if (!_appliedInitialProfile &&
             (widget.initialName != null && widget.initialName!.isNotEmpty)) {
           _appliedInitialProfile = true;

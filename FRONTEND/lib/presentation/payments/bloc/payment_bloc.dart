@@ -1,28 +1,24 @@
 import 'dart:developer' as dev;
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:dio/dio.dart';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../core/api_client.dart';
 import '../../../data/api/order_api_service.dart';
 import '../data/api/payment_api_service.dart';
 import 'payment_event.dart';
 import 'payment_state.dart';
 
 class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
-  PaymentBloc({required Dio dio})
-      : _dio = dio,
-        super(const PaymentState()) {
+  PaymentBloc() : super(const PaymentState()) {
     on<PaymentStarted>(_onStarted);
     on<PaymentPayPressed>(_onPay);
-    on<PaymentConfirmPressed>(_onConfirm);
-    on<PaymentReset>((_, emit) => emit(const PaymentState()));
+    on<PaymentVerifyRequested>(_onVerify);
+    on<PaymentReset>(_onReset);
   }
 
-  final Dio _dio;
+  final OrderApiService _orderApi = OrderApiService();
+  PaymentApiService get _paymentApi => PaymentApiService(dio);
 
-  OrderApiService get _orderApi => OrderApiService();
-  PaymentApiService get _paymentApi => PaymentApiService(_dio);
-
-  /// Initialize payment page
   Future<void> _onStarted(
     PaymentStarted e,
     Emitter<PaymentState> emit,
@@ -30,25 +26,32 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     emit(
       state.copyWith(
         step: PaymentStep.idle,
+        loading: false,
+        error: null,
         amount: e.amount,
         currency: e.currency,
         description: e.description ?? 'Онлайн-оплата',
-        error: null,
         orderId: null,
+        paymentId: null,
+        paymentUrl: null,
       ),
     );
   }
 
-  /// Step 1: create order
   Future<void> _onPay(
     PaymentPayPressed e,
     Emitter<PaymentState> emit,
   ) async {
+    if (state.loading) return;
+
     emit(
       state.copyWith(
         step: PaymentStep.creatingOrder,
         loading: true,
         error: null,
+        orderId: null,
+        paymentId: null,
+        paymentUrl: null,
       ),
     );
 
@@ -60,38 +63,47 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       );
 
       final orderId = (order['orderId'] as num).toInt();
-      dev.log('🟢 ORDER CREATED: $orderId');
+
+      final payment = await _paymentApi.createPayment(orderId);
+
+      if (payment.confirmationUrl.isEmpty) {
+        throw Exception('Empty confirmationUrl');
+      }
 
       emit(
         state.copyWith(
           loading: false,
+          step: PaymentStep.openingPayment,
           orderId: orderId,
-          step: PaymentStep.waitingForExternalPayment,
+          paymentId: payment.paymentId.isEmpty ? null : payment.paymentId,
+          paymentUrl: payment.confirmationUrl,
+          error: null,
         ),
       );
     } catch (e, st) {
-      dev.log('🔴 ORDER CREATE FAILED: $e', stackTrace: st);
+      dev.log('🔴 PAYMENT ERROR: $e', stackTrace: st);
+
       emit(
         state.copyWith(
           loading: false,
-          step: PaymentStep.failed,
-          error: 'Не удалось создать заказ',
+          step: PaymentStep.idle,
+          error: 'Не удалось создать оплату. Попробуйте снова.',
         ),
       );
     }
   }
 
-  /// Step 2: user confirms payment (SBP done)
-  Future<void> _onConfirm(
-    PaymentConfirmPressed e,
+  Future<void> _onVerify(
+    PaymentVerifyRequested e,
     Emitter<PaymentState> emit,
   ) async {
-    final orderId = state.orderId;
-    if (orderId == null) {
+    final paymentId = state.paymentId;
+    if (paymentId == null || paymentId.isEmpty) {
       emit(
         state.copyWith(
           step: PaymentStep.failed,
-          error: 'Заказ не найден',
+          loading: false,
+          error: 'Не найден paymentId для проверки.',
         ),
       );
       return;
@@ -99,32 +111,63 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
     emit(
       state.copyWith(
-        step: PaymentStep.confirmingPayment,
+        step: PaymentStep.verifyingPayment,
         loading: true,
         error: null,
       ),
     );
 
     try {
-      await _paymentApi.confirmPayment(orderId);
+      final status = await _paymentApi.checkPaymentStatus(paymentId);
 
-      dev.log('🟢 PAYMENT CONFIRMED IN IIKO');
-
-      emit(
-        state.copyWith(
-          loading: false,
-          step: PaymentStep.success,
-        ),
-      );
+      if (status == 'succeeded') {
+        emit(
+          state.copyWith(
+            step: PaymentStep.success,
+            loading: false,
+            error: null,
+          ),
+        );
+      } else if (status == 'pending') {
+        emit(
+          state.copyWith(
+            step: PaymentStep.failed,
+            loading: false,
+            error: 'Платёж ещё не подтверждён. Попробуйте через пару секунд.',
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            step: PaymentStep.failed,
+            loading: false,
+            error: 'Платёж был отклонён.',
+          ),
+        );
+      }
     } catch (e, st) {
-      dev.log('🔴 PAYMENT CONFIRM FAILED: $e', stackTrace: st);
+      dev.log('🔴 VERIFY ERROR: $e', stackTrace: st);
+
       emit(
         state.copyWith(
-          loading: false,
           step: PaymentStep.failed,
-          error: 'Не удалось подтвердить оплату',
+          loading: false,
+          error: 'Не удалось проверить статус платежа.',
         ),
       );
     }
+  }
+
+  void _onReset(
+    PaymentReset event,
+    Emitter<PaymentState> emit,
+  ) {
+    emit(
+      PaymentState(
+        amount: state.amount,
+        currency: state.currency,
+        description: state.description,
+      ),
+    );
   }
 }

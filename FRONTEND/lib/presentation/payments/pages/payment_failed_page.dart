@@ -27,7 +27,7 @@ class PaymentFailedPage extends StatelessWidget {
                 height: 86,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.red.withOpacity(.12),
+                  color: Colors.red.withValues(alpha:.12),
                 ),
                 child: const Icon(Icons.error_outline,
                     size: 42, color: Colors.redAccent),

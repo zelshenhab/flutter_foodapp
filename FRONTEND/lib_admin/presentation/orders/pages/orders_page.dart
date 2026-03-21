@@ -336,7 +336,7 @@ class _StatusFilter extends StatelessWidget {
     return SizedBox(
       width: 220,
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         items: items,
         onChanged: (v) => onChanged(v ?? 'all'),
         decoration: const InputDecoration(labelText: 'Фильтр статуса'),

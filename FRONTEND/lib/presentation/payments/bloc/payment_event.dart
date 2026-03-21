@@ -26,9 +26,11 @@ class PaymentPayPressed extends PaymentEvent {
   const PaymentPayPressed();
 }
 
-/// User confirms that payment was completed in bank app (SBP)
-class PaymentConfirmPressed extends PaymentEvent {
-  const PaymentConfirmPressed();
+class PaymentVerifyRequested extends PaymentEvent {
+  const PaymentVerifyRequested();
+
+  @override
+  List<Object?> get props => [];
 }
 
 class PaymentReset extends PaymentEvent {

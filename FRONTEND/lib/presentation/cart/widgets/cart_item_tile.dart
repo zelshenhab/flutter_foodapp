@@ -92,7 +92,7 @@ class CartItemTile extends StatelessWidget {
   Widget _qtyBtn({
     required IconData icon,
     required VoidCallback onTap,
-    Color bg = const Color(0xFFFF7A00),
+    Color bg = const Color.fromARGB(255, 199, 160, 34),
     Color iconColor = Colors.white,
   }) {
     return InkWell(
