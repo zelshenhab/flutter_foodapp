@@ -87,7 +87,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         state.copyWith(
           loading: false,
           step: PaymentStep.idle,
-          error: 'Не удалось создать оплату. Попробуйте снова.',
+          error: 'Ошибка оплаты. Пожалуйста, удалите товары из корзины, добавьте заново и повторите попытку.',
         ),
       );
     }

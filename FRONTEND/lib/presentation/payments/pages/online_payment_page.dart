@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/utils/payment_launcher.dart';
 import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
 import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
 
@@ -8,9 +12,8 @@ import '../bloc/payment_event.dart';
 import '../bloc/payment_state.dart';
 import 'payment_failed_page.dart';
 import 'payment_success_page.dart';
-import 'payment_webview_page.dart';
 
-class OnlinePaymentPage extends StatelessWidget {
+class OnlinePaymentPage extends StatefulWidget {
   final double amount;
   final String currency;
   final String? description;
@@ -22,58 +25,112 @@ class OnlinePaymentPage extends StatelessWidget {
     this.description,
   });
 
+  @override
+  State<OnlinePaymentPage> createState() => _OnlinePaymentPageState();
+}
+
+class _OnlinePaymentPageState extends State<OnlinePaymentPage>
+    with WidgetsBindingObserver {
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSub;
+
+  late final PaymentBloc _paymentBloc;
+
+  bool _paymentPageOpened = false;
+  bool _verificationTriggered = false;
+
   String _money(double v) => '${v.toStringAsFixed(0)} ₽';
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => PaymentBloc()
-        ..add(
-          PaymentStarted(
-            amount: amount,
-            currency: currency,
-            description: description,
-          ),
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+
+    /// Create bloc BEFORE widget tree
+    _paymentBloc = PaymentBloc()
+      ..add(
+        PaymentStarted(
+          amount: widget.amount,
+          currency: widget.currency,
+          description: widget.description,
         ),
+      );
+
+    _listenDeepLinks();
+  }
+
+  void _listenDeepLinks() {
+    _linkSub = _appLinks.uriLinkStream.listen((uri) {
+      if (!mounted) return;
+
+      if (uri.host == 'payment-success') {
+        _verificationTriggered = true;
+        _paymentBloc.add(const PaymentVerifyRequested());
+      }
+
+      if (uri.host == 'payment-failed') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PaymentFailedPage(
+              reason: 'Платёж был отклонён.',
+            ),
+          ),
+        );
+      }
+    });
+  }
+
+  /// Detect returning from browser
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_paymentPageOpened && !_verificationTriggered) {
+        _verificationTriggered = true;
+        _paymentBloc.add(const PaymentVerifyRequested());
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _linkSub?.cancel();
+    _paymentBloc.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider.value(
+      value: _paymentBloc,
       child: BlocConsumer<PaymentBloc, PaymentState>(
         listenWhen: (p, n) =>
             p.step != n.step || p.paymentUrl != n.paymentUrl,
         listener: (context, state) async {
+          /// OPEN PAYMENT PAGE IN BROWSER
           if (state.step == PaymentStep.openingPayment &&
-              state.paymentUrl != null &&
-              state.orderId != null) {
-            final result = await Navigator.push<PaymentWebResult>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PaymentWebViewPage(url: state.paymentUrl!),
-              ),
-            );
+              state.paymentUrl != null) {
+            try {
+              _paymentPageOpened = true;
 
-            if (!context.mounted) return;
+              await PaymentLauncher.openPaymentPage(state.paymentUrl!);
+            } catch (e) {
+              if (!context.mounted) return;
 
-            switch (result) {
-              case PaymentWebResult.success:
-                context.read<PaymentBloc>().add(const PaymentVerifyRequested());
-                break;
-
-              case PaymentWebResult.failed:
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PaymentFailedPage(
-                      reason: 'Платёж был отклонён.',
-                    ),
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PaymentFailedPage(
+                    reason: 'Не удалось открыть страницу оплаты',
                   ),
-                );
-                break;
-
-              case PaymentWebResult.cancelled:
-              case null:
-                context.read<PaymentBloc>().add(const PaymentReset());
-                break;
+                ),
+              );
             }
           }
 
+          /// SUCCESS PAGE
           if (state.step == PaymentStep.success && state.orderId != null) {
             Navigator.pushReplacement(
               context,
@@ -92,6 +149,7 @@ class OnlinePaymentPage extends StatelessWidget {
             });
           }
 
+          /// FAILURE PAGE
           if (state.step == PaymentStep.failed && state.error != null) {
             Navigator.pushReplacement(
               context,
