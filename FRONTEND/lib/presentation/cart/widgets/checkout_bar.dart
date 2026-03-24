@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../auth/pages/login_info_page.dart';
 
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_state.dart';
@@ -34,9 +36,19 @@ class CheckoutBar extends StatelessWidget {
           ),
           builder: (context, vm) {
             return ElevatedButton(
-              onPressed: (vm.isEmpty || vm.isLoading)
-                  ? null
-                  : onCheckout,
+onPressed: (vm.isEmpty || vm.isLoading)
+    ? null
+    : () async {
+        const storage = FlutterSecureStorage();
+        final token = await storage.read(key: 'auth_token');
+
+        if (token == null || token.isEmpty) {
+          _showLoginRequiredDialog(context);
+          return;
+        }
+
+        onCheckout();
+      },
               child: vm.isLoading
                   ? const SizedBox(
                       width: 22,
@@ -74,4 +86,37 @@ class _CheckoutViewModel {
 
   @override
   int get hashCode => Object.hash(isEmpty, isLoading);
+}
+
+void _showLoginRequiredDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (_) {
+      return AlertDialog(
+        title: const Text('Требуется вход'),
+        content: const Text(
+          'Чтобы оформить заказ, пожалуйста войдите в аккаунт.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LoginInfoPage(),
+                ),
+              );
+            },
+            child: const Text('Войти'),
+          ),
+        ],
+      );
+    },
+  );
 }

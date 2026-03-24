@@ -98,24 +98,25 @@ class _SplashScreenState extends State<SplashScreen> {
     _initialize();
   }
 
-  Future<void> _initialize() async {
-    const storage = FlutterSecureStorage();
+ Future<void> _initialize() async {
+  const storage = FlutterSecureStorage();
 
-    try {
-      final token = await storage.read(key: 'auth_token');
+  try {
+    final token = await storage.read(key: 'auth_token');
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      if (token != null && token.isNotEmpty) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/login');
+    if (token != null && token.isNotEmpty) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // 👇 Guest mode
+      Navigator.pushReplacementNamed(context, '/home');
     }
+  } catch (e) {
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/home');
   }
+}
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/presentation/auth/data/real_auth_service.dart';
+import 'package:flutter_foodapp/presentation/root/app_shell.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -49,15 +50,45 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
     );
   }
 
+  /// ⭐ Professional error popup
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text(
+          'Ошибка',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Ок',
+              style: TextStyle(
+                color: Color.fromARGB(255, 199, 160, 34),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocConsumer<AuthBloc, AuthState>(
         listenWhen: (p, c) => p.step != c.step || p.error != c.error,
         listener: (context, state) {
+          /// ❌ SnackBar removed
+          /// ✅ Dialog used instead
           if (state.error != null) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(state.error!)));
+            _showErrorDialog(state.error!);
           }
 
           if (state.step == AuthStep.verifyOtp) {
@@ -136,7 +167,8 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                       height: 48,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 199, 160, 34),
+                          backgroundColor:
+                              const Color.fromARGB(255, 199, 160, 34),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -157,6 +189,27 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
                                 ),
                               )
                             : const Text('Получить код'),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AppShell(),
+                          ),
+                          (_) => false,
+                        );
+                      },
+                      child: const Text(
+                        'Продолжить как гость',
+                        style: TextStyle(
+                          color: Color.fromARGB(255, 199, 160, 34),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
 
@@ -209,7 +262,8 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
-          borderSide: BorderSide(color: Color.fromARGB(255, 199, 160, 34)),
+          borderSide:
+              BorderSide(color: Color.fromARGB(255, 199, 160, 34)),
         ),
       ),
     );

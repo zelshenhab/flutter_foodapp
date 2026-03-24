@@ -24,15 +24,7 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Профиль')),
-      body: BlocConsumer<ProfileBloc, ProfileState>(
-        listenWhen: (p, c) => p.error != c.error,
-        listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error!)),
-            );
-          }
-        },
+      body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           // 🔄 Show loading indicator
           if (state.loading) {
