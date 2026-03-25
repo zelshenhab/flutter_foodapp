@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_foodapp/presentation/profile/widgets/bonuses_card.dart';
 
-import '../../promos/pages/promotions_page.dart';
 import '../../orders/pages/orders_page.dart';
 import '../../support/pages/support_page.dart';
 
@@ -13,7 +11,6 @@ import '../bloc/profile_state.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_section_card.dart';
 import '../widgets/address_readonly_tile.dart';
-import '../widgets/settings_tile_switch.dart';
 import '../widgets/settings_tile_language.dart';
 import '../models/user_profile.dart';
 
@@ -69,7 +66,7 @@ class ProfilePage extends StatelessWidget {
                 ),
 
                 /// ===== Bonuses + Promotions
-                _BonusesCardShim(),
+               // _BonusesCardShim(),
 
                 /// ===== Personal data
                 const SizedBox(height: 8),
@@ -119,8 +116,8 @@ class ProfilePage extends StatelessWidget {
                 /// ===== Address
                 const SizedBox(height: 8),
                 const ProfileSectionCard(
-                  title: "Адрес доставки",
-                  children: [AddressReadonlyTile(address: 'ул. Пушкина 15')],
+                  title: "Адрес ресторана",
+                  children: [AddressReadonlyTile(address: 'ул. Николая Ершова, 62 (Арт центр)')],
                 ),
 
                 /// ===== Settings
@@ -128,11 +125,11 @@ class ProfilePage extends StatelessWidget {
                 ProfileSectionCard(
                   title: "Настройки",
                   children: [
-                    SettingsTileSwitch(
+                    /*SettingsTileSwitch(
                       title: "Уведомления",
                       value: true,
                       onChanged: (_) {},
-                    ),
+                    ),*/
                     SettingsTileLanguage(
                       currentCode: 'ru',
                       onChanged: (_) {},
@@ -330,7 +327,7 @@ class ProfilePage extends StatelessWidget {
 }
 
 /// Keeps your existing BonusesCard look
-class _BonusesCardShim extends StatelessWidget {
+/*class _BonusesCardShim extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BonusesCard(
@@ -343,4 +340,4 @@ class _BonusesCardShim extends StatelessWidget {
       },
     );
   }
-}
+}*/

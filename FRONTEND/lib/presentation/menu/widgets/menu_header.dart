@@ -30,14 +30,14 @@ class MenuHeader extends StatelessWidget {
                       fontWeight: FontWeight.w800),
                 ),
               ),
-              Container(
+             /* Container(
                 width: 36,
                 height: 36,
                 decoration: const BoxDecoration(
                     color: chipBg, shape: BoxShape.circle),
                 child:
                     const Icon(Icons.person_outline, color: text, size: 20),
-              ),
+              ),*/
             ],
           ),
           const SizedBox(height: 10),

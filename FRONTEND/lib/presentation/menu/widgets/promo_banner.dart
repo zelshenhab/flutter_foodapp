@@ -42,7 +42,7 @@ class PromoBanner extends StatelessWidget {
                 ],
               ),
             ),
-            ElevatedButton(
+           /* ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
@@ -54,7 +54,7 @@ class PromoBanner extends StatelessWidget {
                 ),
               ),
               child: const Text('Заказать'),
-            ),
+            ),*/
           ],
         ),
       ),
