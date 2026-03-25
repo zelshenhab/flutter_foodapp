@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/auth/bloc/auth_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../menu/pages/menu_page.dart';
@@ -72,7 +73,10 @@ class _AppShellState extends State<AppShell> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const LoginInfoPage(),
+                    builder: (_) => BlocProvider.value(
+                      value: context.read<AuthBloc>(),
+                      child: const LoginInfoPage(),
+                    ),
                   ),
                 );
               },

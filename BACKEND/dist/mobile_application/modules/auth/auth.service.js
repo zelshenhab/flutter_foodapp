@@ -4,6 +4,8 @@ exports.requestOtp = requestOtp;
 exports.verifyOtp = verifyOtp;
 exports.me = me;
 exports.refresh = refresh;
+exports.logout = logout;
+exports.deleteAccount = deleteAccount;
 const supabase_1 = require("../../../core/config/supabase");
 const crypto_1 = require("crypto");
 const date_fns_1 = require("date-fns");
@@ -172,5 +174,36 @@ async function refresh(oldToken) {
         email: user.email,
     });
     return { accessToken };
+}
+async function logout(refreshToken) {
+    const { data: rec } = await supabase_1.supabase
+        .from("RefreshToken")
+        .select("*")
+        .eq("token", refreshToken)
+        .single();
+    if (!rec) {
+        throw { status: 401, message: "Invalid refresh token" };
+    }
+    await supabase_1.supabase
+        .from("RefreshToken")
+        .update({ revoked: true })
+        .eq("id", rec.id);
+    return { success: true };
+}
+async function deleteAccount(userId) {
+    // remove refresh tokens
+    await supabase_1.supabase
+        .from("RefreshToken")
+        .delete()
+        .eq("userId", userId);
+    // delete user
+    const { error } = await supabase_1.supabase
+        .from("User")
+        .delete()
+        .eq("id", userId);
+    if (error) {
+        throw { status: 500, message: "Failed to delete user" };
+    }
+    return { success: true };
 }
 //# sourceMappingURL=auth.service.js.map

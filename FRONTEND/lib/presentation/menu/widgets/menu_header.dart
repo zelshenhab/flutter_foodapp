@@ -5,7 +5,7 @@ class MenuHeader extends StatelessWidget {
   const MenuHeader({super.key});
 
   void _openMap() {
-    MapsLauncher.launchQuery("ул. Пушкина 15, Казань");
+    MapsLauncher.launchQuery("ул. Николая Ершова, 62, Казань");
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/repos/auth_repository.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,6 +14,8 @@ import '../../../core/api_client.dart'; // global dio to set Authorization heade
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final IAuthService service;
   Timer? _timer;
+
+  final AuthRepository repo = AuthRepository();
 
   AuthBloc(this.service) : super(const AuthState()) {
     super.on<AuthStarted>((e, emit) => emit(const AuthState()));
@@ -34,6 +37,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     super.on<AuthResendCode>(_onResend);
 
     super.on<AuthResendTick>(_onResendTick);
+    super.on<AuthLogoutRequested>(_onLogout);
+    super.on<AuthDeleteAccountRequested>(_onDeleteAccount);
   }
 
   // Request OTP
@@ -137,13 +142,13 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
         code: state.otp,
       );
 
-      // ✅ Save tokens securely for future API calls
+      // Save tokens securely for future API calls
       const storage = FlutterSecureStorage();
       await storage.write(key: 'auth_token', value: res.accessToken);
       await storage.write(key: 'refresh_token', value: res.refreshToken);
       await storage.write(key: 'user_email', value: state.email);
 
-      // ✅ Set Authorization header for the global dio instance (for immediate use)
+      // Set Authorization header for the global dio instance (for immediate use)
       dio.options.headers['Authorization'] = 'Bearer ${res.accessToken}';
 
       debugPrint('✅ Token saved: ${res.accessToken.substring(0, 20)}...');
@@ -157,6 +162,55 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
       );
     } catch (err) {
       emit(state.copyWith(loading: false, error: 'Неверный код'));
+    }
+  }
+
+  Future<void> _onLogout(
+    AuthLogoutRequested e,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      const storage = FlutterSecureStorage();
+
+      final refreshToken = await storage.read(key: 'refresh_token');
+
+      if (refreshToken != null) {
+        await repo.logout(refreshToken);
+      }
+
+      // remove stored tokens
+      await storage.delete(key: 'auth_token');
+      await storage.delete(key: 'refresh_token');
+      await storage.delete(key: 'user_email');
+
+      // remove Authorization header
+      dio.options.headers.remove('Authorization');
+
+      emit(state.copyWith(step: AuthStep.enterInfo));
+    } catch (err) {
+      debugPrint('Logout error: $err');
+    }
+  }
+
+  Future<void> _onDeleteAccount(
+    AuthDeleteAccountRequested e,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      const storage = FlutterSecureStorage();
+
+      await repo.deleteAccount();
+
+      // clear local tokens
+      await storage.delete(key: 'auth_token');
+      await storage.delete(key: 'refresh_token');
+      await storage.delete(key: 'user_email');
+
+      dio.options.headers.remove('Authorization');
+
+      emit(state.copyWith(step: AuthStep.enterInfo));
+    } catch (err) {
+      debugPrint('Delete account error: $err');
     }
   }
 

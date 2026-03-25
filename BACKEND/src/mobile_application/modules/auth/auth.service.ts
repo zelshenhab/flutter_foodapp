@@ -220,3 +220,43 @@ export async function refresh(oldToken: string) {
 
   return { accessToken };
 }
+
+export async function logout(refreshToken: string) {
+  const { data: rec } = await supabase
+    .from("RefreshToken")
+    .select("*")
+    .eq("token", refreshToken)
+    .single();
+
+  if (!rec) {
+    throw { status: 401, message: "Invalid refresh token" };
+  }
+
+  await supabase
+    .from("RefreshToken")
+    .update({ revoked: true })
+    .eq("id", rec.id);
+
+  return { success: true };
+}
+
+export async function deleteAccount(userId: number) {
+
+  // remove refresh tokens
+  await supabase
+    .from("RefreshToken")
+    .delete()
+    .eq("userId", userId);
+
+  // delete user
+  const { error } = await supabase
+    .from("User")
+    .delete()
+    .eq("id", userId);
+
+  if (error) {
+    throw { status: 500, message: "Failed to delete user" };
+  }
+
+  return { success: true };
+}

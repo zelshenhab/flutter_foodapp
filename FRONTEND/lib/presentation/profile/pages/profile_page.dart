@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_foodapp/presentation/auth/bloc/auth_bloc.dart';
+import 'package:flutter_foodapp/presentation/auth/bloc/auth_event.dart';
 
 import '../../orders/pages/orders_page.dart';
 import '../../support/pages/support_page.dart';
@@ -62,7 +63,6 @@ class ProfilePage extends StatelessWidget {
                 ProfileHeader(
                   profile: headerProfile,
                   onEdit: () => _showEditDataSheet(context, name, email),
-                  onChangeAvatar: () => _pickAvatar(context),
                 ),
 
                 /// ===== Bonuses + Promotions
@@ -157,6 +157,66 @@ class ProfilePage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
+                                /// ===== Logout
+                const SizedBox(height: 8),
+                ProfileSectionCard(
+                  title: "Аккаунт",
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.orange),
+                      title: const Text("Выйти из аккаунта"),
+                      onTap: () {
+                        context.read<AuthBloc>().add(AuthLogoutRequested());
+
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/login',
+                          (route) => false,
+                        );
+                      },
+                    ),
+
+                    /// ===== Delete Account
+                    ListTile(
+                      leading: const Icon(Icons.delete, color: Colors.red),
+                      title: const Text("Удалить аккаунт"),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Удалить аккаунт"),
+                            content: const Text(
+                                "Вы уверены что хотите удалить аккаунт?"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Отмена"),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+
+                                  context
+                                      .read<AuthBloc>()
+                                      .add(AuthDeleteAccountRequested());
+
+                                  Navigator.of(context)
+                                      .pushNamedAndRemoveUntil(
+                                    '/login',
+                                    (route) => false,
+                                  );
+                                },
+                                child: const Text(
+                                  "Удалить",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ],
             ),
           );
@@ -279,53 +339,7 @@ class ProfilePage extends StatelessWidget {
       ),
     );
   }
-
-  /// 📸 Avatar picker
-  Future<void> _pickAvatar(BuildContext context) async {
-    final picker = ImagePicker();
-    final bloc = context.read<ProfileBloc>();
-
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A1A),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Камера'),
-                onTap: () => Navigator.of(sheetCtx).pop(ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Галерея'),
-                onTap: () => Navigator.of(sheetCtx).pop(ImageSource.gallery),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (source == null) return;
-
-    try {
-      final xfile = await picker.pickImage(source: source, imageQuality: 85);
-      if (xfile == null) return;
-      bloc.add(ProfileAvatarSet(xfile.path));
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось выбрать изображение')),
-      );
-    }
-  }
 }
-
 /// Keeps your existing BonusesCard look
 /*class _BonusesCardShim extends StatelessWidget {
   @override

@@ -41,3 +41,7 @@ class AuthResendCode extends AuthEvent {}
 class AuthResendTick extends AuthEvent {
   const AuthResendTick();
 }
+
+class AuthLogoutRequested extends AuthEvent {}
+
+class AuthDeleteAccountRequested extends AuthEvent {}

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_foodapp/presentation/auth/data/real_auth_service.dart';
-import 'package:flutter_foodapp/presentation/root/app_shell.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -14,10 +12,7 @@ class LoginInfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AuthBloc(RealAuthService())..add(AuthStarted()),
-      child: const _LoginInfoView(),
-    );
+    return const _LoginInfoView();
   }
 }
 
@@ -196,13 +191,7 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
 
                     TextButton(
                       onPressed: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AppShell(),
-                          ),
-                          (_) => false,
-                        );
+                        Navigator.pushReplacementNamed(context, '/home');
                       },
                       child: const Text(
                         'Продолжить как гость',

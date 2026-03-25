@@ -37,6 +37,8 @@ exports.requestOtp = requestOtp;
 exports.verifyOtp = verifyOtp;
 exports.getMe = getMe;
 exports.postRefresh = postRefresh;
+exports.logout = logout;
+exports.deleteAccount = deleteAccount;
 const svc = __importStar(require("./auth.service"));
 const jwt_1 = require("../../../core/utils/jwt");
 async function requestOtp(req, res) {
@@ -109,6 +111,43 @@ async function postRefresh(req, res) {
     }
     catch (err) {
         console.error("❌ refresh error:", err);
+        return res.status(err?.status || 500).json({
+            message: err?.message || "Internal server error",
+        });
+    }
+}
+async function logout(req, res) {
+    try {
+        const { refreshToken } = req.body || {};
+        if (!refreshToken) {
+            return res.status(400).json({ message: "refreshToken required" });
+        }
+        const data = await svc.logout(refreshToken);
+        return res.status(200).json(data);
+    }
+    catch (err) {
+        console.error("❌ logout error:", err);
+        return res.status(err?.status || 500).json({
+            message: err?.message || "Internal server error",
+        });
+    }
+}
+async function deleteAccount(req, res) {
+    try {
+        const header = req.headers.authorization || "";
+        const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const { valid, payload } = (0, jwt_1.verifyTokenSafe)(token);
+        if (!valid) {
+            return res.status(401).json({ message: "Invalid token" });
+        }
+        const data = await svc.deleteAccount(payload.id);
+        return res.status(200).json(data);
+    }
+    catch (err) {
+        console.error("❌ deleteAccount error:", err);
         return res.status(err?.status || 500).json({
             message: err?.message || "Internal server error",
         });

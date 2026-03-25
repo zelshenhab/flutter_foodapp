@@ -10,4 +10,15 @@ class AuthRepository {
     final res = await dio.post('/auth/refresh', data: {'refreshToken': refreshToken});
     return Map<String, dynamic>.from(res.data);
   }
+
+    Future<void> logout(String refreshToken) async {
+    await dio.post(
+      '/auth/logout',
+      data: {'refreshToken': refreshToken},
+    );
+  }
+
+    Future<void> deleteAccount() async {
+    await dio.delete('/auth/delete-account');
+  }
 }

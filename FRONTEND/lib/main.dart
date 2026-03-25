@@ -6,6 +6,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'core/api_client.dart';
 import 'presentation/auth/pages/login_info_page.dart';
 import 'presentation/root/app_shell.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'presentation/auth/bloc/auth_bloc.dart';
+import 'presentation/auth/bloc/auth_event.dart';
+import 'presentation/auth/data/real_auth_service.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -25,7 +29,12 @@ Future<void> main() async {
   }
   await NotificationService.init();
 
-  runApp(const MyApp());
+  runApp(
+    BlocProvider(
+      create: (_) => AuthBloc(RealAuthService())..add(AuthStarted()),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -114,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   } catch (e) {
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushReplacementNamed(context, '/login');
   }
 }
 
