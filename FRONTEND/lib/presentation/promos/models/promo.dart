@@ -7,8 +7,8 @@ class Promo extends Equatable {
   final String title;
   final String description;
   final PromoType type;
-  final double amount; // 10 = 10% لو type=percent ، أو 300 ₽ لو fixed
-  final String code; // كود البرومو
+  final double amount; 
+  final String code; 
   final DateTime? validTo;
 
   const Promo({

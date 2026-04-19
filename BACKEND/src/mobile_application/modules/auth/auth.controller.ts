@@ -32,7 +32,11 @@ export async function verifyOtp(req: Request, res: Response) {
         .json({ message: "email, requestId, code are required" });
     }
 
-    const data = await svc.verifyOtp(email, requestId, code);
+    // Capture device info for security
+    const userAgent = req.headers["user-agent"];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    const data = await svc.verifyOtp(email, requestId, code, userAgent, ipAddress);
     return res.status(200).json(data);
 
   } catch (err: any) {
@@ -84,7 +88,11 @@ export async function postRefresh(req: Request, res: Response) {
         .json({ message: "refreshToken is required" });
     }
 
-    const data = await svc.refresh(refreshToken);
+    // Capture device info
+    const userAgent = req.headers["user-agent"];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    const data = await svc.refresh(refreshToken, userAgent, ipAddress);
     return res.status(200).json(data);
 
   } catch (err: any) {

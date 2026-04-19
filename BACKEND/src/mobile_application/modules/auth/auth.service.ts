@@ -1,15 +1,17 @@
 ﻿import { supabase } from "../../../core/config/supabase";
 import { randomBytes } from "crypto";
-import { addMinutes, isBefore } from "date-fns";
+import { addMinutes, isBefore, differenceInDays } from "date-fns";
 import { signAccess, signRefresh } from "../../../core/utils/jwt";
 import { sendOtpEmail } from "../../../core/config/sendgrid";
 import { sendOtpEmailSMTP } from "../../../core/config/smtp";
 
 const OTP_TTL_MIN = 15;
 const MAX_ATTEMPTS = 5;
+const INACTIVITY_LIMIT_DAYS = 30; // Force re-login after 30 days of inactivity
+const SESSION_EXTEND_DAYS = 30; // Extend session by 30 days when active
 
 // --------------------
-// REQUEST OTP
+// REQUEST OTP (unchanged)
 // --------------------
 export async function requestOtp(email: string) {
   const moderatorEnabled =
@@ -18,17 +20,14 @@ export async function requestOtp(email: string) {
   const moderatorEmail = process.env.MODERATOR_EMAIL;
   const moderatorCode = process.env.MODERATOR_CODE || "915287";
 
-  // 🛡 Moderator bypass (NO email sending)
   if (moderatorEnabled && email === moderatorEmail) {
     console.log("Moderator OTP bypass activated");
-
     return {
       requestId: "moderator-request",
       ttl: OTP_TTL_MIN * 60,
     };
   }
 
-  // -------- Normal OTP Flow --------
   const requestId = randomBytes(12).toString("hex");
   const code = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -76,10 +75,15 @@ export async function requestOtp(email: string) {
   };
 }
 
+// --------------------
+// VERIFY OTP (updated with metadata)
+// --------------------
 export async function verifyOtp(
   email: string,
   requestId: string,
-  code: string
+  code: string,
+  userAgent?: string,
+  ipAddress?: string
 ) {
   const moderatorEnabled =
     process.env.ENABLE_MODERATOR_BYPASS === "true";
@@ -110,17 +114,30 @@ export async function verifyOtp(
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
+    // Update user activity
+    await supabase
+      .from("User")
+      .update({
+        lastActiveAt: new Date().toISOString(),
+        lastRefreshAt: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
     await supabase.from("RefreshToken").insert({
       userId: user.id,
       token: refreshToken,
       expiresAt: new Date(
-        Date.now() + 30 * 24 * 60 * 60 * 1000
+        Date.now() + SESSION_EXTEND_DAYS * 24 * 60 * 60 * 1000
       ).toISOString(),
+      userAgent,
+      ipAddress,
+      lastUsedAt: new Date().toISOString(),
     });
 
     return { accessToken, refreshToken, user };
   }
 
+  // Normal OTP verification
   const { data: rec, error: fetchError } = await supabase
     .from("OtpRequest")
     .select("*")
@@ -148,6 +165,7 @@ export async function verifyOtp(
     throw { status: 400, message: "Invalid code" };
   }
 
+  // Get or create user
   const { data: user, error: userError } = await supabase
     .from("User")
     .upsert({ email }, { onConflict: "email" })
@@ -163,17 +181,32 @@ export async function verifyOtp(
   const accessToken = signAccess(payload);
   const refreshToken = signRefresh(payload);
 
+  // Update user activity
+  await supabase
+    .from("User")
+    .update({
+      lastActiveAt: new Date().toISOString(),
+      lastRefreshAt: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+
   await supabase.from("RefreshToken").insert({
     userId: user.id,
     token: refreshToken,
     expiresAt: new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000
+      Date.now() + SESSION_EXTEND_DAYS * 24 * 60 * 60 * 1000
     ).toISOString(),
+    userAgent,
+    ipAddress,
+    lastUsedAt: new Date().toISOString(),
   });
 
   return { accessToken, refreshToken, user };
 }
 
+// --------------------
+// ME (unchanged)
+// --------------------
 export async function me(userId: number) {
   const { data, error } = await supabase
     .from("User")
@@ -188,14 +221,22 @@ export async function me(userId: number) {
   return data;
 }
 
-export async function refresh(oldToken: string) {
-  const { data: rec } = await supabase
+// --------------------
+// REFRESH (CRITICAL FIX - with rotation)
+// --------------------
+export async function refresh(
+  oldToken: string,
+  userAgent?: string,
+  ipAddress?: string
+) {
+  // Find the refresh token
+  const { data: rec, error: fetchError } = await supabase
     .from("RefreshToken")
     .select("*")
     .eq("token", oldToken)
     .single();
 
-  if (!rec || rec.revoked) {
+  if (fetchError || !rec || rec.revoked) {
     throw { status: 401, message: "Invalid refresh token" };
   }
 
@@ -203,6 +244,7 @@ export async function refresh(oldToken: string) {
     throw { status: 401, message: "Refresh expired" };
   }
 
+  // Get user
   const { data: user } = await supabase
     .from("User")
     .select("*")
@@ -213,14 +255,74 @@ export async function refresh(oldToken: string) {
     throw { status: 401, message: "User not found" };
   }
 
-  const accessToken = signAccess({
-    id: user.id,
-    email: user.email,
+  // Check for inactivity
+  if (user.lastRefreshAt) {
+    const inactiveDays = differenceInDays(
+      new Date(),
+      new Date(user.lastRefreshAt)
+    );
+    
+    if (inactiveDays > INACTIVITY_LIMIT_DAYS) {
+      // Revoke the old token
+      await supabase
+        .from("RefreshToken")
+        .update({ 
+          revoked: true, 
+          revokedAt: new Date().toISOString() 
+        })
+        .eq("id", rec.id);
+      
+      throw { status: 401, message: "Session expired due to inactivity" };
+    }
+  }
+
+  // Generate NEW tokens
+  const payload = { id: user.id, email: user.email };
+  const newAccessToken = signAccess(payload);
+  const newRefreshToken = signRefresh(payload);
+
+  // Invalidate the OLD refresh token (rotation)
+  await supabase
+    .from("RefreshToken")
+    .update({ 
+      revoked: true,
+      revokedAt: new Date().toISOString(),
+      replacedBy: newRefreshToken,
+      replacedAt: new Date().toISOString()
+    })
+    .eq("id", rec.id);
+
+  // Create NEW refresh token
+  await supabase.from("RefreshToken").insert({
+    userId: user.id,
+    token: newRefreshToken,
+    expiresAt: new Date(
+      Date.now() + SESSION_EXTEND_DAYS * 24 * 60 * 60 * 1000
+    ).toISOString(),
+    userAgent: userAgent || rec.userAgent,
+    ipAddress: ipAddress || rec.ipAddress,
+    lastUsedAt: new Date().toISOString(),
   });
 
-  return { accessToken };
+  // Update user activity
+  await supabase
+    .from("User")
+    .update({
+      lastActiveAt: new Date().toISOString(),
+      lastRefreshAt: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+
+  // Return BOTH tokens
+  return { 
+    accessToken: newAccessToken, 
+    refreshToken: newRefreshToken 
+  };
 }
 
+// --------------------
+// LOGOUT (updated)
+// --------------------
 export async function logout(refreshToken: string) {
   const { data: rec } = await supabase
     .from("RefreshToken")
@@ -234,21 +336,24 @@ export async function logout(refreshToken: string) {
 
   await supabase
     .from("RefreshToken")
-    .update({ revoked: true })
+    .update({ 
+      revoked: true,
+      revokedAt: new Date().toISOString()
+    })
     .eq("id", rec.id);
 
   return { success: true };
 }
 
+// --------------------
+// DELETE ACCOUNT (unchanged)
+// --------------------
 export async function deleteAccount(userId: number) {
-
-  // remove refresh tokens
   await supabase
     .from("RefreshToken")
     .delete()
     .eq("userId", userId);
 
-  // delete user
   const { error } = await supabase
     .from("User")
     .delete()

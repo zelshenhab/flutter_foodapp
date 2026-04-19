@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -21,6 +23,19 @@ final storage = const FlutterSecureStorage();
 
 bool _isRefreshing = false;
 bool _isRedirecting = false;
+final List<QueuedRequest> _queuedRequests = [];
+
+class QueuedRequest {
+  final RequestOptions requestOptions;
+  final ErrorInterceptorHandler handler;
+  final Completer<Response> completer;
+  
+  QueuedRequest({
+    required this.requestOptions,
+    required this.handler,
+    required this.completer,
+  });
+}
 
 void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
   dio.interceptors.clear();
@@ -31,99 +46,146 @@ void setupInterceptors({GlobalKey<NavigatorState>? navigatorKey}) {
       onRequest: (options, handler) async {
         try {
           final token = await storage.read(key: 'auth_token');
-
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
         } catch (_) {}
-
         handler.next(options);
       },
 
-      /// Handle errors
+      /// Handle responses and errors
+      onResponse: (response, handler) {
+        handler.next(response);
+      },
+
+      /// Handle errors with token refresh
       onError: (DioException e, handler) async {
         final statusCode = e.response?.statusCode;
+        
+        // Only handle 401 errors
+        if (statusCode != 401) {
+          return handler.next(e);
+        }
 
-        if (statusCode == 401) {
-          try {
-            /// prevent multiple refresh calls
-            if (_isRefreshing) {
-              return handler.next(e);
-            }
-
-            _isRefreshing = true;
-
-            final refreshToken = await storage.read(key: 'refresh_token');
-
-            if (refreshToken == null) {
-              throw Exception("No refresh token");
-            }
-
-            /// request new tokens
-            final refreshResponse = await dio.post(
-              '/auth/refresh',
-              data: {'refreshToken': refreshToken},
+        // Check if this is a refresh request to avoid loops
+        if (e.requestOptions.path.contains('/auth/refresh')) {
+          // Refresh failed, logout
+          await storage.delete(key: 'auth_token');
+          await storage.delete(key: 'refresh_token');
+          
+          if (!_isRedirecting && navigatorKey?.currentState != null) {
+            _isRedirecting = true;
+            navigatorKey!.currentState!.pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
             );
+          }
+          return handler.reject(e);
+        }
 
-            final newAccessToken = refreshResponse.data['accessToken'];
-            final newRefreshToken = refreshResponse.data['refreshToken'];
+        try {
+          // If already refreshing, queue this request
+          if (_isRefreshing) {
+            final completer = Completer<Response>();
+            _queuedRequests.add(QueuedRequest(
+              requestOptions: e.requestOptions,
+              handler: handler,
+              completer: completer,
+            ));
+            await completer.future;
+            return;
+          }
 
-            if (newAccessToken == null) {
-              throw Exception("Invalid refresh response");
-            }
+          _isRefreshing = true;
+          
+          final refreshToken = await storage.read(key: 'refresh_token');
+          if (refreshToken == null) {
+            throw Exception("No refresh token");
+          }
 
-            /// save new tokens
-            await storage.write(key: 'auth_token', value: newAccessToken);
+          // Request new tokens
+          final refreshResponse = await dio.post(
+            '/auth/refresh',
+            data: {'refreshToken': refreshToken},
+          );
 
-            if (newRefreshToken != null) {
-              await storage.write(
-                key: 'refresh_token',
-                value: newRefreshToken,
-              );
-            }
+          final newAccessToken = refreshResponse.data['accessToken'];
+          final newRefreshToken = refreshResponse.data['refreshToken'];
 
-            /// retry original request with new token
-            final requestOptions = e.requestOptions;
+          if (newAccessToken == null) {
+            throw Exception("Invalid refresh response");
+          }
 
+          // Save new tokens
+          await storage.write(key: 'auth_token', value: newAccessToken);
+          if (newRefreshToken != null) {
+            await storage.write(key: 'refresh_token', value: newRefreshToken);
+          }
+
+          // Update dio headers for future requests
+          dio.options.headers['Authorization'] = 'Bearer $newAccessToken';
+
+          // Retry all queued requests
+          for (final queued in _queuedRequests) {
             final opts = Options(
-              method: requestOptions.method,
+              method: queued.requestOptions.method,
               headers: {
-                ...requestOptions.headers,
+                ...queued.requestOptions.headers,
                 'Authorization': 'Bearer $newAccessToken',
               },
             );
-
-            final response = await dio.request(
-              requestOptions.path,
-              data: requestOptions.data,
-              queryParameters: requestOptions.queryParameters,
-              options: opts,
-            );
-
-            _isRefreshing = false;
-
-            return handler.resolve(response);
-          } catch (_) {
-            _isRefreshing = false;
-
-            /// refresh failed → logout
-            await storage.delete(key: 'auth_token');
-            await storage.delete(key: 'refresh_token');
-
-            if (!_isRedirecting) {
-              _isRedirecting = true;
-
-              if (navigatorKey?.currentState != null) {
-                navigatorKey!.currentState!.pushNamedAndRemoveUntil(
-                  '/login',
-                  (route) => false,
-                );
-              }
+            
+            try {
+              final response = await dio.request(
+                queued.requestOptions.path,
+                data: queued.requestOptions.data,
+                queryParameters: queued.requestOptions.queryParameters,
+                options: opts,
+              );
+              queued.completer.complete(response);
+            } catch (err) {
+              queued.completer.completeError(err);
             }
           }
-        }
+          _queuedRequests.clear();
 
-        handler.next(e);
+          // Retry original request
+          final opts = Options(
+            method: e.requestOptions.method,
+            headers: {
+              ...e.requestOptions.headers,
+              'Authorization': 'Bearer $newAccessToken',
+            },
+          );
+          
+          final response = await dio.request(
+            e.requestOptions.path,
+            data: e.requestOptions.data,
+            queryParameters: e.requestOptions.queryParameters,
+            options: opts,
+          );
+          
+          _isRefreshing = false;
+          return handler.resolve(response);
+          
+        } catch (refreshError) {
+          // Refresh failed, logout user
+          _isRefreshing = false;
+          _queuedRequests.clear();
+          
+          await storage.delete(key: 'auth_token');
+          await storage.delete(key: 'refresh_token');
+          
+          if (!_isRedirecting && navigatorKey?.currentState != null) {
+            _isRedirecting = true;
+            navigatorKey!.currentState!.pushNamedAndRemoveUntil(
+              '/login',
+              (route) => false,
+            );
+          }
+          
+          return handler.reject(e);
+        }
       },
     ),
   );

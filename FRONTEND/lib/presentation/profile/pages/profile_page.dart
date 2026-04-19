@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foodapp/presentation/auth/bloc/auth_bloc.dart';
 import 'package:flutter_foodapp/presentation/auth/bloc/auth_event.dart';
+import 'package:flutter_foodapp/presentation/profile/widgets/bonuses_card.dart';
+import 'package:flutter_foodapp/presentation/promos/pages/promotions_page.dart';
 
 import '../../orders/pages/orders_page.dart';
 import '../../support/pages/support_page.dart';
@@ -66,7 +68,7 @@ class ProfilePage extends StatelessWidget {
                 ),
 
                 /// ===== Bonuses + Promotions
-               // _BonusesCardShim(),
+                _BonusesCardShim(),
 
                 /// ===== Personal data
                 const SizedBox(height: 8),
@@ -341,7 +343,7 @@ class ProfilePage extends StatelessWidget {
   }
 }
 /// Keeps your existing BonusesCard look
-/*class _BonusesCardShim extends StatelessWidget {
+class _BonusesCardShim extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BonusesCard(
@@ -354,4 +356,4 @@ class ProfilePage extends StatelessWidget {
       },
     );
   }
-}*/
+}
