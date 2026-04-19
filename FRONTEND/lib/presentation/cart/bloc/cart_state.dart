@@ -10,8 +10,10 @@ class CartState extends Equatable {
   final double subtotal;
   final double discount;
   final double deliveryFee;
-  final double total;     // total from backend (prefer using this)
+  final double total;
   final String? promoCode;
+  final String? promoError;
+  final bool promoApplying;
   final PaymentMethod paymentMethod;
 
   const CartState({
@@ -23,12 +25,14 @@ class CartState extends Equatable {
     this.deliveryFee = 0,
     this.total = 0,
     this.promoCode,
+    this.promoError,
+    this.promoApplying = false,
     this.paymentMethod = PaymentMethod.defaultMethod,
   });
 
   bool get isEmpty => items.isEmpty;
+  bool get hasValidPromo => promoCode != null && discount > 0 && promoError == null;
 
-  // If you want a derived value for UI (we’ll still trust backend total)
   double get grandTotal => total;
 
   CartState copyWith({
@@ -40,6 +44,8 @@ class CartState extends Equatable {
     double? deliveryFee,
     double? total,
     String? promoCode,
+    String? promoError,
+    bool? promoApplying,
     PaymentMethod? paymentMethod,
   }) {
     return CartState(
@@ -51,6 +57,8 @@ class CartState extends Equatable {
       deliveryFee: deliveryFee ?? this.deliveryFee,
       total: total ?? this.total,
       promoCode: promoCode ?? this.promoCode,
+      promoError: promoError,
+      promoApplying: promoApplying ?? this.promoApplying,
       paymentMethod: paymentMethod ?? this.paymentMethod,
     );
   }
@@ -65,6 +73,8 @@ class CartState extends Equatable {
         deliveryFee,
         total,
         promoCode,
+        promoError,
+        promoApplying,
         paymentMethod,
       ];
 }

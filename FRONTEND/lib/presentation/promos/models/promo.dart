@@ -1,3 +1,4 @@
+// lib/presentation/promos/models/promo.dart
 import 'package:equatable/equatable.dart';
 
 enum PromoType { percent, fixed }
@@ -7,9 +8,10 @@ class Promo extends Equatable {
   final String title;
   final String description;
   final PromoType type;
-  final double amount; 
-  final String code; 
+  final double amount;
+  final String code;
   final DateTime? validTo;
+  final double minSubtotal; // Add minimum subtotal requirement
 
   const Promo({
     required this.id,
@@ -19,6 +21,7 @@ class Promo extends Equatable {
     required this.amount,
     required this.code,
     this.validTo,
+    this.minSubtotal = 0,
   });
 
   @override
@@ -30,5 +33,6 @@ class Promo extends Equatable {
     amount,
     code,
     validTo,
+    minSubtotal,
   ];
 }

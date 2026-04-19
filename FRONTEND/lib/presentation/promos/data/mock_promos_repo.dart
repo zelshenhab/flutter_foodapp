@@ -1,35 +1,57 @@
+// lib/presentation/promos/data/real_promos_repo.dart
+import 'package:flutter/material.dart';
+
+import '../../../core/api_client.dart';
 import '../models/promo.dart';
 
-class MockPromosRepo {
-  static List<Promo> fetchActive() {
-    return [
-      Promo(
-        id: 'p1',
-        title: 'Скидка новичкам',
-        description: '10% на первый заказ от 1000 ₽',
-        type: PromoType.percent,
-        amount: 10,
-        code: 'WELCOME',
-        validTo: DateTime.now().add(const Duration(days: 7)),
-      ),
-      Promo(
-        id: 'p2',
-        title: 'Комбо выходного',
-        description: 'Скидка 300 ₽ при заказе от 1500 ₽',
-        type: PromoType.fixed,
-        amount: 300,
-        code: 'WEEKEND300',
-        validTo: DateTime.now().add(const Duration(days: 3)),
-      ),
-      Promo(
-        id: 'p3',
-        title: 'Бесплатный соус',
-        description: 'Добавьте соус бесплатно к шаурме',
-        type: PromoType.fixed,
-        amount: 50,
-        code: 'FREESAUCE',
-        validTo: null,
-      ),
-    ];
+class RealPromosRepo {
+  static Future<List<Promo>> fetchActive() async {
+    try {
+      print('📦 Fetching promos from API...');
+      final response = await dio.get('/promos');
+      print('📦 Response status: ${response.statusCode}');
+      
+      final data = response.data as Map<String, dynamic>;
+      print('📦 Full response: $data');
+      
+      // Check if data['data'] exists and is a list
+      if (!data.containsKey('data')) {
+        print('❌ No "data" field in response');
+        return [];
+      }
+      
+      final promosData = data['data'];
+      if (promosData is! List) {
+        print('❌ "data" is not a list, it\'s a ${promosData.runtimeType}');
+        return [];
+      }
+      
+      print('📦 Found ${promosData.length} promos in response');
+      
+      if (promosData.isEmpty) {
+        print('⚠️ No promos found - check your database');
+        return [];
+      }
+      
+      return promosData.map((json) {
+        print('📦 Processing promo: ${json['code']}');
+        return Promo(
+          id: (json['id'] as num).toString(),
+          title: json['title'] as String,
+          description: json['description'] as String? ?? '',
+          type: json['type'] == 'percent' ? PromoType.percent : PromoType.fixed,
+          amount: (json['value'] as num).toDouble(),
+          code: json['code'] as String,
+          validTo: json['validTo'] != null 
+              ? DateTime.tryParse(json['validTo'] as String) 
+              : null,
+          minSubtotal: (json['minSubtotal'] as num?)?.toDouble() ?? 0,
+        );
+      }).toList();
+    } catch (e, stacktrace) {
+      debugPrint('❌ Error fetching promos: $e');
+      debugPrint('❌ Stacktrace: $stacktrace');
+      return [];
+    }
   }
 }

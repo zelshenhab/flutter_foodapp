@@ -29,13 +29,11 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<CartCleared>(_clear);
   }
 
-  // Convert API cart items → UI models
   List<CartItem> _mapApiItemsToCartItems(List<dynamic> apiItems) {
     return apiItems.map<CartItem>((raw) {
       final m = Map<String, dynamic>.from(raw as Map);
 
-      final idStr =
-          (m['id'] ?? m['menuItemId'] ?? m['title'] ?? '').toString();
+      final idStr = (m['id'] ?? m['menuItemId'] ?? m['title'] ?? '').toString();
 
       final menu = MenuItemModel(
         id: idStr,
@@ -54,26 +52,21 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }).toList();
   }
 
-  // Load cart from backend
   Future<void> _load(CartEvent e, Emitter<CartState> emit) async {
     debugPrint("LOAD CART EVENT");
 
-    emit(state.copyWith(loading: true, error: null));
+    emit(state.copyWith(loading: true, error: null, promoError: null));
 
     try {
       final data = await repo.getCart();
 
-      final items =
-          _mapApiItemsToCartItems(List.from(data['items'] as List));
+      final items = _mapApiItemsToCartItems(List.from(data['items'] as List));
 
       final subtotal = (data['subtotal'] as num).toDouble();
       final discount = (data['discount'] as num).toDouble();
-      final deliveryFee =
-          (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
-
-      final total =
-          (data['total'] as num?)?.toDouble() ??
-              (subtotal - discount + deliveryFee);
+      final deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
+      final total = (data['total'] as num?)?.toDouble() ?? (subtotal - discount + deliveryFee);
+      final promoError = data['promoError'] as String?;
 
       emit(
         state.copyWith(
@@ -84,10 +77,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           deliveryFee: deliveryFee,
           total: total,
           promoCode: data['promoCode'] as String?,
+          promoError: promoError,
           error: null,
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error loading cart: $e');
       emit(
         state.copyWith(
           loading: false,
@@ -97,13 +92,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  // Add item to cart (instant UI update)
-  Future<void> _addItem(
-    CartItemAdded e,
-    Emitter<CartState> emit,
-  ) async {
-    debugPrint("ADD ITEM EVENT");
-
+  Future<void> _addItem(CartItemAdded e, Emitter<CartState> emit) async {
     final updatedItems = List<CartItem>.from(state.items);
 
     final index = updatedItems.indexWhere(
@@ -112,122 +101,92 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     if (index != -1) {
       final existing = updatedItems[index];
-      updatedItems[index] =
-          existing.copyWith(qty: existing.qty + e.quantity);
+      updatedItems[index] = existing.copyWith(qty: existing.qty + e.quantity);
     } else {
-      updatedItems.add(
-        CartItem(item: e.item, qty: e.quantity),
-      );
+      updatedItems.add(CartItem(item: e.item, qty: e.quantity));
     }
 
     emit(_recalculateTotals(updatedItems));
 
-    // sync backend
     try {
       await repo.addItem(
         itemId: e.item.serverId!,
         quantity: e.quantity,
       );
+      // Refresh to get accurate totals from backend
+      add(CartRefreshed());
     } catch (_) {
       emit(state.copyWith(error: 'Не удалось добавить товар'));
     }
   }
 
-  Future<void> _removeItem(
-    CartItemRemoved e,
-    Emitter<CartState> emit,
-  ) async {
-
+  Future<void> _removeItem(CartItemRemoved e, Emitter<CartState> emit) async {
     final updatedItems = List<CartItem>.from(state.items);
-
-    final index =
-        updatedItems.indexWhere((it) => it.item.id == e.itemId);
+    final index = updatedItems.indexWhere((it) => it.item.id == e.itemId);
 
     if (index == -1) return;
 
     final item = updatedItems[index];
-
-    // remove locally first (instant UI update)
     updatedItems.removeAt(index);
 
     emit(_recalculateTotals(updatedItems));
 
     try {
-      await repo.removeItem(
-        itemId: item.item.serverId!,   // use serverId instead
-      );
+      await repo.removeItem(itemId: item.item.serverId!);
+      // Refresh to get accurate totals from backend
+      add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(
-        error: 'Не удалось удалить товар',
-      ));
+      emit(state.copyWith(error: 'Не удалось удалить товар'));
     }
   }
 
-
   CartState _recalculateTotals(List<CartItem> items) {
-  final subtotal = items.fold<double>(
-    0,
-    (sum, item) => sum + (item.item.price * item.qty),
-  );
+    final subtotal = items.fold<double>(
+      0,
+      (sum, item) => sum + (item.item.price * item.qty),
+    );
 
-  final discount = state.discount;
-  final deliveryFee = state.deliveryFee;
+    final discount = state.discount;
+    final deliveryFee = state.deliveryFee;
+    final total = subtotal - discount + deliveryFee;
 
-  final total = subtotal - discount + deliveryFee;
+    return state.copyWith(
+      items: items,
+      subtotal: subtotal,
+      total: total,
+    );
+  }
 
-  return state.copyWith(
-    items: items,
-    subtotal: subtotal,
-    total: total,
-  );
-}
-
-  Future<void> _increaseQty(
-    CartItemQtyIncreased e,
-    Emitter<CartState> emit,
-  ) async {
-
+  Future<void> _increaseQty(CartItemQtyIncreased e, Emitter<CartState> emit) async {
     final updatedItems = List<CartItem>.from(state.items);
-
-    final index =
-        updatedItems.indexWhere((it) => it.item.id == e.itemId);
+    final index = updatedItems.indexWhere((it) => it.item.id == e.itemId);
 
     if (index == -1) return;
 
     final item = updatedItems[index];
-
     final newQty = item.qty + 1;
-
     updatedItems[index] = item.copyWith(qty: newQty);
 
     emit(_recalculateTotals(updatedItems));
 
     try {
       await repo.updateQuantity(
-        itemId: item.item.serverId!,   // FIX
+        itemId: item.item.serverId!,
         quantity: newQty,
       );
+      add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(
-        error: 'Не удалось увеличить количество',
-      ));
+      emit(state.copyWith(error: 'Не удалось увеличить количество'));
     }
   }
 
-  Future<void> _decreaseQty(
-    CartItemQtyDecreased e,
-    Emitter<CartState> emit,
-  ) async {
-
+  Future<void> _decreaseQty(CartItemQtyDecreased e, Emitter<CartState> emit) async {
     final updatedItems = List<CartItem>.from(state.items);
-
-    final index =
-        updatedItems.indexWhere((it) => it.item.id == e.itemId);
+    final index = updatedItems.indexWhere((it) => it.item.id == e.itemId);
 
     if (index == -1) return;
 
     final item = updatedItems[index];
-
     final newQty = item.qty - 1;
 
     if (newQty <= 0) {
@@ -240,68 +199,65 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     try {
       await repo.updateQuantity(
-        itemId: item.item.serverId!,   // FIX
+        itemId: item.item.serverId!,
         quantity: newQty,
       );
+      add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(
-        error: 'Не удалось уменьшить количество',
-      ));
+      emit(state.copyWith(error: 'Не удалось уменьшить количество'));
     }
   }
-  
-  Future<void> _applyPromo(
-    CartPromoApplied e,
-    Emitter<CartState> emit,
-  ) async {
-    emit(state.copyWith(loading: true, error: null));
+
+  Future<void> _applyPromo(CartPromoApplied e, Emitter<CartState> emit) async {
+    // Don't emit loading to avoid UI flicker, just show applying state
+    emit(state.copyWith(promoApplying: true, promoError: null));
 
     try {
       final data = await repo.applyPromo(e.code);
 
-      final items =
-          _mapApiItemsToCartItems(List.from(data['items'] as List));
-
+      final items = _mapApiItemsToCartItems(List.from(data['items'] as List));
       final subtotal = (data['subtotal'] as num).toDouble();
       final discount = (data['discount'] as num).toDouble();
-
-      final deliveryFee =
-          (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
-
-      final total =
-          (data['total'] as num?)?.toDouble() ??
-              (subtotal - discount + deliveryFee);
+      final deliveryFee = (data['deliveryFee'] as num?)?.toDouble() ?? 0.0;
+      final total = (data['total'] as num?)?.toDouble() ?? (subtotal - discount + deliveryFee);
+      final promoError = data['promoError'] as String?;
 
       emit(
         state.copyWith(
-          loading: false,
+          promoApplying: false,
           items: items,
           subtotal: subtotal,
           discount: discount,
           deliveryFee: deliveryFee,
           total: total,
           promoCode: data['promoCode'] as String?,
+          promoError: promoError,
+          error: promoError ?? null,
         ),
       );
-    } catch (_) {
-      emit(state.copyWith(
-        loading: false,
-        error: 'Промокод не применён',
-      ));
+
+      // Show success message if promo applied
+      if (discount > 0 && promoError == null) {
+        // You can add a snackbar here via a separate event or callback
+        debugPrint('✅ Promo applied! Discount: $discount ₽');
+      }
+    } catch (e) {
+      debugPrint('Error applying promo: $e');
+      emit(
+        state.copyWith(
+          promoApplying: false,
+          promoError: 'Неверный промокод или условия не выполнены',
+          error: 'Неверный промокод',
+        ),
+      );
     }
   }
 
-  void _changeMethod(
-    CartPaymentMethodChanged e,
-    Emitter<CartState> emit,
-  ) {
+  void _changeMethod(CartPaymentMethodChanged e, Emitter<CartState> emit) {
     emit(state.copyWith(paymentMethod: e.method));
   }
 
-  Future<void> _clear(
-    CartCleared e,
-    Emitter<CartState> emit,
-  ) async {
+  Future<void> _clear(CartCleared e, Emitter<CartState> emit) async {
     emit(
       state.copyWith(
         items: [],
@@ -310,6 +266,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         deliveryFee: 0,
         total: 0,
         promoCode: null,
+        promoError: null,
       ),
     );
   }

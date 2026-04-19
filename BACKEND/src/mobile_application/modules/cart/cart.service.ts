@@ -1,14 +1,15 @@
 ﻿import { supabase } from "../../../core/config/supabase";
+import { validatePromo } from "../promos/promo.service";
 
 type Pricing = {
   items: Array<{
-    id: number;          // menuItemId (numeric) to make FE ops easy
+    id: number;
     title: string;
     quantity: number;
     unitPrice: number;
     lineTotal: number;
     optionIds: number[];
-    menuItemId: number;  // explicit too
+    menuItemId: number;
     image?: string | null;
     categoryId?: string | null;
   }>;
@@ -17,6 +18,7 @@ type Pricing = {
   deliveryFee: number;
   total: number;
   promoCode?: string | null;
+  promoError?: string | null;
 };
 
 function round2(n: number) {
@@ -32,7 +34,6 @@ function sameNumberSets(a: number[], b: number[]) {
 }
 
 async function getOrCreateCart(userId: number) {
-  // Try to get existing cart
   const { data: existing, error: fetchError } = await supabase
     .from("Cart")
     .select("*")
@@ -43,7 +44,6 @@ async function getOrCreateCart(userId: number) {
     return existing;
   }
 
-  // Create new cart if doesn't exist
   const { data: newCart, error: createError } = await supabase
     .from("Cart")
     .insert({ userId })
@@ -80,9 +80,8 @@ export async function getCart(userId: number): Promise<Pricing> {
       const unitPrice = Number(ci.unitPriceSnapshot ?? ci.unitPrice ?? 0);
       const lineTotal = Number(ci.lineTotal ?? unitPrice * Number(ci.quantity || 1));
 
-      // IMPORTANT: expose id = menuItemId to keep FE numeric id easy
       return {
-        id: ci.menuItemId, // <= menuItemId (numeric)
+        id: ci.menuItemId,
         menuItemId: ci.menuItemId,
         title: ci.MenuItem?.title ?? "Товар",
         quantity: Number(ci.quantity || 1),
@@ -95,12 +94,26 @@ export async function getCart(userId: number): Promise<Pricing> {
     }) || [];
 
   const subtotal = mapped.reduce((s, it) => s + it.lineTotal, 0);
-  const deliveryFee = subtotal > 0 ? 1.5 : 0;
+  const deliveryFee = subtotal > 0 ? 150 : 0; // Fixed delivery fee of 150 RUB
 
   let discount = 0;
+  let promoError = null;
+
   if (cart.promoCode) {
-    discount = await computePromoDiscount(cart.promoCode, subtotal);
+    try {
+      const validation = await validatePromo(cart.promoCode, subtotal, userId);
+      discount = validation.discountAmount;
+    } catch (err: any) {
+      promoError = err.message;
+      discount = 0;
+      // Clear invalid promo
+      await supabase
+        .from("Cart")
+        .update({ promoCode: null })
+        .eq("id", cart.id);
+    }
   }
+
   const total = Math.max(0, subtotal - discount + deliveryFee);
 
   return {
@@ -110,6 +123,7 @@ export async function getCart(userId: number): Promise<Pricing> {
     deliveryFee: round2(deliveryFee),
     total: round2(total),
     promoCode: cart.promoCode,
+    promoError,
   };
 }
 
@@ -154,7 +168,6 @@ export async function addItem(
   const unitPrice = round2(price);
   const lineTotal = round2(price * quantity);
 
-  // 🔁 Try to merge with an existing line that has SAME menuItemId AND SAME optionIds
   const { data: rows, error: exErr } = await supabase
     .from("CartItem")
     .select("*")
@@ -186,7 +199,6 @@ export async function addItem(
     }
   }
 
-  // ➕ Else insert new line
   const { data: created, error } = await supabase
     .from("CartItem")
     .insert({
@@ -204,7 +216,6 @@ export async function addItem(
     throw { status: 500, message: "Failed to add item to cart" };
   }
 
-  // touch cart
   await supabase
     .from("Cart")
     .update({ updatedAt: new Date().toISOString() })
@@ -213,7 +224,6 @@ export async function addItem(
   return created.id;
 }
 
-// NEW: set absolute quantity; if qty <= 0 remove the line
 export async function updateItemQuantity(
   userId: number,
   menuItemId: number,
@@ -221,7 +231,6 @@ export async function updateItemQuantity(
 ) {
   const cart = await getOrCreateCart(userId);
 
-  // get all matching rows (not single)
   const { data: rows, error: rowErr } = await supabase
     .from("CartItem")
     .select("*")
@@ -232,7 +241,6 @@ export async function updateItemQuantity(
     throw { status: 404, message: "Item not in cart" };
   }
 
-  // merge all duplicates into one by deleting extras
   const first = rows[0];
   const totalQty = Math.max(0, quantity);
   const unitPrice = Number(first.unitPriceSnapshot ?? first.unitPrice ?? 0);
@@ -247,7 +255,6 @@ export async function updateItemQuantity(
     return;
   }
 
-  // delete duplicates except one
   if (rows.length > 1) {
     const extraIds = rows.slice(1).map((r: any) => r.id);
     await supabase.from("CartItem").delete().in("id", extraIds);
@@ -268,7 +275,6 @@ export async function updateItemQuantity(
     .eq("id", cart.id);
 }
 
-// NEW: remove by menu item id for this user's cart
 export async function removeByMenuItem(userId: number, menuItemId: number) {
   const cart = await getOrCreateCart(userId);
 
@@ -286,7 +292,6 @@ export async function removeByMenuItem(userId: number, menuItemId: number) {
     .eq("id", cart.id);
 }
 
-// OLD: remove by CartItem id (kept for completeness; not used by new controller)
 export async function removeItem(userId: number, cartItemId: number) {
   const cart = await getOrCreateCart(userId);
 
@@ -308,9 +313,12 @@ export async function removeItem(userId: number, cartItemId: number) {
 
 export async function applyPromo(userId: number, code: string) {
   const cart = await getOrCreateCart(userId);
-
-  if (!code) {
-    // clear promo
+  
+  // First get current cart to get subtotal
+  const currentCart = await getCart(userId);
+  
+  if (!code || code.trim() === "") {
+    // Clear promo
     const { error: clearErr } = await supabase
       .from("Cart")
       .update({ promoCode: null })
@@ -319,60 +327,20 @@ export async function applyPromo(userId: number, code: string) {
     return getCart(userId);
   }
 
-  // Validate promo exists & active
-  const { data: promo, error } = await supabase
-    .from("Promo")
-    .select("*")
-    .eq("code", code)
-    .eq("active", true)
-    .single();
+  // Validate promo with current subtotal
+  await validatePromo(code.toUpperCase(), currentCart.subtotal, userId);
 
-  if (error || !promo) {
-    throw { status: 400, message: "Invalid promo" };
-  }
-
-  // Save on cart
+  // Save promo on cart
   const { error: updateError } = await supabase
     .from("Cart")
-    .update({ promoCode: code })
+    .update({ promoCode: code.toUpperCase() })
     .eq("id", cart.id);
+    
   if (updateError) {
     throw { status: 500, message: "Failed to apply promo" };
   }
 
   return getCart(userId);
-}
-
-async function computePromoDiscount(code: string, subtotal: number) {
-  const { data: promo, error } = await supabase
-    .from("Promo")
-    .select("*")
-    .eq("code", code)
-    .eq("active", true)
-    .single();
-
-  if (error || !promo) return 0;
-
-  // date window check
-  const now = new Date();
-  if (
-    (promo.validFrom && new Date(promo.validFrom) > now) ||
-    (promo.validTo && new Date(promo.validTo) < now)
-  ) {
-    return 0;
-  }
-
-  if (promo.minSubtotal && Number(promo.minSubtotal) > subtotal) return 0;
-
-  const type = promo.type;
-  const value = Number(promo.value);
-  if (type === "percent") {
-    return round2((value / 100) * subtotal);
-  }
-  if (type === "fixed") {
-    return Math.min(round2(value), subtotal);
-  }
-  return 0;
 }
 
 export async function clearCart(cartId: number) {
