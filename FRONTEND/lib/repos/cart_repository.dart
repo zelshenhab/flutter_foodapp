@@ -45,4 +45,15 @@ class CartRepository {
     final res = await dio.post('/cart/apply-promo', data: {'code': code});
     return Map<String, dynamic>.from(res.data['data'] as Map);
   }
+  
+  Future<Map<String, dynamic>> applyPoints(int points) async {
+    final res = await dio.post('/cart/apply-points', data: {'points': points});
+    return Map<String, dynamic>.from(res.data['data']);
+  }
+  
+  Future<Map<String, dynamic>> removePoints() async {
+    final res = await dio.delete('/cart/remove-points');
+    return Map<String, dynamic>.from(res.data['data']);
+  }
 }
+

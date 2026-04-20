@@ -1,6 +1,8 @@
 ﻿import { supabase } from "../../../core/config/supabase";
 import { validatePromo } from "../promos/promo.service";
+import { calculatePointsRedemption } from "../loyalty/loyalty.service"; // 👈 ADD THIS LINE
 
+// ✅ UPDATE THE Pricing TYPE to include loyalty points
 type Pricing = {
   items: Array<{
     id: number;
@@ -14,11 +16,14 @@ type Pricing = {
     categoryId?: string | null;
   }>;
   subtotal: number;
-  discount: number;
+  discount: number;        // Promo discount
+  pointsDiscount: number;  // 👈 ADD THIS - Loyalty points discount
   deliveryFee: number;
   total: number;
   promoCode?: string | null;
   promoError?: string | null;
+  appliedPoints?: number;   // 👈 ADD THIS
+  availablePoints?: number; // 👈 ADD THIS
 };
 
 function round2(n: number) {
@@ -57,7 +62,8 @@ async function getOrCreateCart(userId: number) {
   return newCart;
 }
 
-export async function getCart(userId: number): Promise<Pricing> {
+// ✅ UPDATE getCart function to include loyalty points
+export async function getCart(userId: number, appliedPoints?: number): Promise<Pricing> {
   const cart = await getOrCreateCart(userId);
 
   const { data: items, error } = await supabase
@@ -94,19 +100,22 @@ export async function getCart(userId: number): Promise<Pricing> {
     }) || [];
 
   const subtotal = mapped.reduce((s, it) => s + it.lineTotal, 0);
-  const deliveryFee = subtotal > 0 ? 150 : 0; // Fixed delivery fee of 150 RUB
 
-  let discount = 0;
+  // ✅ Service fee (still called deliveryFee in API for compatibility)
+  const deliveryFee = mapped.length > 0 ? 2 : 0;
+
+  // Promo discount
+  let promoDiscount = 0;
   let promoError = null;
 
   if (cart.promoCode) {
     try {
       const validation = await validatePromo(cart.promoCode, subtotal, userId);
-      discount = validation.discountAmount;
+      promoDiscount = validation.discountAmount;
     } catch (err: any) {
       promoError = err.message;
-      discount = 0;
-      // Clear invalid promo
+      promoDiscount = 0;
+
       await supabase
         .from("Cart")
         .update({ promoCode: null })
@@ -114,16 +123,49 @@ export async function getCart(userId: number): Promise<Pricing> {
     }
   }
 
-  const total = Math.max(0, subtotal - discount + deliveryFee);
+  // Loyalty points
+  const { data: user } = await supabase
+    .from("User")
+    .select("loyaltyPoints")
+    .eq("id", userId)
+    .single();
+
+  const availablePoints = user?.loyaltyPoints || 0;
+
+  let pointsDiscount = 0;
+  let finalAppliedPoints = 0;
+
+  if (appliedPoints && appliedPoints > 0 && availablePoints > 0) {
+    const remainingTotal = subtotal - promoDiscount;
+    const maxPointsByOrder = Math.floor(remainingTotal * 0.3);
+
+    let pointsToUse = Math.min(appliedPoints, availablePoints, maxPointsByOrder);
+
+    // round to clean numbers (100)
+    pointsToUse = Math.floor(pointsToUse / 100) * 100;
+
+    if (pointsToUse >= 100) {
+      pointsDiscount = pointsToUse;
+      finalAppliedPoints = pointsToUse;
+    }
+  }
+
+  const total = Math.max(
+    0,
+    subtotal - promoDiscount - pointsDiscount + deliveryFee
+  );
 
   return {
     items: mapped,
     subtotal: round2(subtotal),
-    discount: round2(discount),
-    deliveryFee: round2(deliveryFee),
+    discount: round2(promoDiscount),
+    pointsDiscount: round2(pointsDiscount),
+    deliveryFee: round2(deliveryFee), // still called deliveryFee for frontend compatibility
     total: round2(total),
     promoCode: cart.promoCode,
     promoError,
+    appliedPoints: finalAppliedPoints,
+    availablePoints: availablePoints,
   };
 }
 
@@ -350,4 +392,36 @@ export async function clearCart(cartId: number) {
 
 export async function getCartRecord(userId: number) {
   return getOrCreateCart(userId);
+}
+
+export async function applyLoyaltyPoints(userId: number, pointsToApply: number) {
+  const cart = await getOrCreateCart(userId);
+  
+  // Validate points
+  const currentCart = await getCart(userId);
+  const { data: user } = await supabase
+    .from("User")
+    .select("loyaltyPoints")
+    .eq("id", userId)
+    .single();
+  
+  const availablePoints = user?.loyaltyPoints || 0;
+  const remainingTotal = currentCart.subtotal - currentCart.discount;
+  const maxPointsByOrder = Math.floor(remainingTotal * 0.3);
+  
+  let finalPoints = Math.min(pointsToApply, availablePoints, maxPointsByOrder);
+  finalPoints = Math.floor(finalPoints / 100) * 100;
+  
+  if (finalPoints < 100) {
+    throw { status: 400, message: "Minimum 100 points required" };
+  }
+  
+  // Store applied points in cart (you might want to add a column to Cart table)
+  // For now, we'll just return the updated cart
+  return getCart(userId, finalPoints);
+}
+
+// ✅ ADD NEW FUNCTION to remove loyalty points
+export async function removeLoyaltyPoints(userId: number) {
+  return getCart(userId, 0);
 }

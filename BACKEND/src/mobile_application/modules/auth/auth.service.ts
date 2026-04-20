@@ -4,6 +4,7 @@ import { addMinutes, isBefore, differenceInDays } from "date-fns";
 import { signAccess, signRefresh } from "../../../core/utils/jwt";
 import { sendOtpEmail } from "../../../core/config/sendgrid";
 import { sendOtpEmailSMTP } from "../../../core/config/smtp";
+import { awardWelcomeBonus } from "../loyalty/loyalty.service";
 
 const OTP_TTL_MIN = 15;
 const MAX_ATTEMPTS = 5;
@@ -11,7 +12,7 @@ const INACTIVITY_LIMIT_DAYS = 30; // Force re-login after 30 days of inactivity
 const SESSION_EXTEND_DAYS = 30; // Extend session by 30 days when active
 
 // --------------------
-// REQUEST OTP (unchanged)
+// REQUEST OTP
 // --------------------
 export async function requestOtp(email: string) {
   const moderatorEnabled =
@@ -76,7 +77,7 @@ export async function requestOtp(email: string) {
 }
 
 // --------------------
-// VERIFY OTP (updated with metadata)
+// VERIFY OTP (UPDATED with proper welcome bonus)
 // --------------------
 export async function verifyOtp(
   email: string,
@@ -99,18 +100,58 @@ export async function verifyOtp(
   ) {
     console.log("Moderator login successful");
 
-    const { data: user, error: userError } = await supabase
+    // Check if user exists first
+    let { data: user, error: userError } = await supabase
       .from("User")
-      .upsert({ email }, { onConflict: "email" })
-      .select()
-      .single();
+      .select("*")
+      .eq("email", email)
+      .maybeSingle();
 
-    if (userError || !user) {
-      throw { status: 500, message: "Failed to create/update user" };
+    let isNewUser = false;
+
+    if (!user) {
+      // Create new user
+      console.log(`Creating new moderator user: ${email}`);
+      const { data: newUser, error: createError } = await supabase
+        .from("User")
+        .insert({ email })
+        .select()
+        .single();
+
+      if (createError || !newUser) {
+        console.error("Failed to create moderator user:", createError);
+        throw { status: 500, message: "Failed to create user" };
+      }
+      user = newUser;
+      isNewUser = true;
+      console.log(`✅ New moderator user created: ${user.id}`);
+    } else {
+      console.log(`✅ Existing moderator user logged in: ${user.id}`);
+    }
+
+    // Award welcome bonus for new users
+    if (isNewUser) {
+      try {
+        console.log(`🎁 Awarding welcome bonus to moderator user ${user.id}...`);
+        await awardWelcomeBonus(user.id);
+        console.log(`✅ Welcome bonus awarded to moderator user ${user.id}`);
+        
+        // Refresh user data
+        const { data: refreshedUser } = await supabase
+          .from("User")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        
+        if (refreshedUser) {
+          user = refreshedUser;
+        }
+      } catch (error) {
+        console.error("❌ Failed to award welcome bonus:", error);
+      }
     }
 
     const payload = { id: user.id, email: user.email };
-
     const accessToken = signAccess(payload);
     const refreshToken = signRefresh(payload);
 
@@ -165,19 +206,59 @@ export async function verifyOtp(
     throw { status: 400, message: "Invalid code" };
   }
 
-  // Get or create user
-  const { data: user, error: userError } = await supabase
+  // Check if user exists FIRST (using maybeSingle to avoid errors)
+  let { data: user, error: userError } = await supabase
     .from("User")
-    .upsert({ email }, { onConflict: "email" })
-    .select()
-    .single();
+    .select("*")
+    .eq("email", email)
+    .maybeSingle();
 
-  if (userError || !user) {
-    throw { status: 500, message: "Failed to create/update user" };
+  let isNewUser = false;
+
+  if (!user) {
+    // Create new user
+    console.log(`Creating new user: ${email}`);
+    const { data: newUser, error: createError } = await supabase
+      .from("User")
+      .insert({ email })
+      .select()
+      .single();
+
+    if (createError || !newUser) {
+      console.error("Failed to create user:", createError);
+      throw { status: 500, message: "Failed to create user" };
+    }
+    user = newUser;
+    isNewUser = true;
+    console.log(`✅ New user created: ${user.id}`);
+  } else {
+    console.log(`✅ Existing user logged in: ${user.id}`);
+  }
+
+  // Award welcome bonus for NEW users only
+  if (isNewUser) {
+    try {
+      console.log(`🎁 Awarding welcome bonus to user ${user.id}...`);
+      const result = await awardWelcomeBonus(user.id);
+      console.log(`✅ Welcome bonus result:`, result);
+      
+      // Refresh user data to get updated points
+      const { data: refreshedUser } = await supabase
+        .from("User")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      
+      if (refreshedUser) {
+        user = refreshedUser;
+        console.log(`✅ User ${user.id} now has ${user.loyaltyPoints} loyalty points`);
+      }
+    } catch (error) {
+      console.error("❌ Failed to award welcome bonus:", error);
+    }
   }
 
   const payload = { id: user.id, email: user.email };
-
   const accessToken = signAccess(payload);
   const refreshToken = signRefresh(payload);
 
@@ -205,7 +286,7 @@ export async function verifyOtp(
 }
 
 // --------------------
-// ME (unchanged)
+// ME
 // --------------------
 export async function me(userId: number) {
   const { data, error } = await supabase
@@ -222,7 +303,7 @@ export async function me(userId: number) {
 }
 
 // --------------------
-// REFRESH (CRITICAL FIX - with rotation)
+// REFRESH (with rotation)
 // --------------------
 export async function refresh(
   oldToken: string,
@@ -321,7 +402,7 @@ export async function refresh(
 }
 
 // --------------------
-// LOGOUT (updated)
+// LOGOUT
 // --------------------
 export async function logout(refreshToken: string) {
   const { data: rec } = await supabase
@@ -346,14 +427,16 @@ export async function logout(refreshToken: string) {
 }
 
 // --------------------
-// DELETE ACCOUNT (unchanged)
+// DELETE ACCOUNT
 // --------------------
 export async function deleteAccount(userId: number) {
+  // Remove refresh tokens
   await supabase
     .from("RefreshToken")
     .delete()
     .eq("userId", userId);
 
+  // Delete user
   const { error } = await supabase
     .from("User")
     .delete()

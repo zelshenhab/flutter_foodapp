@@ -1,15 +1,21 @@
+// lib/presentation/profile/bloc/profile_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../repos/profile_repository.dart';
+import '../../../repos/loyalty_repository.dart'; // 👈 ADD THIS
 import 'profile_event.dart';
 import 'profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final ProfileRepository repo;
+  final LoyaltyRepository loyaltyRepo; // 👈 ADD THIS
 
-  ProfileBloc({ProfileRepository? repo})
-      : repo = repo ?? const ProfileRepository(),
+  ProfileBloc({
+    ProfileRepository? repo,
+    LoyaltyRepository? loyaltyRepo, // 👈 ADD THIS
+  })  : repo = repo ?? const ProfileRepository(),
+        loyaltyRepo = loyaltyRepo ?? const LoyaltyRepository(), // 👈 ADD THIS
         super(const ProfileState()) {
     on<ProfileStarted>(_load);
     on<ProfileNameChanged>(
@@ -32,6 +38,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         name: '',
         email: null,
         avatarUrl: null,
+        loyaltyPoints: 0, // 👈 ADD THIS
       ));
       return;
     }
@@ -45,11 +52,22 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       String name = (m['name'] as String?)?.trim() ?? '';
 
+      // 👈 ADD LOYALTY POINTS FETCHING
+      int loyaltyPoints = 0;
+      try {
+        final loyaltyData = await loyaltyRepo.getLoyaltyInfo();
+        loyaltyPoints = loyaltyData['points'] ?? 0;
+        debugPrint('✅ Loyalty points loaded: $loyaltyPoints');
+      } catch (e) {
+        debugPrint('❌ Failed to load loyalty points: $e');
+      }
+
       emit(state.copyWith(
         loading: false,
         id: (m['id'] as num?)?.toInt(),
         email: m['email'] as String?,
         name: name,
+        loyaltyPoints: loyaltyPoints, // 👈 ADD THIS
         createdAt: m['createdAt'] != null
             ? DateTime.tryParse(m['createdAt'] as String)
             : null,
@@ -59,10 +77,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(state.copyWith(
         loading: false,
         error: 'Не удалось загрузить профиль',
+        loyaltyPoints: 0, // 👈 ADD THIS
       ));
     }
   }
-
 
   // Save profile updates
   Future<void> _save(ProfileSaved e, Emitter<ProfileState> emit) async {
@@ -72,7 +90,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         name: state.name.trim(),
       );
 
-      // Sanitize again on save
       String name = (m['name'] as String?)?.trim() ?? '';
 
       emit(state.copyWith(

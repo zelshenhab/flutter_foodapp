@@ -1,5 +1,5 @@
 ﻿import { Router } from "express";
-import { addItem, getCart, applyPromo, updateItemQty, removeItem } from "./cart.controller";
+import { addItem, getCart, applyPromo, updateItemQty, removeItem, applyLoyaltyPoints, removeLoyaltyPoints } from "./cart.controller";
 
 export const cartRouter = Router();
 
@@ -17,3 +17,6 @@ cartRouter.delete("/items/:itemId", removeItem);
 
 // Apply promo
 cartRouter.post("/apply-promo", applyPromo);
+
+cartRouter.post("/apply-points", applyLoyaltyPoints);
+cartRouter.delete("/remove-points", removeLoyaltyPoints);

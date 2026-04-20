@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/cart/widgets/loyalty_card.dart';
 import 'package:flutter_foodapp/presentation/payments/pages/online_payment_page.dart';
 
 import '../bloc/cart_bloc.dart';
@@ -122,6 +123,8 @@ class _CartScaffold extends StatelessWidget {
               const SizedBox(height: 8),
 
               const PromoField(),
+
+              const LoyaltyCard(),
               const PaymentMethodSelector(),
               const SummaryPanel(pickup: true, pickupAddress: 'ул. Пушкина 15'),
 

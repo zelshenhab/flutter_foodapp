@@ -14,4 +14,6 @@ exports.cartRouter.patch("/items", cart_controller_1.updateItemQty);
 exports.cartRouter.delete("/items/:itemId", cart_controller_1.removeItem);
 // Apply promo
 exports.cartRouter.post("/apply-promo", cart_controller_1.applyPromo);
+exports.cartRouter.post("/apply-points", cart_controller_1.applyLoyaltyPoints);
+exports.cartRouter.delete("/remove-points", cart_controller_1.removeLoyaltyPoints);
 //# sourceMappingURL=cart.routes.js.map

@@ -342,12 +342,11 @@ class ProfilePage extends StatelessWidget {
     );
   }
 }
-/// Keeps your existing BonusesCard look
+// Keeps your existing BonusesCard look
 class _BonusesCardShim extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BonusesCard(
-      balance: 150,
       onViewPromos: () {
         Navigator.push(
           context,

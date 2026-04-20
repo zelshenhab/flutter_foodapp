@@ -12,8 +12,11 @@ const date_fns_1 = require("date-fns");
 const jwt_1 = require("../../../core/utils/jwt");
 const sendgrid_1 = require("../../../core/config/sendgrid");
 const smtp_1 = require("../../../core/config/smtp");
+const loyalty_service_1 = require("../loyalty/loyalty.service");
 const OTP_TTL_MIN = 15;
 const MAX_ATTEMPTS = 5;
+const INACTIVITY_LIMIT_DAYS = 30; // Force re-login after 30 days of inactivity
+const SESSION_EXTEND_DAYS = 30; // Extend session by 30 days when active
 // --------------------
 // REQUEST OTP
 // --------------------
@@ -21,7 +24,6 @@ async function requestOtp(email) {
     const moderatorEnabled = process.env.ENABLE_MODERATOR_BYPASS === "true";
     const moderatorEmail = process.env.MODERATOR_EMAIL;
     const moderatorCode = process.env.MODERATOR_CODE || "915287";
-    // 🛡 Moderator bypass (NO email sending)
     if (moderatorEnabled && email === moderatorEmail) {
         console.log("Moderator OTP bypass activated");
         return {
@@ -29,7 +31,6 @@ async function requestOtp(email) {
             ttl: OTP_TTL_MIN * 60,
         };
     }
-    // -------- Normal OTP Flow --------
     const requestId = (0, crypto_1.randomBytes)(12).toString("hex");
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     console.log("Sending OTP to:", email);
@@ -72,7 +73,10 @@ async function requestOtp(email) {
         ttl: OTP_TTL_MIN * 60,
     };
 }
-async function verifyOtp(email, requestId, code) {
+// --------------------
+// VERIFY OTP (UPDATED with proper welcome bonus)
+// --------------------
+async function verifyOtp(email, requestId, code, userAgent, ipAddress) {
     const moderatorEnabled = process.env.ENABLE_MODERATOR_BYPASS === "true";
     const moderatorEmail = process.env.MODERATOR_EMAIL;
     const moderatorCode = process.env.MODERATOR_CODE || "123456";
@@ -81,24 +85,74 @@ async function verifyOtp(email, requestId, code) {
         email === moderatorEmail &&
         code === moderatorCode) {
         console.log("Moderator login successful");
-        const { data: user, error: userError } = await supabase_1.supabase
+        // Check if user exists first
+        let { data: user, error: userError } = await supabase_1.supabase
             .from("User")
-            .upsert({ email }, { onConflict: "email" })
-            .select()
-            .single();
-        if (userError || !user) {
-            throw { status: 500, message: "Failed to create/update user" };
+            .select("*")
+            .eq("email", email)
+            .maybeSingle();
+        let isNewUser = false;
+        if (!user) {
+            // Create new user
+            console.log(`Creating new moderator user: ${email}`);
+            const { data: newUser, error: createError } = await supabase_1.supabase
+                .from("User")
+                .insert({ email })
+                .select()
+                .single();
+            if (createError || !newUser) {
+                console.error("Failed to create moderator user:", createError);
+                throw { status: 500, message: "Failed to create user" };
+            }
+            user = newUser;
+            isNewUser = true;
+            console.log(`✅ New moderator user created: ${user.id}`);
+        }
+        else {
+            console.log(`✅ Existing moderator user logged in: ${user.id}`);
+        }
+        // Award welcome bonus for new users
+        if (isNewUser) {
+            try {
+                console.log(`🎁 Awarding welcome bonus to moderator user ${user.id}...`);
+                await (0, loyalty_service_1.awardWelcomeBonus)(user.id);
+                console.log(`✅ Welcome bonus awarded to moderator user ${user.id}`);
+                // Refresh user data
+                const { data: refreshedUser } = await supabase_1.supabase
+                    .from("User")
+                    .select("*")
+                    .eq("id", user.id)
+                    .single();
+                if (refreshedUser) {
+                    user = refreshedUser;
+                }
+            }
+            catch (error) {
+                console.error("❌ Failed to award welcome bonus:", error);
+            }
         }
         const payload = { id: user.id, email: user.email };
         const accessToken = (0, jwt_1.signAccess)(payload);
         const refreshToken = (0, jwt_1.signRefresh)(payload);
+        // Update user activity
+        await supabase_1.supabase
+            .from("User")
+            .update({
+            lastActiveAt: new Date().toISOString(),
+            lastRefreshAt: new Date().toISOString(),
+        })
+            .eq("id", user.id);
         await supabase_1.supabase.from("RefreshToken").insert({
             userId: user.id,
             token: refreshToken,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            expiresAt: new Date(Date.now() + SESSION_EXTEND_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+            userAgent,
+            ipAddress,
+            lastUsedAt: new Date().toISOString(),
         });
         return { accessToken, refreshToken, user };
     }
+    // Normal OTP verification
     const { data: rec, error: fetchError } = await supabase_1.supabase
         .from("OtpRequest")
         .select("*")
@@ -120,24 +174,77 @@ async function verifyOtp(email, requestId, code) {
     if (rec.code !== code) {
         throw { status: 400, message: "Invalid code" };
     }
-    const { data: user, error: userError } = await supabase_1.supabase
+    // Check if user exists FIRST (using maybeSingle to avoid errors)
+    let { data: user, error: userError } = await supabase_1.supabase
         .from("User")
-        .upsert({ email }, { onConflict: "email" })
-        .select()
-        .single();
-    if (userError || !user) {
-        throw { status: 500, message: "Failed to create/update user" };
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
+    let isNewUser = false;
+    if (!user) {
+        // Create new user
+        console.log(`Creating new user: ${email}`);
+        const { data: newUser, error: createError } = await supabase_1.supabase
+            .from("User")
+            .insert({ email })
+            .select()
+            .single();
+        if (createError || !newUser) {
+            console.error("Failed to create user:", createError);
+            throw { status: 500, message: "Failed to create user" };
+        }
+        user = newUser;
+        isNewUser = true;
+        console.log(`✅ New user created: ${user.id}`);
+    }
+    else {
+        console.log(`✅ Existing user logged in: ${user.id}`);
+    }
+    // Award welcome bonus for NEW users only
+    if (isNewUser) {
+        try {
+            console.log(`🎁 Awarding welcome bonus to user ${user.id}...`);
+            const result = await (0, loyalty_service_1.awardWelcomeBonus)(user.id);
+            console.log(`✅ Welcome bonus result:`, result);
+            // Refresh user data to get updated points
+            const { data: refreshedUser } = await supabase_1.supabase
+                .from("User")
+                .select("*")
+                .eq("id", user.id)
+                .single();
+            if (refreshedUser) {
+                user = refreshedUser;
+                console.log(`✅ User ${user.id} now has ${user.loyaltyPoints} loyalty points`);
+            }
+        }
+        catch (error) {
+            console.error("❌ Failed to award welcome bonus:", error);
+        }
     }
     const payload = { id: user.id, email: user.email };
     const accessToken = (0, jwt_1.signAccess)(payload);
     const refreshToken = (0, jwt_1.signRefresh)(payload);
+    // Update user activity
+    await supabase_1.supabase
+        .from("User")
+        .update({
+        lastActiveAt: new Date().toISOString(),
+        lastRefreshAt: new Date().toISOString(),
+    })
+        .eq("id", user.id);
     await supabase_1.supabase.from("RefreshToken").insert({
         userId: user.id,
         token: refreshToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + SESSION_EXTEND_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+        userAgent,
+        ipAddress,
+        lastUsedAt: new Date().toISOString(),
     });
     return { accessToken, refreshToken, user };
 }
+// --------------------
+// ME
+// --------------------
 async function me(userId) {
     const { data, error } = await supabase_1.supabase
         .from("User")
@@ -149,18 +256,23 @@ async function me(userId) {
     }
     return data;
 }
-async function refresh(oldToken) {
-    const { data: rec } = await supabase_1.supabase
+// --------------------
+// REFRESH (with rotation)
+// --------------------
+async function refresh(oldToken, userAgent, ipAddress) {
+    // Find the refresh token
+    const { data: rec, error: fetchError } = await supabase_1.supabase
         .from("RefreshToken")
         .select("*")
         .eq("token", oldToken)
         .single();
-    if (!rec || rec.revoked) {
+    if (fetchError || !rec || rec.revoked) {
         throw { status: 401, message: "Invalid refresh token" };
     }
     if ((0, date_fns_1.isBefore)(new Date(rec.expiresAt), new Date())) {
         throw { status: 401, message: "Refresh expired" };
     }
+    // Get user
     const { data: user } = await supabase_1.supabase
         .from("User")
         .select("*")
@@ -169,12 +281,61 @@ async function refresh(oldToken) {
     if (!user) {
         throw { status: 401, message: "User not found" };
     }
-    const accessToken = (0, jwt_1.signAccess)({
-        id: user.id,
-        email: user.email,
+    // Check for inactivity
+    if (user.lastRefreshAt) {
+        const inactiveDays = (0, date_fns_1.differenceInDays)(new Date(), new Date(user.lastRefreshAt));
+        if (inactiveDays > INACTIVITY_LIMIT_DAYS) {
+            // Revoke the old token
+            await supabase_1.supabase
+                .from("RefreshToken")
+                .update({
+                revoked: true,
+                revokedAt: new Date().toISOString()
+            })
+                .eq("id", rec.id);
+            throw { status: 401, message: "Session expired due to inactivity" };
+        }
+    }
+    // Generate NEW tokens
+    const payload = { id: user.id, email: user.email };
+    const newAccessToken = (0, jwt_1.signAccess)(payload);
+    const newRefreshToken = (0, jwt_1.signRefresh)(payload);
+    // Invalidate the OLD refresh token (rotation)
+    await supabase_1.supabase
+        .from("RefreshToken")
+        .update({
+        revoked: true,
+        revokedAt: new Date().toISOString(),
+        replacedBy: newRefreshToken,
+        replacedAt: new Date().toISOString()
+    })
+        .eq("id", rec.id);
+    // Create NEW refresh token
+    await supabase_1.supabase.from("RefreshToken").insert({
+        userId: user.id,
+        token: newRefreshToken,
+        expiresAt: new Date(Date.now() + SESSION_EXTEND_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+        userAgent: userAgent || rec.userAgent,
+        ipAddress: ipAddress || rec.ipAddress,
+        lastUsedAt: new Date().toISOString(),
     });
-    return { accessToken };
+    // Update user activity
+    await supabase_1.supabase
+        .from("User")
+        .update({
+        lastActiveAt: new Date().toISOString(),
+        lastRefreshAt: new Date().toISOString(),
+    })
+        .eq("id", user.id);
+    // Return BOTH tokens
+    return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken
+    };
 }
+// --------------------
+// LOGOUT
+// --------------------
 async function logout(refreshToken) {
     const { data: rec } = await supabase_1.supabase
         .from("RefreshToken")
@@ -186,17 +347,23 @@ async function logout(refreshToken) {
     }
     await supabase_1.supabase
         .from("RefreshToken")
-        .update({ revoked: true })
+        .update({
+        revoked: true,
+        revokedAt: new Date().toISOString()
+    })
         .eq("id", rec.id);
     return { success: true };
 }
+// --------------------
+// DELETE ACCOUNT
+// --------------------
 async function deleteAccount(userId) {
-    // remove refresh tokens
+    // Remove refresh tokens
     await supabase_1.supabase
         .from("RefreshToken")
         .delete()
         .eq("userId", userId);
-    // delete user
+    // Delete user
     const { error } = await supabase_1.supabase
         .from("User")
         .delete()

@@ -1,5 +1,7 @@
-﻿import { supabase } from "../../../core/config/supabase";
+﻿// ✅ ADD THIS IMPORT AT THE TOP of order.service.ts
+import { supabase } from "../../../core/config/supabase";
 import * as cartSvc from "../cart/cart.service";
+import { awardLoyaltyPoints } from "../loyalty/loyalty.service"; // 👈 ADD THIS LINE
 
 /* ======================================================
    HELPERS
@@ -12,7 +14,6 @@ function getMenuItem(ci: any) {
       message: "One or more items are no longer available",
     };
   }
-
   return ci.MenuItem;
 }
 
@@ -135,11 +136,29 @@ export async function createOrder(
   console.log("ORDER ITEMS CREATED:", orderItems);
 
   console.log("CLEARING CART:", cartRec.id);
+  
   /* -----------------------------------------
    * 5️⃣ CLEAR CART
    * --------------------------------------- */
 
   await cartSvc.clearCart(cartRec.id);
+
+  // ✅ ADD THIS SECTION - AWARD LOYALTY POINTS
+  /* -----------------------------------------
+   * 6️⃣ AWARD LOYALTY POINTS
+   * --------------------------------------- */
+  try {
+    const { pointsEarned, newBalance } = await awardLoyaltyPoints(
+      userId, 
+      order.id, 
+      cart.total  // Use the total amount paid
+    );
+    console.log(`✅ Awarded ${pointsEarned} loyalty points to user ${userId} for order ${order.id}`);
+    console.log(`✅ New loyalty balance: ${newBalance}`);
+  } catch (error) {
+    console.error("❌ Failed to award loyalty points:", error);
+    // Don't fail the order if points award fails
+  }
 
   return {
     orderId: order.id,

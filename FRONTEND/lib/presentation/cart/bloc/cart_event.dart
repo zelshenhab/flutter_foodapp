@@ -85,3 +85,14 @@ class CartPaymentMethodChanged extends CartEvent {
 class CartCleared extends CartEvent {
   const CartCleared();
 }
+
+class CartPointsApplied extends CartEvent {
+  final int points;
+  const CartPointsApplied(this.points);
+  @override
+  List<Object?> get props => [points];
+}
+
+class CartPointsRemoved extends CartEvent {
+  const CartPointsRemoved();
+}

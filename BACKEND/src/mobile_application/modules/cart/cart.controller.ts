@@ -61,3 +61,33 @@ export async function applyPromo(req: Request, res: Response) {
   const data = await svc.applyPromo(userId, String(code || ""));
   res.json({ data });
 }
+
+export async function applyLoyaltyPoints(req: Request, res: Response) {
+  try {
+    const userId = userIdFrom(req);
+    const { points } = req.body;
+    
+    if (!points || points < 100) {
+      return res.status(400).json({ message: "Minimum 100 points required" });
+    }
+    
+    const data = await svc.applyLoyaltyPoints(userId, points);
+    res.json({ data });
+  } catch (err: any) {
+    res.status(err?.status || 500).json({ 
+      message: err?.message || "Failed to apply loyalty points" 
+    });
+  }
+}
+
+export async function removeLoyaltyPoints(req: Request, res: Response) {
+  try {
+    const userId = userIdFrom(req);
+    const data = await svc.removeLoyaltyPoints(userId);
+    res.json({ data });
+  } catch (err: any) {
+    res.status(err?.status || 500).json({ 
+      message: err?.message || "Failed to remove loyalty points" 
+    });
+  }
+}

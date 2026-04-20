@@ -18,6 +18,10 @@ import '../profile/bloc/profile_event.dart';
 
 import '../auth/pages/login_info_page.dart';
 
+// ✅ ADD THIS IMPORT
+import '../../repos/loyalty_repository.dart'; // 👈 ADD THIS LINE
+import '../../repos/profile_repository.dart'; // 👈 ADD THIS LINE (if not already)
+
 class AppShell extends StatefulWidget {
   final String? initialName;
   final String? initialEmail;
@@ -110,7 +114,13 @@ class _AppShellState extends State<AppShell> {
       providers: [
         BlocProvider(create: (_) => CartBloc()..add(const CartStarted())),
         BlocProvider(create: (_) => MenuBloc()..add(MenuStarted())),
-        BlocProvider(create: (_) => ProfileBloc()..add(const ProfileStarted())),
+        // ✅ UPDATED ProfileBloc with dependencies
+        BlocProvider(
+          create: (_) => ProfileBloc(
+            repo: const ProfileRepository(),
+            loyaltyRepo: const LoyaltyRepository(),
+          )..add(const ProfileStarted()),
+        ),
       ],
       child: Builder(
         builder: (context) {

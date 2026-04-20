@@ -38,8 +38,10 @@ exports.createOrder = createOrder;
 exports.listOrders = listOrders;
 exports.getOrderDetail = getOrderDetail;
 exports.completeOrder = completeOrder;
+// ✅ ADD THIS IMPORT AT THE TOP of order.service.ts
 const supabase_1 = require("../../../core/config/supabase");
 const cartSvc = __importStar(require("../cart/cart.service"));
+const loyalty_service_1 = require("../loyalty/loyalty.service"); // 👈 ADD THIS LINE
 /* ======================================================
    HELPERS
 ====================================================== */
@@ -147,6 +149,20 @@ async function createOrder(userId, input) {
      * 5️⃣ CLEAR CART
      * --------------------------------------- */
     await cartSvc.clearCart(cartRec.id);
+    // ✅ ADD THIS SECTION - AWARD LOYALTY POINTS
+    /* -----------------------------------------
+     * 6️⃣ AWARD LOYALTY POINTS
+     * --------------------------------------- */
+    try {
+        const { pointsEarned, newBalance } = await (0, loyalty_service_1.awardLoyaltyPoints)(userId, order.id, cart.total // Use the total amount paid
+        );
+        console.log(`✅ Awarded ${pointsEarned} loyalty points to user ${userId} for order ${order.id}`);
+        console.log(`✅ New loyalty balance: ${newBalance}`);
+    }
+    catch (error) {
+        console.error("❌ Failed to award loyalty points:", error);
+        // Don't fail the order if points award fails
+    }
     return {
         orderId: order.id,
         status: order.status,

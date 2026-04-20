@@ -38,6 +38,8 @@ exports.addItem = addItem;
 exports.updateItemQty = updateItemQty;
 exports.removeItem = removeItem;
 exports.applyPromo = applyPromo;
+exports.applyLoyaltyPoints = applyLoyaltyPoints;
+exports.removeLoyaltyPoints = removeLoyaltyPoints;
 const svc = __importStar(require("./cart.service"));
 const jwt_1 = require("../../../core/utils/jwt");
 function userIdFrom(req) {
@@ -90,5 +92,33 @@ async function applyPromo(req, res) {
     const { code } = req.body || {};
     const data = await svc.applyPromo(userId, String(code || ""));
     res.json({ data });
+}
+async function applyLoyaltyPoints(req, res) {
+    try {
+        const userId = userIdFrom(req);
+        const { points } = req.body;
+        if (!points || points < 100) {
+            return res.status(400).json({ message: "Minimum 100 points required" });
+        }
+        const data = await svc.applyLoyaltyPoints(userId, points);
+        res.json({ data });
+    }
+    catch (err) {
+        res.status(err?.status || 500).json({
+            message: err?.message || "Failed to apply loyalty points"
+        });
+    }
+}
+async function removeLoyaltyPoints(req, res) {
+    try {
+        const userId = userIdFrom(req);
+        const data = await svc.removeLoyaltyPoints(userId);
+        res.json({ data });
+    }
+    catch (err) {
+        res.status(err?.status || 500).json({
+            message: err?.message || "Failed to remove loyalty points"
+        });
+    }
 }
 //# sourceMappingURL=cart.controller.js.map
