@@ -72,14 +72,22 @@ export async function ordersByStatus(range: AnalyticsRangeQuery): Promise<Orders
 
 /* ---------- 3. BEST SELLING ITEMS ---------- */
 
-export async function bestSellingItems(range: AnalyticsRangeQuery): Promise<BestSellingItem[]> {
+export async function bestSellingItems(
+  range: AnalyticsRangeQuery
+): Promise<BestSellingItem[]> {
   const { from, to } = dateRange(range);
 
   const { data, error } = await supabase
-    .from("order_items")
-    .select("menuItemId, titleSnap, quantity, lineTotal, orders!inner(createdAt)")
-    .gte("orders.createdAt", from)
-    .lte("orders.createdAt", to);
+    .from("OrderItem")
+    .select(`
+      menuItemId,
+      titleSnap,
+      quantity,
+      lineTotal,
+      order:Order!OrderItem_orderId_fkey(createdAt)
+    `)
+    .gte("order.createdAt", from)
+    .lte("order.createdAt", to);
 
   if (error) throw error;
 
@@ -92,8 +100,8 @@ export async function bestSellingItems(range: AnalyticsRangeQuery): Promise<Best
       total: 0,
     };
 
-    entry.qty += item.quantity;
-    entry.total += item.lineTotal;
+    entry.qty += Number(item.quantity);
+    entry.total += Number(item.lineTotal);
 
     map.set(item.menuItemId, entry);
   });

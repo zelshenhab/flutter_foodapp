@@ -59,10 +59,16 @@ async function ordersByStatus(range) {
 async function bestSellingItems(range) {
     const { from, to } = dateRange(range);
     const { data, error } = await supabase_1.supabase
-        .from("order_items")
-        .select("menuItemId, titleSnap, quantity, lineTotal, orders!inner(createdAt)")
-        .gte("orders.createdAt", from)
-        .lte("orders.createdAt", to);
+        .from("OrderItem")
+        .select(`
+      menuItemId,
+      titleSnap,
+      quantity,
+      lineTotal,
+      order:Order!OrderItem_orderId_fkey(createdAt)
+    `)
+        .gte("order.createdAt", from)
+        .lte("order.createdAt", to);
     if (error)
         throw error;
     const map = new Map();
@@ -72,8 +78,8 @@ async function bestSellingItems(range) {
             qty: 0,
             total: 0,
         };
-        entry.qty += item.quantity;
-        entry.total += item.lineTotal;
+        entry.qty += Number(item.quantity);
+        entry.total += Number(item.lineTotal);
         map.set(item.menuItemId, entry);
     });
     return Array.from(map, ([menuItemId, v]) => ({

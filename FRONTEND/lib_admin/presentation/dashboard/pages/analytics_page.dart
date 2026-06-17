@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../common/widgets/stat_card.dart';
 import '../bloc/analytics_bloc.dart';
+import '../bloc/analytics_event.dart';
 import '../bloc/analytics_state.dart';
 
 class AnalyticsPage extends StatefulWidget {
@@ -13,11 +15,35 @@ class AnalyticsPage extends StatefulWidget {
 
 class _AnalyticsPageState extends State<AnalyticsPage> {
   String _search = '';
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final bloc = context.read<AnalyticsBloc>();
+
+    // initial load
+    bloc.add(const AnalyticsLoad());
+
+    // auto refresh every 10 seconds
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      bloc.add(const AnalyticsLoad());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AnalyticsBloc, AnalyticsState>(
       builder: (context, state) {
+        print("🖥️ UI STATE SUMMARY: ${state.summary}"); // 👈 ADD HERE
+        print("🖥️ UI STATE ORDERS: ${state.ordersByStatus}"); // 👈 ADD HERE
         final summary = state.summary;
         final orders = state.ordersByStatus;
 
@@ -48,7 +74,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ),
           StatCard(
             title: 'Самовывоз (7 дней)',
-            value: '—', 
+            value: '—',
             icon: Icons.store_mall_directory,
             sub: 'Среднее: —',
           ),
@@ -92,9 +118,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                           .where(
                             (c) =>
                                 _search.trim().isEmpty ||
-                                c.title.toLowerCase().contains(
-                                      _search.toLowerCase(),
-                                    ),
+                                c.title
+                                    .toLowerCase()
+                                    .contains(_search.toLowerCase()),
                           )
                           .toList(),
                     ),

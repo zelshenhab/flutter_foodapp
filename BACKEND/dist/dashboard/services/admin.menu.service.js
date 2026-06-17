@@ -101,12 +101,6 @@ async function listItems(filters) {
    =============================================================== */
 async function createItem(payload) {
     const { categoryId, title, description, imageUrl, basePrice, isActive, isPopular, iikoProductId, } = payload;
-    if (!iikoProductId || !iikoProductId.trim()) {
-        throw {
-            status: 400,
-            message: "iikoProductId is required. Create product in iiko first.",
-        };
-    }
     const slug = slugify(title);
     const { data, error } = await supabase_1.supabase
         .from("MenuItem")
@@ -120,7 +114,7 @@ async function createItem(payload) {
             basePrice,
             isActive: isActive ?? true,
             isPopular: isPopular ?? false,
-            iikoProductId, // ✅ SAVE REAL IIKO ID
+            iikoProductId: iikoProductId?.trim() || null, // ✅ optional
         },
     ])
         .select()
@@ -157,7 +151,7 @@ async function updateItem(id, payload) {
         patch.isPopular = payload.isPopular;
     }
     if (payload.iikoProductId !== undefined) {
-        patch.iikoProductId = payload.iikoProductId;
+        patch.iikoProductId = payload.iikoProductId?.trim() || null;
     }
     const { data, error } = await supabase_1.supabase
         .from("MenuItem")

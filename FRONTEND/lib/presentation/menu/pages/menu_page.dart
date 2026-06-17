@@ -40,16 +40,17 @@ class MenuPage extends StatelessWidget {
                 'main': 'assets/images/Chicken-Shawarma-8.jpg',
                 'breakfast': 'assets/images/Chicken-Shawarma-8.jpg',
                 'sauces': 'assets/images/Chicken-Shawarma-8.jpg',*/
-                'baklava': 'assets/images/baklava-walnut-assorted.jpg',
+                'bakhlava-box': 'assets/images/baklava-walnut-assorted.jpg',
+                'bakhlava-vec': 'assets/images/baklava-walnut-assorted.jpg',
                 'cookies': 'assets/images/arabic-cookies.jpg',
                 'assorted-sweets': 'assets/images/assorted-gnezdo-12pcs.jpg',
                 'gift-boxes': 'assets/images/gift-box-walnut-900g.jpg',
                 'gnezdo': 'assets/images/gnezdo-nuts.jpg',
                 'shabiyat': 'assets/images/shabiyat.jpg',
                 'kataifi': 'assets/images/kataifi-pistachio.jpg',
-                'turkish-assorted': 'assets/images/turkish-assorted-walnut.jpg',
                 'triangles-rolls': 'assets/images/mini-triangle-walnut.jpg',
-                'luxury-arabic-sweets': 'assets/images/luxury-arabic-sweets.jpg'
+                'luxury-arabic-sweets': 'assets/images/luxury-arabic-sweets.jpg',
+                'drinks': 'assets/images/luxury-arabic-sweets.jpg'
               };
 
               if (state.loading && state.items.isEmpty) {
@@ -114,6 +115,10 @@ class MenuPage extends StatelessWidget {
                         categories: state.categories,
                         selectedId: state.selectedCategoryId,
                         iconAssetByCategoryId: iconMap,
+                         subtitleByCategoryId: {
+                          'bakhlava-box': 'кор',
+                          'bakhlava-vec': 'вес',
+                          },
                         onSelected: (id) => context
                             .read<MenuBloc>()
                             .add(MenuCategorySelected(id)),

@@ -6,6 +6,7 @@ class AdminUser {
   final String role;
   final bool blocked;
   final DateTime? createdAt;
+  final int loyaltyPoints;
 
   const AdminUser({
     required this.id,
@@ -15,6 +16,7 @@ class AdminUser {
     required this.role,
     required this.blocked,
     this.createdAt,
+    required this.loyaltyPoints, 
   });
 
   factory AdminUser.fromJson(Map<String, dynamic> j) {
@@ -28,6 +30,7 @@ class AdminUser {
       createdAt: j['createdAt'] != null
           ? DateTime.tryParse(j['createdAt'].toString())
           : null,
+      loyaltyPoints: (j['loyaltyPoints'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -56,6 +59,7 @@ class AdminUser {
     String? role,
     bool? blocked,
     DateTime? createdAt,
+    int? loyaltyPoints,
   }) {
     return AdminUser(
       id: id ?? this.id,
@@ -65,11 +69,13 @@ class AdminUser {
       role: role ?? this.role,
       blocked: blocked ?? this.blocked,
       createdAt: createdAt ?? this.createdAt,
+      loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
     );
   }
 
-  @override
-  String toString() {
-    return 'AdminUser(id: $id, name: $name, email: $email, role: $role)';
-  }
+@override
+String toString() {
+  return 'AdminUser(id: $id, name: $displayName, email: $email, '
+      'role: $role, blocked: $blocked, loyaltyPoints: $loyaltyPoints)';
+}
 }

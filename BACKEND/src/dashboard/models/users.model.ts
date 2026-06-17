@@ -6,4 +6,5 @@ export interface AdminUser {
   role: string;     // "customer" | "admin" | "manager"
   blocked: boolean;
   createdAt: string | null;
+  loyaltyPoints: number; // 👈 ADD THIS
 }

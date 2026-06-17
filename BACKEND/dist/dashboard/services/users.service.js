@@ -12,7 +12,7 @@ const USER_TABLE = "User";
 async function fetchUsers(limit, offset) {
     const { data, error } = await supabase_1.supabase
         .from(USER_TABLE)
-        .select("id, name, email, avatarUrl, role, blocked, createdAt")
+        .select("id, name, email, avatarUrl, role, blocked, createdAt, loyaltyPoints")
         .order("createdAt", { ascending: false })
         .range(offset, offset + limit - 1);
     if (error)

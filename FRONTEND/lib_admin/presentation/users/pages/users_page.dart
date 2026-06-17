@@ -14,7 +14,8 @@ class UsersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (ctx) => UsersBloc(ctx.read<UsersRepo>())..add(const UsersLoaded()),
+      create: (ctx) =>
+          UsersBloc(ctx.read<UsersRepo>())..add(const UsersLoaded()),
       child: BlocConsumer<UsersBloc, UsersState>(
         listenWhen: (p, n) => p.error != n.error,
         listener: (context, state) {
@@ -25,10 +26,14 @@ class UsersPage extends StatelessWidget {
                   children: [
                     Expanded(child: Text(state.error!)),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                      icon: const Icon(Icons.close,
+                          color: Colors.white, size: 20),
                       onPressed: () {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                        context.read<UsersBloc>().add(const UsersErrorDismissed());
+                        ScaffoldMessenger.of(context)
+                            .hideCurrentSnackBar();
+                        context
+                            .read<UsersBloc>()
+                            .add(const UsersErrorDismissed());
                       },
                     ),
                   ],
@@ -42,251 +47,245 @@ class UsersPage extends StatelessWidget {
         builder: (context, state) {
           final bloc = context.read<UsersBloc>();
 
-          // Filter users based on search
           final filteredUsers = state.search.isEmpty
               ? state.data
               : state.data.where((user) {
-                  final searchLower = state.search.toLowerCase();
-                  return (user.name?.toLowerCase().contains(searchLower) ?? false) ||
-                         user.email.toLowerCase().contains(searchLower);
+                  final q = state.search.toLowerCase();
+                  return (user.name?.toLowerCase().contains(q) ?? false) ||
+                      user.email.toLowerCase().contains(q);
                 }).toList();
 
           return Scaffold(
             backgroundColor: Colors.transparent,
             body: Container(
-              alignment: Alignment.topLeft,
               padding: const EdgeInsets.all(16),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Пользователи',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                        ),
-                        const Spacer(),
-                        SizedBox(
-                          width: 240,
-                          child: TextField(
-                            onChanged: (v) => bloc.add(UsersSearchChanged(v)),
-                            decoration: InputDecoration(
-                              hintText: 'Поиск по имени / телефону',
-                              prefixIcon: const Icon(Icons.search),
-                              filled: true,
-                              fillColor: const Color(0xFF1E1E1E),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// HEADER
+                  Row(
+                    children: [
+                      const Text(
+                        'Пользователи',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w800),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 240,
+                        child: TextField(
+                          onChanged: (v) =>
+                              bloc.add(UsersSearchChanged(v)),
+                          decoration: InputDecoration(
+                            hintText: 'Поиск по имени / email',
+                            prefixIcon: const Icon(Icons.search),
+                            filled: true,
+                            fillColor: const Color(0xFF1E1E1E),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // User stats
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildStatCard(
-                            'Всего пользователей',
-                            state.data.length.toString(),
-                            Colors.blue,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatCard(
-                            'Активные',
-                            state.data.where((u) => !u.blocked).length.toString(),
-                            Colors.green,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildStatCard(
-                            'Заблокированы',
-                            state.data.where((u) => u.blocked).length.toString(),
-                            Colors.red,
-                          ),
-                        ],
                       ),
-                    ),
+                    ],
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // Users table
-                    Card(
+                  /// STATS
+                  Row(
+                    children: [
+                      _buildStatCard(
+                        'Всего пользователей',
+                        state.data.length.toString(),
+                        Colors.blue,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildStatCard(
+                        'Активные',
+                        state.data
+                            .where((u) => !u.blocked)
+                            .length
+                            .toString(),
+                        Colors.green,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildStatCard(
+                        'Заблокированы',
+                        state.data
+                            .where((u) => u.blocked)
+                            .length
+                            .toString(),
+                        Colors.red,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// TABLE
+                  Expanded(
+                    child: Card(
                       color: const Color(0xFF121212),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: state.loading
-                          ? const SizedBox(
-                              height: 200,
-                              child: Center(child: CircularProgressIndicator()),
+                          ? const Center(
+                              child: CircularProgressIndicator(),
                             )
                           : filteredUsers.isEmpty
-                              ? const SizedBox(
-                                  height: 200,
-                                  child: Center(
-                                    child: Text(
-                                      'Пользователи не найдены',
-                                      style: TextStyle(color: Colors.white, fontSize: 16),
-                                    ),
+                              ? const Center(
+                                  child: Text(
+                                    'Пользователи не найдены',
+                                    style: TextStyle(color: Colors.white),
                                   ),
                                 )
-                              : SingleChildScrollView(
-                                  scrollDirection: Axis.vertical,
+                              : Scrollbar(
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  thickness: 8,
+                                  radius: const Radius.circular(4),
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
-                                    child: DataTable(
-                                      headingTextStyle: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Color.fromARGB(255, 199, 160, 34),
-                                      ),
-                                      dataTextStyle: const TextStyle(color: Colors.white),
-                                      columns: const [
-                                        DataColumn(label: Text('ID')),
-                                        DataColumn(label: Text('Имя')),
-                                        DataColumn(label: Text('Телефон')),
-                                        DataColumn(label: Text('Роль')),
-                                        DataColumn(label: Text('Статус')),
-                                        DataColumn(label: Text('Дата регистрации')),
-                                        DataColumn(label: Text('Действия')),
-                                      ],
-                                      rows: filteredUsers.map((user) {
-                                        return DataRow(
-                                          cells: [
-                                            DataCell(Text(user.id.toString())),
-                                            DataCell(
-                                              Text(
-                                                user.displayName,
-                                                style: TextStyle(
-                                                  fontStyle: user.name == null || user.name!.isEmpty
-                                                      ? FontStyle.italic
-                                                      : FontStyle.normal,
-                                                ),
-                                              ),
+                                    child: SizedBox(
+                                      width: 1200,
+                                      child: Scrollbar(
+                                        thumbVisibility: true,
+                                        trackVisibility: true,
+                                        thickness: 8,
+                                        radius: const Radius.circular(4),
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.vertical,
+                                          child: DataTable(
+                                            headingTextStyle: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Color.fromARGB(255, 199, 160, 34),
                                             ),
-                                            DataCell(Text(user.email)),
-                                            DataCell(
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: _getRoleColor(user.role),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  _getRoleDisplayName(user.role),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: user.blocked 
-                                                      ? Colors.red.withValues(alpha:0.2) 
-                                                      : Colors.green.withValues(alpha:0.2),
-                                                  borderRadius: BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  user.blocked ? 'Заблокирован' : 'Активен',
-                                                  style: TextStyle(
-                                                    color: user.blocked ? Colors.red : Colors.green,
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(Text(
-                                              user.createdAt != null
-                                                  ? DateFormat("dd.MM.yyyy HH:mm").format(user.createdAt!)
-                                                  : "—",
-                                            )),
-                                            DataCell(
-                                              Row(
-                                                children: [
-                                                  IconButton(
-                                                    icon: Icon(
-                                                      user.blocked ? Icons.lock_open : Icons.block,
-                                                      color: user.blocked ? Colors.green : Colors.red,
-                                                      size: 20,
+                                            dataTextStyle:
+                                                const TextStyle(color: Colors.white),
+                                            columnSpacing: 24,
+                                            columns: const [
+                                              DataColumn(label: Text('ID')),
+                                              DataColumn(label: Text('Имя')),
+                                              DataColumn(label: Text('Email')),
+                                              DataColumn(label: Text('Роль')),
+                                              DataColumn(label: Text('Статус')),
+                                              DataColumn(label: Text('Бонусы')),
+                                              DataColumn(label: Text('Дата')),
+                                              DataColumn(label: Text('Действия')),
+                                            ],
+                                            rows: filteredUsers.map((user) {
+                                              return DataRow(
+                                                cells: [
+                                                  DataCell(
+                                                      Text(user.id.toString())),
+                                                  DataCell(
+                                                    Text(
+                                                      user.displayName,
+                                                      style: TextStyle(
+                                                        fontStyle: user.name == null ||
+                                                                user.name!.isEmpty
+                                                            ? FontStyle.italic
+                                                            : FontStyle.normal,
+                                                      ),
                                                     ),
-                                                    tooltip: user.blocked ? 'Разблокировать' : 'Заблокировать',
-                                                    onPressed: () {
-                                                      if (user.blocked) {
-                                                        bloc.add(UserUnblocked(user.id));
-                                                      } else {
-                                                        bloc.add(UserBlocked(user.id));
-                                                      }
-                                                    },
                                                   ),
-                                                  PopupMenuButton<String>(
-                                                    icon: const Icon(Icons.more_vert, color: Colors.white),
-                                                    onSelected: (value) {
-                                                      if (value == 'change_role') {
-                                                        _showRoleDialog(context, user, bloc);
-                                                      }
-                                                    },
-                                                    itemBuilder: (context) => [
-                                                      const PopupMenuItem(
-                                                        value: 'change_role',
-                                                        child: Row(
-                                                          children: [
-                                                            Icon(Icons.swap_horiz, size: 18),
-                                                            SizedBox(width: 8),
-                                                            Text('Изменить роль'),
-                                                          ],
+                                                  DataCell(Text(user.email)),
+                                                  DataCell(
+                                                    _roleChip(user.role),
+                                                  ),
+                                                  DataCell(
+                                                    _statusChip(user.blocked),
+                                                  ),
+                                                  DataCell(
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.orange
+                                                            .withOpacity(0.2),
+                                                        borderRadius:
+                                                            BorderRadius.circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        "${user.loyaltyPoints} ⭐",
+                                                        style: const TextStyle(
+                                                          color: Colors.orange,
+                                                          fontWeight: FontWeight.bold,
                                                         ),
                                                       ),
-                                                    ],
+                                                    ),
+                                                  ),
+                                                  DataCell(Text(
+                                                    user.createdAt != null
+                                                        ? DateFormat("dd.MM.yyyy HH:mm")
+                                                            .format(user.createdAt!)
+                                                        : "—",
+                                                  )),
+                                                  DataCell(
+                                                    Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        IconButton(
+                                                          icon: Icon(
+                                                            user.blocked
+                                                                ? Icons.lock_open
+                                                                : Icons.block,
+                                                            color: user.blocked
+                                                                ? Colors.green
+                                                                : Colors.red,
+                                                          ),
+                                                          onPressed: () {
+                                                            if (user.blocked) {
+                                                              bloc.add(
+                                                                  UserUnblocked(
+                                                                      user.id));
+                                                            } else {
+                                                              bloc.add(
+                                                                  UserBlocked(
+                                                                      user.id));
+                                                            }
+                                                          },
+                                                        ),
+                                                        PopupMenuButton<String>(
+                                                          icon: const Icon(
+                                                              Icons.more_vert,
+                                                              color: Colors.white),
+                                                          onSelected: (value) {
+                                                            if (value ==
+                                                                'change_role') {
+                                                              _showRoleDialog(
+                                                                  context,
+                                                                  user,
+                                                                  bloc);
+                                                            }
+                                                          },
+                                                          itemBuilder: (context) => [
+                                                            const PopupMenuItem(
+                                                              value: 'change_role',
+                                                              child: Text(
+                                                                  'Изменить роль'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ],
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      }).toList(),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Pagination
-                    if (state.totalPages > 1)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Colors.white),
-                            onPressed: state.page > 1
-                                ? () => bloc.add(UsersPageChanged(state.page - 1))
-                                : null,
-                          ),
-                          Text(
-                            "Страница ${state.page} из ${state.totalPages}",
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.arrow_forward, color: Colors.white),
-                            onPressed: state.page < state.totalPages
-                                ? () => bloc.add(UsersPageChanged(state.page + 1))
-                                : null,
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -299,19 +298,15 @@ class UsersPage extends StatelessWidget {
     return SizedBox(
       width: 180,
       child: Card(
-        color: color.withValues(alpha:0.1),
+        color: color.withOpacity(0.1),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
-              ),
+              Text(title,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 4),
               Text(
                 value,
@@ -328,67 +323,74 @@ class UsersPage extends StatelessWidget {
     );
   }
 
-  Color _getRoleColor(String role) {
+  Widget _roleChip(String role) {
+    Color color;
+    String text;
+
     switch (role) {
       case 'admin':
-        return Color.fromARGB(255, 199, 160, 34);
+        color = const Color.fromARGB(255, 199, 160, 34);
+        text = 'Админ';
+        break;
       case 'manager':
-        return Colors.purple;
-      case 'customer':
+        color = Colors.purple;
+        text = 'Менеджер';
+        break;
       default:
-        return Colors.blue;
+        color = Colors.blue;
+        text = 'Клиент';
     }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration:
+          BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
+      child: Text(text,
+          style: const TextStyle(color: Colors.white, fontSize: 12)),
+    );
   }
 
-  String _getRoleDisplayName(String role) {
-    switch (role) {
-      case 'admin':
-        return 'Админ';
-      case 'manager':
-        return 'Менеджер';
-      case 'customer':
-      default:
-        return 'Клиент';
-    }
+  Widget _statusChip(bool blocked) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: blocked
+            ? Colors.red.withOpacity(0.2)
+            : Colors.green.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        blocked ? 'Заблокирован' : 'Активен',
+        style: TextStyle(
+          color: blocked ? Colors.red : Colors.green,
+          fontSize: 12,
+        ),
+      ),
+    );
   }
 
-  void _showRoleDialog(BuildContext context, AdminUser user, UsersBloc bloc) {
+  void _showRoleDialog(
+      BuildContext context, AdminUser user, UsersBloc bloc) {
     final currentRole = user.role;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Изменить роль пользователя'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Пользователь: ${user.displayName}'),
-            const SizedBox(height: 16),
-            const Text('Выберите новую роль:'),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: currentRole,
-              items: const [
-                DropdownMenuItem(value: 'customer', child: Text('Клиент')),
-                DropdownMenuItem(value: 'manager', child: Text('Менеджер')),
-                DropdownMenuItem(value: 'admin', child: Text('Администратор')),
-              ],
-              onChanged: (newRole) {
-                if (newRole != null && newRole != currentRole) {
-                  bloc.add(UserRoleChanged(user.id, newRole));
-                  Navigator.pop(context);
-                }
-              },
-            ),
+        title: const Text('Изменить роль'),
+        content: DropdownButtonFormField<String>(
+          initialValue: currentRole,
+          items: const [
+            DropdownMenuItem(value: 'customer', child: Text('Клиент')),
+            DropdownMenuItem(value: 'manager', child: Text('Менеджер')),
+            DropdownMenuItem(value: 'admin', child: Text('Админ')),
           ],
+          onChanged: (newRole) {
+            if (newRole != null && newRole != currentRole) {
+              bloc.add(UserRoleChanged(user.id, newRole));
+              Navigator.pop(context);
+            }
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
-          ),
-        ],
       ),
     );
   }

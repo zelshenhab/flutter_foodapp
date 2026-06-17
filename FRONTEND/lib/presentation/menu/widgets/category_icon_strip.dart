@@ -6,6 +6,9 @@ class CategoryIconStrip extends StatelessWidget {
   final String? selectedId;
   final Map<String, String>? iconAssetByCategoryId; // id -> asset path
   final ValueChanged<String> onSelected;
+  
+  // Add subtitle map parameter
+  final Map<String, String>? subtitleByCategoryId; // id -> subtitle text
 
   const CategoryIconStrip({
     super.key,
@@ -13,6 +16,7 @@ class CategoryIconStrip extends StatelessWidget {
     required this.selectedId,
     required this.onSelected,
     this.iconAssetByCategoryId,
+    this.subtitleByCategoryId, // New parameter
   });
 
   @override
@@ -22,7 +26,7 @@ class CategoryIconStrip extends StatelessWidget {
     final accent = Theme.of(context).colorScheme.primary;
 
     return SizedBox(
-      height: 96,
+      height: 110, // Increased height to accommodate subtitle
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
@@ -32,6 +36,7 @@ class CategoryIconStrip extends StatelessWidget {
           final c = categories[i];
           final sel = c.id == selectedId;
           final iconPath = iconAssetByCategoryId?[c.id];
+          final subtitle = subtitleByCategoryId?[c.id]; // Get subtitle
 
           return InkWell(
             onTap: () => onSelected(c.id),
@@ -47,7 +52,7 @@ class CategoryIconStrip extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // أيقونة القسم (من asset لو متوفر، وإلا fallback)
+                  // Icon
                   if (iconPath != null)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
@@ -56,7 +61,9 @@ class CategoryIconStrip extends StatelessWidget {
                   else
                     Icon(Icons.category_outlined,
                         size: 26, color: sel ? accent : const Color(0xFFA7A7A7)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  
+                  // Category name
                   Text(
                     c.title,
                     maxLines: 1,
@@ -67,6 +74,21 @@ class CategoryIconStrip extends StatelessWidget {
                       color: sel ? Colors.white : const Color(0xFFEDEDED),
                     ),
                   ),
+                  
+                  // Subtitle (if provided)
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF888888), // Gray color
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -104,14 +104,17 @@ class MenuAdminPage extends StatelessWidget {
                               DataCell(Text(item["title"] ?? "-")),
                               DataCell(Text('${item["basePrice"]} ₽')),
                               DataCell(
-                                Icon(
-                                  item["iikoProductId"] != null
-                                      ? Icons.check_circle
-                                      : Icons.error,
-                                  color: item["iikoProductId"] != null
-                                      ? Colors.green
-                                      : Colors.red,
-                                  size: 18,
+                                Builder(
+                                  builder: (_) {
+                                    final hasIiko = item["iikoProductId"] != null &&
+                                        item["iikoProductId"].toString().isNotEmpty;
+
+                                    return Icon(
+                                      hasIiko ? Icons.check_circle : Icons.error,
+                                      color: hasIiko ? Colors.green : Colors.orange,
+                                      size: 18,
+                                    );
+                                  },
                                 ),
                               ),
                               DataCell(
@@ -237,10 +240,7 @@ class MenuAdminPage extends StatelessWidget {
               final price = num.tryParse(priceCtrl.text.trim()) ?? 0;
               final iikoProductId = iikoCtrl.text.trim();
 
-              if (name.isEmpty ||
-                  slug.isEmpty ||
-                  price <= 0 ||
-                  iikoProductId.isEmpty) {
+              if (name.isEmpty || slug.isEmpty || price <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content:
@@ -258,7 +258,7 @@ class MenuAdminPage extends StatelessWidget {
                 "imageUrl": imageCtrl.text.trim(),
                 "description": descCtrl.text.trim(),
                 "categoryId": categoryId,
-                "iikoProductId": iikoProductId,
+                "iikoProductId": iikoProductId.isEmpty ? null : iikoProductId,
               };
 
               final bloc = context.read<MenuAdminBloc>();

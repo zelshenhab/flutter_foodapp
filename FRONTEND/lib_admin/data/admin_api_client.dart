@@ -8,15 +8,21 @@ class AdminApiClient {
     this.baseUrl = "https://adam-eve-ebon.vercel.app/api/admin",
   });
 
-  Future<dynamic> get(String endpoint) async {
-    final url = Uri.parse("$baseUrl$endpoint");
-    final res = await http.get(url);
+Future<dynamic> get(String endpoint) async {
+  final url = Uri.parse("$baseUrl$endpoint");
 
-    if (res.statusCode >= 400) {
-      throw Exception("GET $endpoint failed: ${res.body}");
-    }
-    return jsonDecode(res.body);
+  print("🌐 GET REQUEST: $url"); // 👈 ADD HERE
+
+  final res = await http.get(url);
+
+  print("📦 RESPONSE (${res.statusCode}): ${res.body}"); // 👈 ADD HERE
+
+  if (res.statusCode >= 400) {
+    throw Exception("GET $endpoint failed: ${res.body}");
   }
+
+  return jsonDecode(res.body);
+}
 
   Future<dynamic> post(String endpoint, {Map<String, dynamic>? body}) async {
     final url = Uri.parse("$baseUrl$endpoint");
