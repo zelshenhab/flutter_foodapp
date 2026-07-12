@@ -6,4 +6,3 @@ export const loyaltyRouter = Router();
 
 loyaltyRouter.get("/info", getLoyaltyInfo);
 loyaltyRouter.post("/calculate", calculatePointsRedemption);
-loyaltyRouter.post("/redeem", redeemPoints);

@@ -1,7 +1,5 @@
-﻿// ✅ ADD THIS IMPORT AT THE TOP of order.service.ts
-import { supabase } from "../../../core/config/supabase";
+﻿import { supabase } from "../../../core/config/supabase";
 import * as cartSvc from "../cart/cart.service";
-import { awardLoyaltyPoints } from "../loyalty/loyalty.service"; // 👈 ADD THIS LINE
 
 /* ======================================================
    HELPERS
@@ -14,7 +12,12 @@ function getMenuItem(ci: any) {
       message: "One or more items are no longer available",
     };
   }
+
   return ci.MenuItem;
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 /* ======================================================
@@ -38,7 +41,7 @@ export async function createOrder(
   }
 ) {
   /* -----------------------------------------
-   * 1️⃣ LOAD CART
+   * 1. LOAD CART
    * --------------------------------------- */
 
   const cartRec = await cartSvc.getCartRecord(userId);
@@ -49,41 +52,97 @@ export async function createOrder(
   console.log("CART:", cart);
 
   if (!cart.items.length) {
-    throw { status: 400, message: "Cart is empty" };
+    throw {
+      status: 400,
+      message: "Cart is empty",
+    };
+  }
+
+  const subtotal = Number(cart.subtotal);
+  const promoDiscount = Number(cart.discount);
+  const pointsDiscount = Number(cart.pointsDiscount);
+  const deliveryFee = Number(cart.deliveryFee);
+
+  const totalDiscount = round2(
+    promoDiscount + pointsDiscount
+  );
+
+  const finalTotal = round2(
+    Math.max(
+      0,
+      subtotal - totalDiscount + deliveryFee
+    )
+  );
+
+  if (Math.abs(finalTotal - Number(cart.total)) > 0.01) {
+    console.error("❌ CART TOTAL MISMATCH", {
+      subtotal,
+      promoDiscount,
+      pointsDiscount,
+      totalDiscount,
+      deliveryFee,
+      cartTotal: cart.total,
+      finalTotal,
+    });
+
+    throw {
+      status: 400,
+      message: "Invalid cart total",
+    };
   }
 
   /* -----------------------------------------
-   * 2️⃣ CREATE ORDER
+   * 2. CREATE ORDER
    * --------------------------------------- */
 
-  const { data: order, error: orderError } = await supabase
-    .from("Order")
-    .insert({
-      userId,
-      status: "pending",
-      paymentMethod: input.paymentMethod,
-      paymentStatus: input.paymentMethod === "cod" ? "unpaid" : "pending",
-      subtotal: cart.subtotal,
-      discount: cart.discount,
-      deliveryFee: cart.deliveryFee,
-      total: cart.total,
-      addressSnapshot: input.address ?? { text: "N/A" },
-      promoCode: cart.promoCode ?? null,
-      notes: input.notes ?? null,
-    })
-    .select()
-    .single();
+  const { data: order, error: orderError } =
+    await supabase
+      .from("Order")
+      .insert({
+        userId,
+        status: "pending",
+        paymentMethod: input.paymentMethod,
+        paymentStatus:
+          input.paymentMethod === "cod"
+            ? "unpaid"
+            : "pending",
+
+        subtotal,
+        discount: totalDiscount,
+        deliveryFee,
+        total: finalTotal,
+
+        pointsUsed: Number(cart.appliedPoints ?? 0),
+
+        addressSnapshot:
+          input.address ?? { text: "N/A" },
+
+        promoCode: cart.promoCode ?? null,
+        notes: input.notes ?? null,
+      })
+      .select()
+      .single();
 
   if (orderError || !order) {
-    console.error("❌ ORDER INSERT ERROR:", orderError);
-    throw { status: 500, message: "Failed to create order" };
+    console.error(
+      "❌ ORDER INSERT ERROR:",
+      orderError
+    );
+
+    throw {
+      status: 500,
+      message: "Failed to create order",
+    };
   }
 
   /* -----------------------------------------
-   * 3️⃣ LOAD CART ITEMS
+   * 3. LOAD CART ITEMS
    * --------------------------------------- */
 
-  const { data: cartItems, error: cartItemsError } = await supabase
+  const {
+    data: cartItems,
+    error: cartItemsError,
+  } = await supabase
     .from("CartItem")
     .select(
       `
@@ -100,15 +159,23 @@ export async function createOrder(
     )
     .eq("cartId", cartRec.id)
     .order("id", { ascending: true });
-    console.log("CART ITEMS:", cartItems);
+
+  console.log("CART ITEMS:", cartItems);
 
   if (cartItemsError || !cartItems?.length) {
-    console.error("❌ CART ITEMS ERROR:", cartItemsError);
-    throw { status: 500, message: "Failed to fetch cart items" };
+    console.error(
+      "❌ CART ITEMS ERROR:",
+      cartItemsError
+    );
+
+    throw {
+      status: 500,
+      message: "Failed to fetch cart items",
+    };
   }
 
   /* -----------------------------------------
-   * 4️⃣ CREATE ORDER ITEMS
+   * 4. CREATE ORDER ITEMS
    * --------------------------------------- */
 
   const orderItems = cartItems.map((ci) => {
@@ -119,46 +186,51 @@ export async function createOrder(
       menuItemId: ci.menuItemId,
       titleSnap: menuItem.title,
       unitPrice: Number(ci.unitPriceSnapshot),
-      quantity: ci.quantity,
+      quantity: Number(ci.quantity),
       lineTotal: Number(ci.lineTotal),
     };
   });
 
-  const { error: orderItemsError } = await supabase
-    .from("OrderItem")
-    .insert(orderItems);
+  const { error: orderItemsError } =
+    await supabase
+      .from("OrderItem")
+      .insert(orderItems);
 
   if (orderItemsError) {
-    console.error("❌ ORDER ITEMS ERROR:", orderItemsError);
-    throw { status: 500, message: "Failed to create order items" };
+    console.error(
+      "❌ ORDER ITEMS ERROR:",
+      orderItemsError
+    );
+
+    throw {
+      status: 500,
+      message: "Failed to create order items",
+    };
   }
 
-  console.log("ORDER ITEMS CREATED:", orderItems);
+  console.log(
+    "ORDER ITEMS CREATED:",
+    orderItems
+  );
+
+  /* -----------------------------------------
+   * 5. CLEAR CART
+   * --------------------------------------- */
 
   console.log("CLEARING CART:", cartRec.id);
-  
-  /* -----------------------------------------
-   * 5️⃣ CLEAR CART
-   * --------------------------------------- */
 
   await cartSvc.clearCart(cartRec.id);
 
-  // ✅ ADD THIS SECTION - AWARD LOYALTY POINTS
-  /* -----------------------------------------
-   * 6️⃣ AWARD LOYALTY POINTS
-   * --------------------------------------- */
-  try {
-    const { pointsEarned, newBalance } = await awardLoyaltyPoints(
-      userId, 
-      order.id, 
-      cart.total  // Use the total amount paid
-    );
-    console.log(`✅ Awarded ${pointsEarned} loyalty points to user ${userId} for order ${order.id}`);
-    console.log(`✅ New loyalty balance: ${newBalance}`);
-  } catch (error) {
-    console.error("❌ Failed to award loyalty points:", error);
-    // Don't fail the order if points award fails
-  }
+  /*
+   * Do not award loyalty points here.
+   *
+   * For card payments, points must be awarded only
+   * after YooKassa confirms payment.status === "succeeded".
+   *
+   * For cash payments, points should be awarded only
+   * after an authorized restaurant/admin action confirms
+   * that the order was completed.
+   */
 
   return {
     orderId: order.id,
@@ -173,26 +245,52 @@ export async function createOrder(
 
 export async function listOrders(
   userId: number,
-  opts: { status?: string; page?: number; limit?: number }
+  opts: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  }
 ) {
-  const page = Math.max(1, Number(opts.page || 1));
-  const limit = Math.min(50, Math.max(1, Number(opts.limit || 10)));
+  const page = Math.max(
+    1,
+    Number(opts.page || 1)
+  );
+
+  const limit = Math.min(
+    50,
+    Math.max(1, Number(opts.limit || 10))
+  );
+
   const offset = (page - 1) * limit;
 
   let query = supabase
     .from("Order")
     .select("*")
     .eq("userId", userId)
-    .order("createdAt", { ascending: false })
+    .order("createdAt", {
+      ascending: false,
+    })
     .range(offset, offset + limit - 1);
 
-  if (opts.status) query = query.eq("status", opts.status);
+  if (opts.status) {
+    query = query.eq(
+      "status",
+      opts.status
+    );
+  }
 
   const { data, error } = await query;
 
   if (error) {
-    console.error("❌ LIST ORDERS ERROR:", error);
-    throw { status: 500, message: "Failed to fetch orders" };
+    console.error(
+      "❌ LIST ORDERS ERROR:",
+      error
+    );
+
+    throw {
+      status: 500,
+      message: "Failed to fetch orders",
+    };
   }
 
   return data ?? [];
@@ -202,42 +300,73 @@ export async function listOrders(
    GET ORDER DETAIL
 ====================================================== */
 
-export async function getOrderDetail(userId: number, orderId: number) {
-  const { data: order, error } = await supabase
-    .from("Order")
-    .select("*")
-    .eq("id", orderId)
-    .eq("userId", userId)
-    .single();
+export async function getOrderDetail(
+  userId: number,
+  orderId: number
+) {
+  const { data: order, error } =
+    await supabase
+      .from("Order")
+      .select("*")
+      .eq("id", orderId)
+      .eq("userId", userId)
+      .single();
 
   if (error || !order) {
-    throw { status: 404, message: "Order not found" };
+    throw {
+      status: 404,
+      message: "Order not found",
+    };
   }
 
-  const { data: items } = await supabase
-    .from("OrderItem")
-    .select("*")
-    .eq("orderId", orderId);
+  const { data: items, error: itemsError } =
+    await supabase
+      .from("OrderItem")
+      .select("*")
+      .eq("orderId", orderId);
 
-  return { ...order, items: items ?? [] };
+  if (itemsError) {
+    console.error(
+      "❌ ORDER ITEMS FETCH ERROR:",
+      itemsError
+    );
+  }
+
+  return {
+    ...order,
+    items: items ?? [],
+  };
 }
 
 /* ======================================================
    COMPLETE ORDER
 ====================================================== */
 
-export async function completeOrder(userId: number, orderId: number) {
-  const { data, error } = await supabase
-    .from("Order")
-    .update({ status: "completed" })
-    .eq("id", orderId)
-    .eq("userId", userId)
-    .select()
-    .single();
+export async function completeOrder(
+  userId: number,
+  orderId: number
+) {
+  const { data, error } =
+    await supabase
+      .from("Order")
+      .update({
+        status: "completed",
+      })
+      .eq("id", orderId)
+      .eq("userId", userId)
+      .select()
+      .single();
 
   if (error || !data) {
-    console.error("❌ COMPLETE ORDER ERROR:", error);
-    throw { status: 500, message: "Failed to complete order" };
+    console.error(
+      "❌ COMPLETE ORDER ERROR:",
+      error
+    );
+
+    throw {
+      status: 500,
+      message: "Failed to complete order",
+    };
   }
 
   return data;

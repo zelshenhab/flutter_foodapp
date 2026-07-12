@@ -6,67 +6,114 @@ exports.awardLoyaltyPoints = awardLoyaltyPoints;
 exports.awardWelcomeBonus = awardWelcomeBonus;
 exports.calculatePointsRedemption = calculatePointsRedemption;
 exports.redeemLoyaltyPoints = redeemLoyaltyPoints;
-// backend/src/modules/loyalty/loyalty.service.ts
 const supabase_1 = require("../../../core/config/supabase");
+/* ======================================================
+   GET LOYALTY INFORMATION
+====================================================== */
 async function getUserLoyalty(userId) {
-    const { data: user, error } = await supabase_1.supabase
+    const { data: user, error: userError } = await supabase_1.supabase
         .from("User")
         .select("loyaltyPoints, totalPointsEarned, totalPointsRedeemed")
         .eq("id", userId)
         .single();
-    if (error) {
-        throw { status: 500, message: "Failed to fetch loyalty points" };
+    if (userError || !user) {
+        throw {
+            status: 500,
+            message: "Failed to fetch loyalty points",
+        };
     }
-    // Get loyalty settings
-    const { data: settings } = await supabase_1.supabase
+    const { data: settings, error: settingsError } = await supabase_1.supabase
         .from("LoyaltySettings")
         .select("*")
-        .single();
-    // Get recent transactions
-    const { data: transactions } = await supabase_1.supabase
+        .limit(1)
+        .maybeSingle();
+    if (settingsError) {
+        console.error("Failed to fetch loyalty settings:", settingsError);
+    }
+    const { data: transactions, error: transactionsError, } = await supabase_1.supabase
         .from("LoyaltyTransaction")
         .select("*")
         .eq("userId", userId)
         .order("createdAt", { ascending: false })
         .limit(20);
+    if (transactionsError) {
+        console.error("Failed to fetch loyalty transactions:", transactionsError);
+    }
+    const normalizedSettings = {
+        pointsPerThousand: Number(settings?.pointsperthousand ?? 50),
+        minRedeemPoints: Number(settings?.minredeempoints ?? 100),
+        maxRedeemPercent: Number(settings?.maxredeempercent ?? 30),
+    };
     return {
-        points: user?.loyaltyPoints || 0,
-        totalEarned: user?.totalPointsEarned || 0,
-        totalRedeemed: user?.totalPointsRedeemed || 0,
-        settings: settings || { pointsPerThousand: 50, minRedeemPoints: 100, maxRedeemPercent: 30 },
-        transactions: transactions || [],
+        points: Number(user.loyaltyPoints ?? 0),
+        totalEarned: Number(user.totalPointsEarned ?? 0),
+        totalRedeemed: Number(user.totalPointsRedeemed ?? 0),
+        settings: normalizedSettings,
+        transactions: transactions ?? [],
     };
 }
-// Calculate points earned from an order
+/* ======================================================
+   CALCULATE EARNED POINTS
+====================================================== */
 function calculatePointsEarned(orderTotal, pointsPerThousand = 50) {
-    // 50 points per 1000 RUB
-    const points = Math.floor((orderTotal / 1000) * pointsPerThousand);
-    return points;
+    return Math.floor((Number(orderTotal) / 1000) *
+        Number(pointsPerThousand));
 }
-// Award points to user after order completion
+/* ======================================================
+   AWARD POINTS AFTER SUCCESSFUL PAYMENT
+====================================================== */
 async function awardLoyaltyPoints(userId, orderId, orderTotal) {
-    // Get loyalty settings
-    const { data: settings } = await supabase_1.supabase
+    const { data: settings, error: settingsError } = await supabase_1.supabase
         .from("LoyaltySettings")
-        .select("*")
-        .single();
-    const pointsPerThousand = settings?.pointsPerThousand || 50;
-    const pointsEarned = calculatePointsEarned(orderTotal, pointsPerThousand);
-    if (pointsEarned <= 0)
-        return { pointsEarned: 0 };
-    // Get current user points
+        .select("pointsperthousand")
+        .limit(1)
+        .maybeSingle();
+    if (settingsError) {
+        console.error("Failed to fetch loyalty settings:", settingsError);
+    }
+    const pointsPerThousand = Number(settings?.pointsperthousand ?? 50);
+    const pointsEarned = calculatePointsEarned(Number(orderTotal), pointsPerThousand);
+    if (pointsEarned <= 0) {
+        return {
+            pointsEarned: 0,
+        };
+    }
+    // Prevent awarding points twice for the same order.
+    const { data: existingReward, error: existingRewardError, } = await supabase_1.supabase
+        .from("LoyaltyTransaction")
+        .select("id")
+        .eq("userId", userId)
+        .eq("type", "earned")
+        .eq("referenceid", orderId)
+        .maybeSingle();
+    if (existingRewardError) {
+        throw {
+            status: 500,
+            message: "Failed to check existing loyalty reward",
+        };
+    }
+    if (existingReward) {
+        console.log(`Loyalty reward already exists for order ${orderId}`);
+        return {
+            pointsEarned: 0,
+            alreadyAwarded: true,
+        };
+    }
     const { data: user, error: userError } = await supabase_1.supabase
         .from("User")
         .select("loyaltyPoints, totalPointsEarned")
         .eq("id", userId)
         .single();
-    if (userError) {
-        console.error("Failed to fetch user:", userError);
-        return { pointsEarned: 0 };
+    if (userError || !user) {
+        throw {
+            status: 500,
+            message: "Failed to fetch user",
+        };
     }
-    const newBalance = (user.loyaltyPoints || 0) + pointsEarned;
-    const newTotalEarned = (user.totalPointsEarned || 0) + pointsEarned;
-    // Update user points
+    const currentBalance = Number(user.loyaltyPoints ?? 0);
+    const currentTotalEarned = Number(user.totalPointsEarned ?? 0);
+    const newBalance = currentBalance + pointsEarned;
+    const newTotalEarned = currentTotalEarned + pointsEarned;
     const { error: updateError } = await supabase_1.supabase
         .from("User")
         .update({
@@ -75,56 +122,70 @@ async function awardLoyaltyPoints(userId, orderId, orderTotal) {
     })
         .eq("id", userId);
     if (updateError) {
-        console.error("Failed to update loyalty points:", updateError);
-        return { pointsEarned: 0 };
+        throw {
+            status: 500,
+            message: "Failed to award loyalty points",
+        };
     }
-    // Record transaction
     const { error: transactionError } = await supabase_1.supabase
         .from("LoyaltyTransaction")
         .insert({
         userId,
         points: pointsEarned,
         type: "earned",
-        referenceId: orderId,
-        description: `Earned ${pointsEarned} points from order #${orderId} (${orderTotal} RUB)`,
+        referenceid: orderId,
+        description: `Earned ${pointsEarned} points from order #${orderId}`,
     });
     if (transactionError) {
-        console.error("Failed to record loyalty transaction:", transactionError);
+        console.error("Failed to record loyalty reward:", transactionError);
+        throw {
+            status: 500,
+            message: "Failed to record loyalty reward",
+        };
     }
-    return { pointsEarned, newBalance };
+    return {
+        pointsEarned,
+        newBalance,
+    };
 }
-// backend/src/modules/loyalty/loyalty.service.ts
-// Give welcome bonus to new user - FIXED VERSION
+/* ======================================================
+   WELCOME BONUS
+====================================================== */
 async function awardWelcomeBonus(userId) {
     const welcomePoints = 100;
     console.log(`🎁 Awarding ${welcomePoints} welcome points to user ${userId}...`);
     try {
-        // First, check if user already has a welcome bonus
-        const { data: existingBonus } = await supabase_1.supabase
+        const { data: existingBonus, error: existingBonusError, } = await supabase_1.supabase
             .from("LoyaltyTransaction")
-            .select("*")
+            .select("id")
             .eq("userId", userId)
             .eq("type", "welcome")
             .maybeSingle();
-        if (existingBonus) {
-            console.log(`⚠️ User ${userId} already received welcome bonus`);
-            return { pointsEarned: 0, alreadyAwarded: true };
+        if (existingBonusError) {
+            throw existingBonusError;
         }
-        // Get current user points
+        if (existingBonus) {
+            console.log(`User ${userId} already received the welcome bonus`);
+            return {
+                pointsEarned: 0,
+                alreadyAwarded: true,
+            };
+        }
         const { data: user, error: userError } = await supabase_1.supabase
             .from("User")
             .select("loyaltyPoints, totalPointsEarned")
             .eq("id", userId)
             .single();
-        if (userError) {
-            console.error("❌ Failed to fetch user:", userError);
-            return { pointsEarned: 0, error: userError.message };
+        if (userError || !user) {
+            throw {
+                status: 500,
+                message: "Failed to fetch user",
+            };
         }
-        const currentPoints = user?.loyaltyPoints || 0;
+        const currentPoints = Number(user.loyaltyPoints ?? 0);
+        const currentTotalEarned = Number(user.totalPointsEarned ?? 0);
         const newBalance = currentPoints + welcomePoints;
-        const newTotalEarned = (user?.totalPointsEarned || 0) + welcomePoints;
-        console.log(`📊 User ${userId}: current=${currentPoints}, new=${newBalance}`);
-        // Update user points
+        const newTotalEarned = currentTotalEarned + welcomePoints;
         const { error: updateError } = await supabase_1.supabase
             .from("User")
             .update({
@@ -133,17 +194,11 @@ async function awardWelcomeBonus(userId) {
         })
             .eq("id", userId);
         if (updateError) {
-            console.error("❌ Failed to update user points:", updateError);
-            return { pointsEarned: 0, error: updateError.message };
+            throw {
+                status: 500,
+                message: "Failed to award welcome bonus",
+            };
         }
-        // Verify the update worked
-        const { data: verifyUser } = await supabase_1.supabase
-            .from("User")
-            .select("loyaltyPoints")
-            .eq("id", userId)
-            .single();
-        console.log(`✅ Verification - User ${userId} now has ${verifyUser?.loyaltyPoints} points`);
-        // Record transaction
         const { error: transactionError } = await supabase_1.supabase
             .from("LoyaltyTransaction")
             .insert({
@@ -154,77 +209,131 @@ async function awardWelcomeBonus(userId) {
             createdAt: new Date().toISOString(),
         });
         if (transactionError) {
-            console.error("❌ Failed to record transaction:", transactionError);
+            throw {
+                status: 500,
+                message: "Failed to record welcome bonus",
+            };
         }
-        else {
-            console.log(`✅ Welcome bonus transaction recorded for user ${userId}`);
-        }
-        console.log(`✅ Successfully awarded ${welcomePoints} welcome points to user ${userId}`);
-        return { pointsEarned: welcomePoints, newBalance, success: true };
+        console.log(`✅ Awarded ${welcomePoints} welcome points to user ${userId}`);
+        return {
+            pointsEarned: welcomePoints,
+            newBalance,
+            success: true,
+        };
     }
     catch (error) {
         console.error("❌ Unexpected error in awardWelcomeBonus:", error);
-        return { pointsEarned: 0, error: String(error) };
+        return {
+            pointsEarned: 0,
+            error: String(error),
+        };
     }
 }
-// Calculate possible redemption
+/* ======================================================
+   CALCULATE POINTS REDEMPTION
+====================================================== */
 async function calculatePointsRedemption(cartTotal, requestedPoints, userId) {
-    const { data: user } = await supabase_1.supabase
+    const safeCartTotal = Math.max(0, Number(cartTotal ?? 0));
+    const safeRequestedPoints = Math.max(0, Math.floor(Number(requestedPoints ?? 0)));
+    const { data: user, error: userError } = await supabase_1.supabase
         .from("User")
         .select("loyaltyPoints")
         .eq("id", userId)
         .single();
-    const { data: settings } = await supabase_1.supabase
-        .from("LoyaltySettings")
-        .select("*")
-        .single();
-    const availablePoints = user?.loyaltyPoints || 0;
-    const minRedeem = settings?.minRedeemPoints || 100;
-    const maxRedeemPercent = settings?.maxRedeemPercent || 30;
-    // Max points based on cart total (30% of order)
-    const maxPointsByOrder = Math.floor((cartTotal * maxRedeemPercent) / 100);
-    // Max points based on user balance and order limit
-    let maxRedeemablePoints = Math.min(availablePoints, maxPointsByOrder);
-    // Round down to nearest 100 (since 1 point = 1 RUB, and we want clean numbers)
-    maxRedeemablePoints = Math.floor(maxRedeemablePoints / 100) * 100;
-    // Calculate actual points to redeem
-    let pointsToRedeem = 0;
-    if (requestedPoints && requestedPoints > 0) {
-        pointsToRedeem = Math.min(requestedPoints, maxRedeemablePoints);
-        if (pointsToRedeem < minRedeem && pointsToRedeem > 0) {
-            pointsToRedeem = 0; // Can't redeem less than minimum
-        }
+    if (userError || !user) {
+        throw {
+            status: 500,
+            message: "Failed to fetch user loyalty balance",
+        };
     }
-    const discountAmount = pointsToRedeem; // 1 point = 1 RUB
+    const { data: settings, error: settingsError } = await supabase_1.supabase
+        .from("LoyaltySettings")
+        .select("minredeempoints, maxredeempercent")
+        .limit(1)
+        .maybeSingle();
+    if (settingsError) {
+        console.error("Failed to fetch loyalty settings:", settingsError);
+    }
+    const availablePoints = Math.max(0, Number(user.loyaltyPoints ?? 0));
+    const minRedeem = Number(settings?.minredeempoints ?? 100);
+    const maxRedeemPercent = Number(settings?.maxredeempercent ?? 30);
+    const maxPointsByOrder = Math.floor((safeCartTotal * maxRedeemPercent) / 100);
+    let maxRedeemablePoints = Math.min(availablePoints, maxPointsByOrder);
+    maxRedeemablePoints =
+        Math.floor(maxRedeemablePoints / 100) *
+            100;
+    let pointsToRedeem = Math.min(safeRequestedPoints, maxRedeemablePoints);
+    pointsToRedeem =
+        Math.floor(pointsToRedeem / 100) * 100;
+    if (pointsToRedeem > 0 &&
+        pointsToRedeem < minRedeem) {
+        pointsToRedeem = 0;
+    }
     return {
         availablePoints,
-        requestedPoints: requestedPoints || 0,
+        requestedPoints: safeRequestedPoints,
         appliedPoints: pointsToRedeem,
-        discountAmount,
+        discountAmount: pointsToRedeem,
         minRedeem,
         maxRedeemPercent,
         maxPossiblePoints: maxRedeemablePoints,
     };
 }
-// Redeem points for order
+/* ======================================================
+   REDEEM POINTS AFTER SUCCESSFUL PAYMENT
+====================================================== */
 async function redeemLoyaltyPoints(userId, pointsToRedeem, orderId) {
-    // First calculate if redemption is valid
-    // Note: We need cart total here, but for simplicity, we'll validate in cart service
+    const safePoints = Math.max(0, Math.floor(Number(pointsToRedeem)));
+    if (safePoints <= 0) {
+        throw {
+            status: 400,
+            message: "Invalid loyalty points amount",
+        };
+    }
+    // Prevent deducting points twice for the same order.
+    if (orderId) {
+        const { data: existingRedemption, error: existingRedemptionError, } = await supabase_1.supabase
+            .from("LoyaltyTransaction")
+            .select("id")
+            .eq("userId", userId)
+            .eq("type", "redeemed")
+            .eq("referenceid", orderId)
+            .maybeSingle();
+        if (existingRedemptionError) {
+            throw {
+                status: 500,
+                message: "Failed to check points redemption",
+            };
+        }
+        if (existingRedemption) {
+            console.log(`Points already redeemed for order ${orderId}`);
+            return {
+                redeemedPoints: 0,
+                alreadyRedeemed: true,
+            };
+        }
+    }
     const { data: user, error: userError } = await supabase_1.supabase
         .from("User")
         .select("loyaltyPoints, totalPointsRedeemed")
         .eq("id", userId)
         .single();
-    if (userError) {
-        throw { status: 500, message: "Failed to fetch user" };
+    if (userError || !user) {
+        throw {
+            status: 500,
+            message: "Failed to fetch user",
+        };
     }
-    const currentPoints = user.loyaltyPoints || 0;
-    if (pointsToRedeem > currentPoints) {
-        throw { status: 400, message: "Insufficient loyalty points" };
+    const currentPoints = Number(user.loyaltyPoints ?? 0);
+    if (safePoints > currentPoints) {
+        throw {
+            status: 400,
+            message: "Insufficient loyalty points",
+        };
     }
-    const newBalance = currentPoints - pointsToRedeem;
-    const newTotalRedeemed = (user.totalPointsRedeemed || 0) + pointsToRedeem;
-    // Update user points
+    const newBalance = currentPoints - safePoints;
+    const newTotalRedeemed = Number(user.totalPointsRedeemed ?? 0) +
+        safePoints;
     const { error: updateError } = await supabase_1.supabase
         .from("User")
         .update({
@@ -233,24 +342,32 @@ async function redeemLoyaltyPoints(userId, pointsToRedeem, orderId) {
     })
         .eq("id", userId);
     if (updateError) {
-        throw { status: 500, message: "Failed to redeem points" };
+        throw {
+            status: 500,
+            message: "Failed to redeem points",
+        };
     }
-    // Record transaction
     const { error: transactionError } = await supabase_1.supabase
         .from("LoyaltyTransaction")
         .insert({
         userId,
-        points: -pointsToRedeem, // Negative for redemption
+        points: -safePoints,
         type: "redeemed",
-        referenceId: orderId,
-        description: `Redeemed ${pointsToRedeem} points for order #${orderId || "cart"}`,
+        referenceid: orderId ?? null,
+        description: orderId
+            ? `Redeemed ${safePoints} points for order #${orderId}`
+            : `Redeemed ${safePoints} points`,
     });
     if (transactionError) {
         console.error("Failed to record redemption:", transactionError);
+        throw {
+            status: 500,
+            message: "Failed to record points redemption",
+        };
     }
     return {
-        redeemedPoints: pointsToRedeem,
-        discountAmount: pointsToRedeem,
+        redeemedPoints: safePoints,
+        discountAmount: safePoints,
         newBalance,
     };
 }

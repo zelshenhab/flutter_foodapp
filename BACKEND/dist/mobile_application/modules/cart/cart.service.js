@@ -12,6 +12,7 @@ exports.applyLoyaltyPoints = applyLoyaltyPoints;
 exports.removeLoyaltyPoints = removeLoyaltyPoints;
 const supabase_1 = require("../../../core/config/supabase");
 const promo_service_1 = require("../promos/promo.service");
+const loyalty_service_1 = require("../loyalty/loyalty.service"); // 👈 ADD THIS LINE
 function round2(n) {
     return Math.round(n * 100) / 100;
 }
@@ -45,7 +46,7 @@ async function getOrCreateCart(userId) {
     return newCart;
 }
 // ✅ UPDATE getCart function to include loyalty points
-async function getCart(userId, appliedPoints) {
+async function getCart(userId) {
     const cart = await getOrCreateCart(userId);
     const { data: items, error } = await supabase_1.supabase
         .from("CartItem")
@@ -94,23 +95,26 @@ async function getCart(userId, appliedPoints) {
         }
     }
     // Loyalty points
-    const { data: user } = await supabase_1.supabase
-        .from("User")
-        .select("loyaltyPoints")
-        .eq("id", userId)
-        .single();
-    const availablePoints = user?.loyaltyPoints || 0;
-    let pointsDiscount = 0;
-    let finalAppliedPoints = 0;
-    if (appliedPoints && appliedPoints > 0 && availablePoints > 0) {
-        const remainingTotal = subtotal - promoDiscount;
-        const maxPointsByOrder = Math.floor(remainingTotal * 0.3);
-        let pointsToUse = Math.min(appliedPoints, availablePoints, maxPointsByOrder);
-        // round to clean numbers (100)
-        pointsToUse = Math.floor(pointsToUse / 100) * 100;
-        if (pointsToUse >= 100) {
-            pointsDiscount = pointsToUse;
-            finalAppliedPoints = pointsToUse;
+    const storedAppliedPoints = Math.max(0, Math.floor(Number(cart.appliedPoints ?? 0)));
+    const remainingTotal = Math.max(0, subtotal - promoDiscount);
+    const redemption = await (0, loyalty_service_1.calculatePointsRedemption)(remainingTotal, storedAppliedPoints, userId);
+    const availablePoints = Number(redemption.availablePoints ?? 0);
+    const finalAppliedPoints = Number(redemption.appliedPoints ?? 0);
+    const pointsDiscount = Number(redemption.discountAmount ?? 0);
+    // Revalidate saved points when:
+    // - cart quantity changes
+    // - promo changes
+    // - user balance changes
+    if (finalAppliedPoints !== storedAppliedPoints) {
+        const { error: normalizationError } = await supabase_1.supabase
+            .from("Cart")
+            .update({
+            appliedPoints: finalAppliedPoints,
+            updatedAt: new Date().toISOString(),
+        })
+            .eq("id", cart.id);
+        if (normalizationError) {
+            console.error("Failed to normalize applied points:", normalizationError);
         }
     }
     const total = Math.max(0, subtotal - promoDiscount - pointsDiscount + deliveryFee);
@@ -119,12 +123,12 @@ async function getCart(userId, appliedPoints) {
         subtotal: round2(subtotal),
         discount: round2(promoDiscount),
         pointsDiscount: round2(pointsDiscount),
-        deliveryFee: round2(deliveryFee), // still called deliveryFee for frontend compatibility
+        deliveryFee: round2(deliveryFee),
         total: round2(total),
         promoCode: cart.promoCode,
         promoError,
         appliedPoints: finalAppliedPoints,
-        availablePoints: availablePoints,
+        availablePoints,
     };
 }
 async function computeUnitPrice(menuItemId, optionIds) {
@@ -298,35 +302,87 @@ async function applyPromo(userId, code) {
     return getCart(userId);
 }
 async function clearCart(cartId) {
-    await supabase_1.supabase.from("CartItem").delete().eq("cartId", cartId);
-    await supabase_1.supabase.from("Cart").update({ promoCode: null }).eq("id", cartId);
+    const { error: itemsError } = await supabase_1.supabase
+        .from("CartItem")
+        .delete()
+        .eq("cartId", cartId);
+    if (itemsError) {
+        throw {
+            status: 500,
+            message: "Failed to clear cart items",
+        };
+    }
+    const { error: cartError } = await supabase_1.supabase
+        .from("Cart")
+        .update({
+        promoCode: null,
+        appliedPoints: 0,
+        updatedAt: new Date().toISOString(),
+    })
+        .eq("id", cartId);
+    if (cartError) {
+        throw {
+            status: 500,
+            message: "Failed to reset cart",
+        };
+    }
 }
 async function getCartRecord(userId) {
     return getOrCreateCart(userId);
 }
 async function applyLoyaltyPoints(userId, pointsToApply) {
-    const cart = await getOrCreateCart(userId);
-    // Validate points
-    const currentCart = await getCart(userId);
-    const { data: user } = await supabase_1.supabase
-        .from("User")
-        .select("loyaltyPoints")
-        .eq("id", userId)
-        .single();
-    const availablePoints = user?.loyaltyPoints || 0;
-    const remainingTotal = currentCart.subtotal - currentCart.discount;
-    const maxPointsByOrder = Math.floor(remainingTotal * 0.3);
-    let finalPoints = Math.min(pointsToApply, availablePoints, maxPointsByOrder);
-    finalPoints = Math.floor(finalPoints / 100) * 100;
-    if (finalPoints < 100) {
-        throw { status: 400, message: "Minimum 100 points required" };
+    const requestedPoints = Math.floor(Number(pointsToApply));
+    if (!Number.isFinite(requestedPoints) ||
+        requestedPoints < 100) {
+        throw {
+            status: 400,
+            message: "Minimum 100 points required",
+        };
     }
-    // Store applied points in cart (you might want to add a column to Cart table)
-    // For now, we'll just return the updated cart
-    return getCart(userId, finalPoints);
+    const cartRecord = await getOrCreateCart(userId);
+    const currentCart = await getCart(userId);
+    const remainingTotal = Math.max(0, currentCart.subtotal - currentCart.discount);
+    const redemption = await (0, loyalty_service_1.calculatePointsRedemption)(remainingTotal, requestedPoints, userId);
+    const finalPoints = Number(redemption.appliedPoints ?? 0);
+    if (finalPoints < 100) {
+        throw {
+            status: 400,
+            message: "The requested loyalty points cannot be applied",
+        };
+    }
+    const { error } = await supabase_1.supabase
+        .from("Cart")
+        .update({
+        appliedPoints: finalPoints,
+        updatedAt: new Date().toISOString(),
+    })
+        .eq("id", cartRecord.id);
+    if (error) {
+        console.error("Failed to persist applied points:", error);
+        throw {
+            status: 500,
+            message: "Failed to apply loyalty points",
+        };
+    }
+    return getCart(userId);
 }
 // ✅ ADD NEW FUNCTION to remove loyalty points
 async function removeLoyaltyPoints(userId) {
-    return getCart(userId, 0);
+    const cart = await getOrCreateCart(userId);
+    const { error } = await supabase_1.supabase
+        .from("Cart")
+        .update({
+        appliedPoints: 0,
+        updatedAt: new Date().toISOString(),
+    })
+        .eq("id", cart.id);
+    if (error) {
+        console.error("Failed to remove loyalty points:", error);
+        throw {
+            status: 500,
+            message: "Failed to remove loyalty points",
+        };
+    }
+    return getCart(userId);
 }
 //# sourceMappingURL=cart.service.js.map
