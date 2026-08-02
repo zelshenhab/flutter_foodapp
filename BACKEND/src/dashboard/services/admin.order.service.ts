@@ -6,31 +6,66 @@ export async function listOrders(filters: AdminOrderFilters) {
 
   let q = supabase
     .from("Order")
-    .select("*, User(*)", { count: "exact" })
+    .select(
+      `
+        *,
+        User(*),
+        OrderItem!OrderItem_orderId_fkey(
+          id,
+          orderId,
+          menuItemId,
+          titleSnap,
+          optionsSnap,
+          unitPrice,
+          quantity,
+          lineTotal
+        )
+      `,
+      { count: "exact" }
+    )
     .order("createdAt", { ascending: false });
 
-  if (status) q = q.eq("status", status);
+  if (status) {
+    q = q.eq("status", status);
+  }
 
   q = q.range((page - 1) * limit, page * limit - 1);
 
   const { data, error, count } = await q;
+
   if (error) throw error;
 
   return {
     data,
     pagination: {
-      total: count,
+      total: count ?? 0,
       page,
       limit,
-      totalPages: Math.ceil((count || 0) / limit),
+      totalPages: Math.ceil((count ?? 0) / limit),
     },
   };
 }
 
+
 export async function getOrder(orderId: number) {
   const { data, error } = await supabase
     .from("Order")
-    .select("*, order_items(*), User(*)")
+    .select(
+      `
+        *,
+        User(*),
+        OrderItem!OrderItem_orderId_fkey(
+          id,
+          orderId,
+          menuItemId,
+          titleSnap,
+          optionsSnap,
+          unitPrice,
+          quantity,
+          lineTotal
+        )
+      `
+    )
     .eq("id", orderId)
     .single();
 

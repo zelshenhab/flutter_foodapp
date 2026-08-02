@@ -8,10 +8,24 @@ async function listOrders(filters) {
     const { status, page = 1, limit = 20 } = filters;
     let q = supabase_1.supabase
         .from("Order")
-        .select("*, User(*)", { count: "exact" })
+        .select(`
+        *,
+        User(*),
+        OrderItem!OrderItem_orderId_fkey(
+          id,
+          orderId,
+          menuItemId,
+          titleSnap,
+          optionsSnap,
+          unitPrice,
+          quantity,
+          lineTotal
+        )
+      `, { count: "exact" })
         .order("createdAt", { ascending: false });
-    if (status)
+    if (status) {
         q = q.eq("status", status);
+    }
     q = q.range((page - 1) * limit, page * limit - 1);
     const { data, error, count } = await q;
     if (error)
@@ -19,17 +33,30 @@ async function listOrders(filters) {
     return {
         data,
         pagination: {
-            total: count,
+            total: count ?? 0,
             page,
             limit,
-            totalPages: Math.ceil((count || 0) / limit),
+            totalPages: Math.ceil((count ?? 0) / limit),
         },
     };
 }
 async function getOrder(orderId) {
     const { data, error } = await supabase_1.supabase
         .from("Order")
-        .select("*, order_items(*), User(*)")
+        .select(`
+        *,
+        User(*),
+        OrderItem!OrderItem_orderId_fkey(
+          id,
+          orderId,
+          menuItemId,
+          titleSnap,
+          optionsSnap,
+          unitPrice,
+          quantity,
+          lineTotal
+        )
+      `)
         .eq("id", orderId)
         .single();
     if (error)

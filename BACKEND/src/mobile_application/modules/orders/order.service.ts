@@ -251,41 +251,28 @@ export async function listOrders(
     limit?: number;
   }
 ) {
-  const page = Math.max(
-    1,
-    Number(opts.page || 1)
-  );
-
-  const limit = Math.min(
-    50,
-    Math.max(1, Number(opts.limit || 10))
-  );
-
+  const page = Math.max(1, Number(opts.page || 1));
+  const limit = Math.min(50, Math.max(1, Number(opts.limit || 10)));
   const offset = (page - 1) * limit;
 
   let query = supabase
     .from("Order")
     .select("*")
     .eq("userId", userId)
+    .eq("paymentStatus", "paid")
     .order("createdAt", {
       ascending: false,
     })
     .range(offset, offset + limit - 1);
 
   if (opts.status) {
-    query = query.eq(
-      "status",
-      opts.status
-    );
+    query = query.eq("status", opts.status);
   }
 
   const { data, error } = await query;
 
   if (error) {
-    console.error(
-      "❌ LIST ORDERS ERROR:",
-      error
-    );
+    console.error("❌ LIST ORDERS ERROR:", error);
 
     throw {
       status: 500,

@@ -213,6 +213,7 @@ async function listOrders(userId, opts) {
         .from("Order")
         .select("*")
         .eq("userId", userId)
+        .eq("paymentStatus", "paid")
         .order("createdAt", {
         ascending: false,
     })

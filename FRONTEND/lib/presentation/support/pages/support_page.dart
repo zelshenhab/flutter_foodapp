@@ -87,9 +87,9 @@ class _SupportViewState extends State<_SupportView> {
                     _contactTile(
                       icon: Icons.email_outlined,
                       title: 'Email',
-                      subtitle: 'kauroah@gmail.com',
+                      subtitle: 'adam.nd.evee@gmail.com',
                       onTap: () => openEmail(
-                        'kauroah@gmail.com',
+                        'adam.nd.evee@gmail.com',
                         subject: 'Поддержка',
                       ),
                     ),
