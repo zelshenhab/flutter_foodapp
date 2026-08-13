@@ -32,26 +32,27 @@ class AuthLanguageButton extends StatelessWidget {
             value: code,
             child: Row(
               children: [
-                Icon(
-                  code == current ? Icons.check_circle : Icons.circle_outlined,
-                  size: 18,
-                  color: code == current ? _accent : const Color(0xFFA7A7A7),
-                ),
+                _LanguageFlag(code: code, size: 22),
                 const SizedBox(width: 10),
-                Text(
-                  l10n.languageName(code),
-                  style: TextStyle(
-                    color: _text,
-                    fontWeight:
-                        code == current ? FontWeight.w700 : FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    l10n.languageName(code),
+                    style: TextStyle(
+                      color: _text,
+                      fontWeight: code == current
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
                   ),
                 ),
+                if (code == current)
+                  const Icon(Icons.check, size: 18, color: _accent),
               ],
             ),
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: _surface,
           borderRadius: BorderRadius.circular(12),
@@ -60,7 +61,7 @@ class AuthLanguageButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.language, size: 18, color: _accent),
+            _LanguageFlag(code: current, size: 20),
             const SizedBox(width: 6),
             Text(
               current.toUpperCase(),
@@ -74,6 +75,77 @@ class AuthLanguageButton extends StatelessWidget {
             const SizedBox(width: 2),
             const Icon(Icons.keyboard_arrow_down, size: 18, color: _accent),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageFlag extends StatelessWidget {
+  const _LanguageFlag({required this.code, this.size = 20});
+
+  final String code;
+  final double size;
+
+  /// Emoji country flags (Tatarstan has no emoji flag → custom stripes).
+  static String? emojiFor(String code) {
+    switch (code) {
+      case 'ru':
+        return '🇷🇺';
+      case 'en':
+        return '🇬🇧';
+      case 'ar':
+        return '🇸🇦';
+      default:
+        return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = emojiFor(code);
+    if (emoji != null) {
+      return SizedBox(
+        width: size * 1.35,
+        height: size,
+        child: Center(
+          child: Text(
+            emoji,
+            style: TextStyle(fontSize: size * 0.95, height: 1),
+          ),
+        ),
+      );
+    }
+
+    // Tatarstan flag: green / white / red (slightly shorter than emoji flags)
+    final w = size * 1.35;
+    final h = size * 0.82;
+
+    return SizedBox(
+      width: w,
+      height: size,
+      child: Center(
+        child: Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: const Color(0xFF555555), width: 0.8),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF009B3A),
+                Color(0xFF009B3A),
+                Color(0xFFFFFFFF),
+                Color(0xFFFFFFFF),
+                Color(0xFFD52B1E),
+                Color(0xFFD52B1E),
+              ],
+              // Real Tatarstan flag: thin white stripe in the middle (~1/15)
+              stops: [0.0, 0.465, 0.465, 0.535, 0.535, 1.0],
+            ),
+          ),
         ),
       ),
     );

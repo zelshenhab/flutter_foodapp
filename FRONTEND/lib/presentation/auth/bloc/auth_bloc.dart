@@ -151,6 +151,7 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
 
       // Set Authorization header for the global dio instance (for immediate use)
       dio.options.headers['Authorization'] = 'Bearer ${res.accessToken}';
+      resetAuthRedirectFlag();
 
       debugPrint('✅ Token saved: ${res.accessToken.substring(0, 20)}...');
 

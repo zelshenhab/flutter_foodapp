@@ -174,11 +174,24 @@ class _SplashScreenState extends State<SplashScreen> {
     const storage = FlutterSecureStorage();
 
     try {
-      final token = await storage.read(key: 'auth_token');
+      final refreshToken = await storage.read(key: 'refresh_token');
+      final accessToken = await storage.read(key: 'auth_token');
 
       if (!mounted) return;
 
-      if (token != null && token.isNotEmpty) {
+      // Renew access token on cold start when we still have a refresh token.
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        final ok = await ensureFreshSession();
+        if (!mounted) return;
+        if (ok) {
+          Navigator.pushReplacementNamed(context, '/home');
+          return;
+        }
+        // Refresh failed — fall through to guest/home without forcing login
+        // if we somehow still have a usable access token; otherwise home as guest.
+      }
+
+      if (accessToken != null && accessToken.isNotEmpty) {
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         // Guest mode

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/api_client.dart';
 import 'package:flutter_foodapp/core/auth/auth_session.dart';
 import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
@@ -32,19 +33,44 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   int _index = 0;
   bool _appliedInitialProfile = false;
   late final List<Widget> _pages;
+  bool _refreshingOnResume = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pages = const [
       MenuPage(),
       CartPage(),
       ProfilePage(),
     ];
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshSessionOnResume();
+    }
+  }
+
+  Future<void> _refreshSessionOnResume() async {
+    if (_refreshingOnResume) return;
+    _refreshingOnResume = true;
+    try {
+      await ensureFreshSession();
+    } finally {
+      _refreshingOnResume = false;
+    }
   }
 
   /// Handle tab tap

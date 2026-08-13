@@ -32,14 +32,12 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
     // Guest user → skip API
     if (token == null || token.isEmpty) {
-      debugPrint('Guest mode detected → skipping /users/me');
-
       emit(state.copyWith(
         loading: false,
         name: '',
         email: null,
         avatarUrl: null,
-        loyaltyPoints: 0, // 👈 ADD THIS
+        loyaltyPoints: 0,
       ));
       return;
     }
@@ -47,9 +45,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(loading: true, error: null));
 
     try {
-      debugPrint('👤 Fetching /users/me ...');
       final m = await repo.getMe();
-      debugPrint('✅ User loaded: ${m['name']}');
 
       String name = (m['name'] as String?)?.trim() ?? '';
 
