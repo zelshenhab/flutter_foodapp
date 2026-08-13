@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/core/auth/auth_session.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/guest_browse_banner.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/login_required_dialog.dart';
 import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
 import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
 
@@ -57,6 +62,8 @@ class MenuPage extends StatelessWidget {
                 return const _MenuLoadingSliver();
               }
 
+              final l10n = context.l10n;
+
               if (state.error != null) {
                 return CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -67,12 +74,12 @@ class MenuPage extends StatelessWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text("Ошибка при загрузке меню"),
+                            Text(l10n.menuLoadError),
                             const SizedBox(height: 8),
                             ElevatedButton(
                               onPressed: () =>
                                   context.read<MenuBloc>().add(MenuStarted()),
-                              child: const Text("Повторить"),
+                              child: Text(l10n.retry),
                             ),
                           ],
                         ),
@@ -87,6 +94,7 @@ class MenuPage extends StatelessWidget {
                 slivers: [
                   const SliverToBoxAdapter(child: MenuHeader()),
                   const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  const SliverToBoxAdapter(child: GuestBrowseBanner()),
                   SliverToBoxAdapter(
                       child: MenuSearchBar(
                         onChanged: (q) {
@@ -96,12 +104,12 @@ class MenuPage extends StatelessWidget {
                     ),
                   const SliverToBoxAdapter(child: PromoBanner()),
 
-                  const SliverPadding(
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     sliver: SliverToBoxAdapter(
                       child: Text(
-                        'Категории',
-                        style: TextStyle(
+                        l10n.categories,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
@@ -115,10 +123,10 @@ class MenuPage extends StatelessWidget {
                         categories: state.categories,
                         selectedId: state.selectedCategoryId,
                         iconAssetByCategoryId: iconMap,
-                         subtitleByCategoryId: {
-                          'bakhlava-box': 'кор',
-                          'bakhlava-vec': 'вес',
-                          },
+                        subtitleByCategoryId: {
+                          'bakhlava-box': context.l10n.unitBox,
+                          'bakhlava-vec': context.l10n.unitWeight,
+                        },
                         onSelected: (id) => context
                             .read<MenuBloc>()
                             .add(MenuCategorySelected(id)),
@@ -138,17 +146,28 @@ class MenuPage extends StatelessWidget {
                         // inside SliverList.separated itemBuilder:
                         return MenuItemTile(
                           item: item,
-                          onAdd: () {
-                            // Prefer numeric server id from backend; fallback to parsing string id
-                            final numericId = item.serverId ?? int.tryParse(item.id);
-                            if (numericId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Товар недоступен для заказа (id: ${item.id})')),
+                          onAdd: () async {
+                            if (!await AuthSession.isLoggedIn()) {
+                              if (!context.mounted) return;
+                              await showLoginRequiredDialog(
+                                context,
+                                message: context.l10n.loginRequiredAddToCart,
                               );
                               return;
                             }
 
-                            // Dispatch to CartBloc -> will call POST /cart/items
+                            final numericId =
+                                item.serverId ?? int.tryParse(item.id);
+                            if (numericId == null) {
+                              if (!context.mounted) return;
+                              AppToast.error(
+                                context,
+                                context.l10n.itemUnavailable(item.id),
+                              );
+                              return;
+                            }
+
+                            if (!context.mounted) return;
                             context.read<CartBloc>().add(
                               CartItemAdded(item, quantity: 1),
                             );

@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import 'package:flutter_foodapp/core/utils/money.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_state.dart';
 
 class SummaryPanel extends StatelessWidget {
-  final bool pickup; // ✅ ملخص للـ Pickup عند الحاجة
+  final bool pickup;
   final String? pickupAddress;
 
   const SummaryPanel({super.key, this.pickup = false, this.pickupAddress});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocBuilder<CartBloc, CartState>(
-      // نعيد البناء عند تغيّر أرقام الملخص فقط
       buildWhen: (p, n) =>
           p.subtotal != n.subtotal ||
           p.discount != n.discount ||
@@ -26,25 +28,16 @@ class SummaryPanel extends StatelessWidget {
           child: Column(
             children: [
               if (pickup && pickupAddress != null) ...[
-                _infoChip('Самовывоз — $pickupAddress'),
+                _infoChip(l10n.pickupAt(pickupAddress!)),
                 const SizedBox(height: 8),
               ],
-
-              // Сумма заказа = subtotal
-              _row('Сумма заказа', money(state.subtotal)),
-
-              // Скидка (если есть)
+              _row(l10n.orderSum, money(state.subtotal)),
               if (state.discount > 0)
-                _row('Скидка', '-${money(state.discount)}'),
-
-              // Доставка (покажем только если НЕ pickup ولها قيمة > 0)
+                _row(l10n.discount, '-${money(state.discount)}'),
               if (!pickup && state.deliveryFee > 0)
-                _row('Сервис', money(state.deliveryFee)),
-
+                _row(l10n.serviceFee, money(state.deliveryFee)),
               const Divider(color: Color(0xFF2A2A2A)),
-
-              // Итого = total القادم من الباكэнд (already subtotal - discount + deliveryFee)
-              _row('Итого', money(state.total), bold: true),
+              _row(l10n.total, money(state.total), bold: true),
             ],
           ),
         );

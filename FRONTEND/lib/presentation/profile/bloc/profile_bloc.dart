@@ -1,6 +1,7 @@
 // lib/presentation/profile/bloc/profile_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../repos/profile_repository.dart';
 import '../../../repos/loyalty_repository.dart'; // 👈 ADD THIS
@@ -76,7 +77,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       debugPrint('❌ Profile load error: $err');
       emit(state.copyWith(
         loading: false,
-        error: 'Не удалось загрузить профиль',
+        error: LocaleCubit.l10n.profileLoadFailed,
         loyaltyPoints: 0, // 👈 ADD THIS
       ));
     }
@@ -98,7 +99,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       ));
     } catch (_) {
       emit(state.copyWith(
-          loading: false, error: 'Не удалось сохранить профиль'));
+          loading: false, error: LocaleCubit.l10n.profileSaveFailed));
     }
   }
 }

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
+import 'package:flutter_foodapp/core/branches/branch_cubit.dart';
 import 'package:flutter_foodapp/presentation/auth/bloc/auth_bloc.dart';
 import 'package:flutter_foodapp/presentation/auth/bloc/auth_event.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/branch_selector.dart';
 import 'package:flutter_foodapp/presentation/profile/widgets/bonuses_card.dart';
 import 'package:flutter_foodapp/presentation/promos/pages/promotions_page.dart';
 
@@ -13,7 +18,7 @@ import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_section_card.dart';
-import '../widgets/address_readonly_tile.dart';
+import '../widgets/settings_tile_switch.dart';
 import '../widgets/settings_tile_language.dart';
 import '../models/user_profile.dart';
 
@@ -22,16 +27,23 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final langCode = context.watch<LocaleCubit>().state.languageCode;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Профиль')),
-      body: BlocBuilder<ProfileBloc, ProfileState>(
+      appBar: AppBar(title: Text(l10n.profile)),
+      body: BlocConsumer<ProfileBloc, ProfileState>(
+        listenWhen: (p, c) => p.error != c.error,
+        listener: (context, state) {
+          if (state.error != null) {
+            AppToast.error(context, state.error!);
+          }
+        },
         builder: (context, state) {
-          // 🔄 Show loading indicator
           if (state.loading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // ⚠️ Handle error
           if (state.error != null && state.name.isEmpty) {
             return Center(
               child: Text(
@@ -41,16 +53,15 @@ class ProfilePage extends StatelessWidget {
             );
           }
 
-          // ✅ Build the actual profile content
           final name = state.name.isNotEmpty ? state.name : '-';
           final email = state.email ?? '-';
 
           final headerProfile = UserProfile(
             name: name,
             email: email,
-            address: 'ул. Пушкина 15',
+            address: context.watch<BranchCubit>().state.fullAddress,
             notifications: true,
-            languageCode: 'ru',
+            languageCode: langCode,
             avatarPath: state.avatarUrl,
           );
 
@@ -61,112 +72,100 @@ class ProfilePage extends StatelessWidget {
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                /// ===== Header (Avatar + name + email)
                 ProfileHeader(
                   profile: headerProfile,
                   onEdit: () => _showEditDataSheet(context, name, email),
                 ),
-
-                /// ===== Bonuses + Promotions
                 _BonusesCardShim(),
-
-                /// ===== Personal data
                 const SizedBox(height: 8),
                 ProfileSectionCard(
-                  title: "Мои данные",
+                  title: l10n.myData,
                   children: [
                     ListTile(
                       leading: const Icon(Icons.person),
-                      title: Text("Имя: $name"),
+                      title: Text(l10n.nameLabel(name)),
                     ),
                     ListTile(
                       leading: const Icon(Icons.email),
-                      title: Text("Элек.почта: $email"),
+                      title: Text(l10n.emailLabel(email)),
                     ),
                     const SizedBox(height: 4),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
-                        onPressed: () => _showEditDataSheet(context, name, email),
+                        onPressed: () =>
+                            _showEditDataSheet(context, name, email),
                         icon: const Icon(Icons.edit),
-                        label: const Text('Редактировать'),
+                        label: Text(l10n.edit),
                       ),
                     ),
                   ],
                 ),
-
-                /// ===== Orders
                 const SizedBox(height: 8),
                 ProfileSectionCard(
-                  title: "Мои заказы",
+                  title: l10n.myOrders,
                   children: [
                     ListTile(
                       leading: const Icon(Icons.history,
                           color: Color.fromARGB(255, 199, 160, 34)),
-                      title: const Text("Посмотреть заказы"),
+                      title: Text(l10n.viewOrders),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const OrdersPage()),
+                          MaterialPageRoute(
+                              builder: (_) => const OrdersPage()),
                         );
                       },
                     ),
                   ],
                 ),
-
-                /// ===== Address
-                const SizedBox(height: 8),
-                const ProfileSectionCard(
-                  title: "Адрес ресторана",
-                  children: [AddressReadonlyTile(address: 'ул. Николая Ершова, 62 (Арт центр)')],
-                ),
-
-                /// ===== Settings
                 const SizedBox(height: 8),
                 ProfileSectionCard(
-                  title: "Настройки",
-                  children: [
-                    /*SettingsTileSwitch(
-                      title: "Уведомления",
-                      value: true,
-                      onChanged: (_) {},
-                    ),*/
-                    SettingsTileLanguage(
-                      currentCode: 'ru',
-                      onChanged: (_) {},
-                    ),
+                  title: l10n.restaurantAddress,
+                  children: const [
+                    BranchSelectorTile(),
                   ],
                 ),
-
-                /// ===== Support
                 const SizedBox(height: 8),
                 ProfileSectionCard(
-                  title: "Поддержка",
+                  title: l10n.settings,
+                  children: [
+                    SettingsTileSwitch(
+                      title: l10n.notifications,
+                      value: true,
+                      onChanged: (_) {},
+                    ),
+                    const SettingsTileLanguage(),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ProfileSectionCard(
+                  title: l10n.support,
                   children: [
                     ListTile(
                       leading: const Icon(Icons.support_agent,
                           color: Color.fromARGB(255, 199, 160, 34)),
-                      title: const Text("Связаться с поддержкой"),
+                      title: Text(l10n.contactSupport),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const SupportPage()),
+                          MaterialPageRoute(
+                              builder: (_) => const SupportPage()),
                         );
                       },
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                                /// ===== Logout
                 const SizedBox(height: 8),
                 ProfileSectionCard(
-                  title: "Аккаунт",
+                  title: l10n.account,
                   children: [
                     ListTile(
                       leading: const Icon(Icons.logout, color: Colors.orange),
-                      title: const Text("Выйти из аккаунта"),
+                      title: Text(l10n.logout),
                       onTap: () {
                         context.read<AuthBloc>().add(AuthLogoutRequested());
 
@@ -176,22 +175,19 @@ class ProfilePage extends StatelessWidget {
                         );
                       },
                     ),
-
-                    /// ===== Delete Account
                     ListTile(
                       leading: const Icon(Icons.delete, color: Colors.red),
-                      title: const Text("Удалить аккаунт"),
+                      title: Text(l10n.deleteAccount),
                       onTap: () {
                         showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: const Text("Удалить аккаунт"),
-                            content: const Text(
-                                "Вы уверены что хотите удалить аккаунт?"),
+                            title: Text(l10n.deleteAccount),
+                            content: Text(l10n.deleteAccountConfirm),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text("Отмена"),
+                                child: Text(context.l10n.cancel),
                               ),
                               TextButton(
                                 onPressed: () {
@@ -207,9 +203,9 @@ class ProfilePage extends StatelessWidget {
                                     (route) => false,
                                   );
                                 },
-                                child: const Text(
-                                  "Удалить",
-                                  style: TextStyle(color: Colors.red),
+                                child: Text(
+                                  l10n.delete,
+                                  style: const TextStyle(color: Colors.red),
                                 ),
                               ),
                             ],
@@ -227,14 +223,16 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  /// 🧾 Bottom Sheet — Edit Name + email
   void _showEditDataSheet(
     BuildContext context,
     String currentName,
     String currentEmail,
   ) {
-    final nameCtrl = TextEditingController(text: currentName != '-' ? currentName : '');
-    final emailCtrl = TextEditingController(text: currentEmail != '-' ? currentEmail : '');
+    final l10n = context.l10n;
+    final nameCtrl =
+        TextEditingController(text: currentName != '-' ? currentName : '');
+    final emailCtrl =
+        TextEditingController(text: currentEmail != '-' ? currentEmail : '');
 
     const fieldBg = Color(0xFF1E1E1E);
 
@@ -256,29 +254,27 @@ class ProfilePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Редактировать данные",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Text(
+                l10n.editData,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 12),
-
-              _buildLabel("Имя"),
+              _buildLabel(l10n.name),
               TextField(
                 controller: nameCtrl,
                 style: const TextStyle(color: Color(0xFFEDEDED)),
-                decoration: _inputDecoration("Введите имя", fieldBg),
+                decoration: _inputDecoration(l10n.enterName, fieldBg),
               ),
               const SizedBox(height: 12),
-
-              _buildLabel("Элек,почта"),
+              _buildLabel(l10n.email),
               TextField(
                 controller: emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 style: const TextStyle(color: Color(0xFFEDEDED)),
-                decoration: _inputDecoration("jhon@mail.ru", fieldBg),
+                decoration: _inputDecoration('john@mail.ru', fieldBg),
               ),
               const SizedBox(height: 16),
-
               SizedBox(
                 width: double.infinity,
                 height: 44,
@@ -288,9 +284,7 @@ class ProfilePage extends StatelessWidget {
                     final email = emailCtrl.text.trim();
 
                     if (name.isEmpty || email.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Заполните имя и телефон')),
-                      );
+                      AppToast.error(context, l10n.fillNameEmail);
                       return;
                     }
 
@@ -301,7 +295,7 @@ class ProfilePage extends StatelessWidget {
 
                     Navigator.pop(context);
                   },
-                  child: const Text('Сохранить'),
+                  child: Text(l10n.save),
                 ),
               ),
             ],
@@ -337,12 +331,13 @@ class ProfilePage extends StatelessWidget {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color.fromARGB(255, 199, 160, 34)),
+        borderSide:
+            const BorderSide(color: Color.fromARGB(255, 199, 160, 34)),
       ),
     );
   }
 }
-// Keeps your existing BonusesCard look
+
 class _BonusesCardShim extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

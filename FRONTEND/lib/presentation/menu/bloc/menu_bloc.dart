@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
 import 'package:flutter_foodapp/presentation/menu/models/menu_item.dart';
 import '../models/category.dart';
 import 'menu_event.dart';
@@ -52,7 +53,7 @@ class MenuBloc extends Bloc<MenuEvent, MenuState> {
     } catch (_) {
       emit(state.copyWith(
         loading: false,
-        error: 'Не удалось загрузить меню',
+        error: LocaleCubit.l10n.menuLoadFailed,
       ));
     }
   }
@@ -118,7 +119,7 @@ class MenuBloc extends Bloc<MenuEvent, MenuState> {
     } catch (_) {
       emit(state.copyWith(
         loading: false,
-        error: 'Не удалось обновить блюда',
+        error: LocaleCubit.l10n.dishesRefreshFailed,
       ));
     }
   }

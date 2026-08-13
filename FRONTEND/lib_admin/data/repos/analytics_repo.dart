@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../admin_api_client.dart';
 
 class AnalyticsRepo {
@@ -44,11 +45,11 @@ Future<Map<String, dynamic>> summary({
     "/analytics/dashboard-stats${_buildQuery(from, to)}",
   );
 
-  print("📊 RAW RESPONSE (repo): $res"); // 👈 ADD HERE
+  debugPrint("📊 RAW RESPONSE (repo): $res"); // 👈 ADD HERE
 
   final data = res["data"];
 
-  print("📊 PARSED DATA (repo): $data"); // 👈 ADD HERE
+  debugPrint("📊 PARSED DATA (repo): $data"); // 👈 ADD HERE
 
   return data;
 }

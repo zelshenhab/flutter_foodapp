@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import 'package:flutter_foodapp/core/utils/money.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
@@ -78,7 +79,7 @@ class CartItemTile extends StatelessWidget {
               Text(money(cartItem.subtotal),
                   style: const TextStyle(fontWeight: FontWeight.w800)),
               IconButton(
-                tooltip: "Удалить",
+                tooltip: context.l10n.delete,
                 onPressed: () => context.read<CartBloc>().add(CartItemRemoved(item.id)),
                 icon: const Icon(Icons.delete_outline, color: Color(0xFFA7A7A7)),
               ),

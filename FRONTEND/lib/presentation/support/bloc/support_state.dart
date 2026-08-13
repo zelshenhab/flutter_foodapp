@@ -5,19 +5,19 @@ class SupportState extends Equatable {
   final String orderId;
   final String message;
 
-  final bool loading;   
-  final bool sending;   
-  final String? error;  
-  final String? successMessage; 
+  final bool loading;
+  final bool sending;
+  final String? error;
+  final String? successTicketId;
 
   const SupportState({
-    this.topic = 'Проблема с заказом',
+    this.topic = 'order_issue',
     this.orderId = '',
     this.message = '',
     this.loading = false,
     this.sending = false,
     this.error,
-    this.successMessage,
+    this.successTicketId,
   });
 
   bool get canSubmit => message.trim().isNotEmpty && !sending;
@@ -29,7 +29,8 @@ class SupportState extends Equatable {
     bool? loading,
     bool? sending,
     String? error,
-    String? successMessage,
+    String? successTicketId,
+    bool clearSuccess = false,
   }) {
     return SupportState(
       topic: topic ?? this.topic,
@@ -38,11 +39,12 @@ class SupportState extends Equatable {
       loading: loading ?? this.loading,
       sending: sending ?? this.sending,
       error: error,
-      successMessage: successMessage,
+      successTicketId:
+          clearSuccess ? null : (successTicketId ?? this.successTicketId),
     );
   }
 
   @override
   List<Object?> get props =>
-      [topic, orderId, message, loading, sending, error, successMessage];
+      [topic, orderId, message, loading, sending, error, successTicketId];
 }

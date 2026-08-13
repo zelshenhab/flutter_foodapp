@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/repos/analytics_repo.dart';
 import 'analytics_event.dart';
@@ -14,18 +15,11 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
     AnalyticsLoad e,
     Emitter<AnalyticsState> emit,
   ) async {
-    print("🚀 AnalyticsLoad TRIGGERED"); // 👈 ADD HERE
+    debugPrint("🚀 AnalyticsLoad TRIGGERED"); // 👈 ADD HERE
 
     emit(state.copyWith(loading: true, error: null));
 
     try {
-      final now = DateTime.now();
-
-      // default: today if not provided
-      final from =
-          e.from ?? DateTime(now.year, now.month, now.day);
-      final to = e.to ?? now;
-
       final results = await Future.wait([
           repo.dailyRevenue(),
           repo.ordersByStatus(),
@@ -33,7 +27,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
           repo.summary(),
         ]);
 
-      print("📊 BLOC SUMMARY: ${results[3]}"); // 👈 ADD HERE
+      debugPrint("📊 BLOC SUMMARY: ${results[3]}"); // 👈 ADD HERE
 
 
       emit(state.copyWith(
@@ -44,7 +38,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
         summary: results[3] as Map<String, dynamic>,
       ));
     } catch (err) {
-      print("❌ BLOC ERROR: $err"); // 👈 ADD HERE
+      debugPrint("❌ BLOC ERROR: $err"); // 👈 ADD HERE
 
       emit(
         state.copyWith(

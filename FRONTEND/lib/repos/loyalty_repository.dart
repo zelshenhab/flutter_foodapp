@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 // lib/repos/loyalty_repository.dart
 import '../core/api_client.dart';
 
@@ -9,7 +11,7 @@ class LoyaltyRepository {
       final res = await dio.get('/loyalty/info');
       return Map<String, dynamic>.from(res.data['data']);
     } catch (e) {
-      print('Error fetching loyalty info: $e');
+      debugPrint('Error fetching loyalty info: $e');
       return {
         'points': 0,
         'totalEarned': 0,
@@ -35,7 +37,7 @@ class LoyaltyRepository {
       });
       return Map<String, dynamic>.from(res.data['data']);
     } catch (e) {
-      print('Error calculating points: $e');
+      debugPrint('Error calculating points: $e');
       return {
         'availablePoints': 0,
         'requestedPoints': requestedPoints,

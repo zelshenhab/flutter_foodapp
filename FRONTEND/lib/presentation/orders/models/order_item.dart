@@ -1,3 +1,5 @@
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
+
 class OrderItem {
   final int id;
   final int orderId;
@@ -32,7 +34,7 @@ class OrderItem {
           : int.tryParse(json['menuItemId'].toString()) ?? 0,
       title: json['title'] ??
           json['titleSnap'] ??
-          'Без названия', // fallback if backend uses titleSnap
+          LocaleCubit.l10n.untitled, // fallback if backend uses titleSnap
       options: json['optionsSnap']?.toString() ?? json['options']?.toString(),
       unitPrice: double.tryParse(json['unitPrice'].toString()) ?? 0,
       quantity: int.tryParse(json['quantity'].toString()) ?? 0,

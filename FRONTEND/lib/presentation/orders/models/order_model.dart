@@ -14,6 +14,7 @@ class OrderModel {
   final String? promoCode;
   final String? notes;
   final String addressText;
+  final String? branchId;
   final DateTime createdAt;
   final List<OrderItem> items;
 
@@ -32,26 +33,61 @@ class OrderModel {
     required this.items,
     this.promoCode,
     this.notes,
+    this.branchId,
   });
 
+  bool get isActive =>
+      status == 'pending' || status == 'preparing' || status == 'ready';
+
+  OrderModel copyWith({
+    String? status,
+    String? addressText,
+    String? branchId,
+    List<OrderItem>? items,
+  }) {
+    return OrderModel(
+      id: id,
+      userId: userId,
+      status: status ?? this.status,
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus,
+      subtotal: subtotal,
+      discount: discount,
+      deliveryFee: deliveryFee,
+      total: total,
+      addressText: addressText ?? this.addressText,
+      branchId: branchId ?? this.branchId,
+      promoCode: promoCode,
+      notes: notes,
+      createdAt: createdAt,
+      items: items ?? this.items,
+    );
+  }
+
   factory OrderModel.fromJson(Map<String, dynamic> json) {
-    // 🧩 Decode addressSnapshot JSON safely
     String address = '';
+    String? branchId;
     try {
       final addrJson = json['addressSnapshot'];
-      if (addrJson != null) {
-        if (addrJson is String && addrJson.isNotEmpty) {
-          final decoded = jsonDecode(addrJson);
-          address = decoded['text'] ?? '';
-        } else if (addrJson is Map<String, dynamic>) {
-          address = addrJson['text'] ?? '';
+      Map<String, dynamic>? map;
+      if (addrJson is String && addrJson.isNotEmpty) {
+        final decoded = jsonDecode(addrJson);
+        if (decoded is Map<String, dynamic>) map = decoded;
+      } else if (addrJson is Map<String, dynamic>) {
+        map = addrJson;
+      }
+      if (map != null) {
+        address = map['text']?.toString() ?? '';
+        final rawBranch = map['branchId']?.toString();
+        if (rawBranch != null && rawBranch.isNotEmpty) {
+          branchId = rawBranch;
         }
       }
     } catch (_) {
       address = '';
+      branchId = null;
     }
 
-    // 🧩 Decode items list (Supabase may return as `OrderItem` or `items`)
     final rawItems = json['items'] ?? json['OrderItem'];
     List<OrderItem> parsedItems = [];
     if (rawItems is List) {
@@ -61,7 +97,9 @@ class OrderModel {
     }
 
     return OrderModel(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
       userId: json['userId'] is int
           ? json['userId']
           : int.tryParse(json['userId'].toString()) ?? 0,
@@ -75,7 +113,9 @@ class OrderModel {
       promoCode: json['promoCode']?.toString(),
       notes: json['notes']?.toString(),
       addressText: address,
-      createdAt: DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now(),
+      branchId: branchId,
+      createdAt:
+          DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now(),
       items: parsedItems,
     );
   }
@@ -93,6 +133,7 @@ class OrderModel {
         'promoCode': promoCode,
         'notes': notes,
         'addressText': addressText,
+        'branchId': branchId,
         'createdAt': createdAt.toIso8601String(),
         'items': items.map((i) => i.toJson()).toList(),
       };

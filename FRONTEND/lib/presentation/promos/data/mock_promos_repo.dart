@@ -7,34 +7,34 @@ import '../models/promo.dart';
 class RealPromosRepo {
   static Future<List<Promo>> fetchActive() async {
     try {
-      print('📦 Fetching promos from API...');
+      debugPrint('📦 Fetching promos from API...');
       final response = await dio.get('/promos');
-      print('📦 Response status: ${response.statusCode}');
+      debugPrint('📦 Response status: ${response.statusCode}');
       
       final data = response.data as Map<String, dynamic>;
-      print('📦 Full response: $data');
+      debugPrint('📦 Full response: $data');
       
       // Check if data['data'] exists and is a list
       if (!data.containsKey('data')) {
-        print('❌ No "data" field in response');
+        debugPrint('❌ No "data" field in response');
         return [];
       }
       
       final promosData = data['data'];
       if (promosData is! List) {
-        print('❌ "data" is not a list, it\'s a ${promosData.runtimeType}');
+        debugPrint('❌ "data" is not a list, it\'s a ${promosData.runtimeType}');
         return [];
       }
       
-      print('📦 Found ${promosData.length} promos in response');
+      debugPrint('📦 Found ${promosData.length} promos in response');
       
       if (promosData.isEmpty) {
-        print('⚠️ No promos found - check your database');
+        debugPrint('⚠️ No promos found - check your database');
         return [];
       }
       
       return promosData.map((json) {
-        print('📦 Processing promo: ${json['code']}');
+        debugPrint('📦 Processing promo: ${json['code']}');
         return Promo(
           id: (json['id'] as num).toString(),
           title: json['title'] as String,

@@ -118,10 +118,10 @@ class _PromosView extends StatelessWidget {
 
     DateTime? validFrom = promo?.validFrom ?? DateTime.now();
     DateTime? validTo = promo?.validTo;
-    num? minSubtotal = promo?.minSubtotal ?? 0;
+    num minSubtotal = promo?.minSubtotal ?? 0;
 
     final minSubtotalCtrl = TextEditingController(
-      text: minSubtotal?.toString() ?? "0",
+      text: minSubtotal.toString(),
     );
 
     showDialog(

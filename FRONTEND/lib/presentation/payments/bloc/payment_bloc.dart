@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
 
 import '../../../core/api_client.dart';
 import '../../../data/api/order_api_service.dart';
@@ -30,7 +31,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         error: null,
         amount: e.amount,
         currency: e.currency,
-        description: e.description ?? 'Онлайн-оплата',
+        description: e.description ?? LocaleCubit.l10n.paymentOnlineDefault,
+        addressText: e.addressText,
+        branchId: e.branchId,
         orderId: null,
         paymentId: null,
         paymentUrl: null,
@@ -58,8 +61,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     try {
       final order = await _orderApi.createOrder(
         paymentMethod: 'card',
-        address: {'text': 'Home'},
-        notes: state.description ?? 'Онлайн-оплата',
+        address: {
+          'text': state.addressText ?? 'Restaurant pickup',
+          if (state.branchId != null && state.branchId!.isNotEmpty)
+            'branchId': state.branchId,
+        },
+        notes: state.description ?? LocaleCubit.l10n.paymentOnlineDefault,
       );
 
       final orderId = (order['orderId'] as num).toInt();
@@ -87,7 +94,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         state.copyWith(
           loading: false,
           step: PaymentStep.idle,
-          error: 'Ошибка оплаты. Пожалуйста, удалите товары из корзины, добавьте заново и повторите попытку.',
+          error: LocaleCubit.l10n.paymentRetryCartError,
         ),
       );
     }
@@ -103,7 +110,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         state.copyWith(
           step: PaymentStep.failed,
           loading: false,
-          error: 'Не найден paymentId для проверки.',
+          error: LocaleCubit.l10n.paymentIdMissing,
         ),
       );
       return;
@@ -133,7 +140,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           state.copyWith(
             step: PaymentStep.failed,
             loading: false,
-            error: 'Платёж ещё не подтверждён. Попробуйте через пару секунд.',
+            error: LocaleCubit.l10n.paymentNotConfirmedYet,
           ),
         );
       } else {
@@ -141,7 +148,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           state.copyWith(
             step: PaymentStep.failed,
             loading: false,
-            error: 'Платёж был отклонён.',
+            error: LocaleCubit.l10n.paymentRejected,
           ),
         );
       }
@@ -152,7 +159,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         state.copyWith(
           step: PaymentStep.failed,
           loading: false,
-          error: 'Не удалось проверить статус платежа.',
+          error: LocaleCubit.l10n.paymentStatusCheckFailed,
         ),
       );
     }

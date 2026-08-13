@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 
 class RestaurantHeader extends StatelessWidget {
   final bool showName;
@@ -14,6 +15,7 @@ class RestaurantHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
@@ -26,7 +28,8 @@ class RestaurantHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFF2A2A2A)),
               ),
-              child: const Text('Самовывоз', style: TextStyle(fontWeight: FontWeight.w700)),
+              child: Text(l10n.pickup,
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
             ),
             const SizedBox(width: 10),
           ],
@@ -35,10 +38,12 @@ class RestaurantHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (showName)
-                  const Text('Адам и Ева', style: TextStyle(fontWeight: FontWeight.w800)),
+                  Text(l10n.appName,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
                 if (pickupAddress != null) ...[
                   const SizedBox(height: 4),
-                  Text(pickupAddress!, style: const TextStyle(color: Color(0xFFA7A7A7))),
+                  Text(pickupAddress!,
+                      style: const TextStyle(color: Color(0xFFA7A7A7))),
                 ],
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
@@ -34,27 +35,30 @@ class _PromoFieldState extends State<PromoField> {
   void _apply() async {
     final code = _ctrl.text.trim();
     if (code.isEmpty) return;
-    
+
     setState(() => _isApplying = true);
-    
+
     // Clear previous error
     context.read<CartBloc>().add(CartPromoApplied(code));
-    
+
     // Wait a bit for the bloc to process
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
+    if (!mounted) return;
+
     setState(() => _isApplying = false);
-    
+
     // Clear the input field after applying
     _ctrl.clear();
     setState(() => _enabled = false);
-    
+
     // Close keyboard
     FocusScope.of(context).unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const borderColor = Color(0xFF2A2A2A);
     const fieldBg = Color(0xFF1E1E1E);
 
@@ -72,18 +76,20 @@ class _PromoFieldState extends State<PromoField> {
                       enabled: !_isApplying,
                       style: const TextStyle(color: Color(0xFFEDEDED)),
                       decoration: InputDecoration(
-                        hintText: 'Введите промокод',
+                        hintText: l10n.enterPromo,
                         hintStyle: const TextStyle(color: Color(0xFFA7A7A7)),
                         filled: true,
                         fillColor: fieldBg,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(color: borderColor),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                          borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary),
                         ),
                       ),
                     ),
@@ -99,7 +105,7 @@ class _PromoFieldState extends State<PromoField> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Применить'),
+                          : Text(l10n.apply),
                     ),
                   ),
                 ],
@@ -112,18 +118,20 @@ class _PromoFieldState extends State<PromoField> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                      const Icon(Icons.error_outline,
+                          color: Colors.red, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           state.promoError!,
-                          style: const TextStyle(color: Colors.red, fontSize: 12),
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 12),
                         ),
                       ),
                     ],
@@ -136,25 +144,33 @@ class _PromoFieldState extends State<PromoField> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      const Icon(Icons.check_circle,
+                          color: Colors.green, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Промокод ${state.promoCode} применен! Скидка: ${state.discount.toStringAsFixed(0)} ₽',
-                          style: const TextStyle(color: Colors.green, fontSize: 12),
+                          l10n.promoApplied(
+                            state.promoCode!,
+                            state.discount.toStringAsFixed(0),
+                          ),
+                          style: const TextStyle(
+                              color: Colors.green, fontSize: 12),
                         ),
                       ),
                       GestureDetector(
                         onTap: () {
-                          context.read<CartBloc>().add(const CartPromoApplied(''));
+                          context
+                              .read<CartBloc>()
+                              .add(const CartPromoApplied(''));
                         },
-                        child: const Icon(Icons.close, color: Colors.green, size: 16),
+                        child: const Icon(Icons.close,
+                            color: Colors.green, size: 16),
                       ),
                     ],
                   ),

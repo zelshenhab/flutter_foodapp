@@ -19,7 +19,7 @@ class OrderPickupConfirmed extends OrdersEvent {
 
 /// (اختياري) تحديث حالة معين من الداشبورد الريلتايم
 class OrderStatusPatched extends OrdersEvent {
-  final String orderId;
+  final int orderId;
   final String status;
   const OrderStatusPatched(this.orderId, this.status);
   @override

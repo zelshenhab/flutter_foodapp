@@ -1,4 +1,5 @@
-/*import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 enum PaymentWebResult {
@@ -60,11 +61,6 @@ class _PaymentWebViewPageState extends State<PaymentWebViewPage> {
       ..loadRequest(Uri.parse(widget.url));
   }
 
-  Future<bool> _handleBack() async {
-    _finish(PaymentWebResult.cancelled);
-    return false;
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -76,17 +72,14 @@ class _PaymentWebViewPageState extends State<PaymentWebViewPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Оплата'),
+          title: Text(context.l10n.payment),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => _finish(PaymentWebResult.cancelled),
           ),
         ),
-        body: WillPopScope(
-          onWillPop: _handleBack,
-          child: WebViewWidget(controller: controller),
-        ),
+        body: WebViewWidget(controller: controller),
       ),
     );
   }
-}*/
+}

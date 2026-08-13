@@ -11,15 +11,20 @@ class PaymentStarted extends PaymentEvent {
   final double amount;
   final String currency;
   final String? description;
+  final String? addressText;
+  final String? branchId;
 
   const PaymentStarted({
     required this.amount,
     this.currency = 'RUB',
     this.description,
+    this.addressText,
+    this.branchId,
   });
 
   @override
-  List<Object?> get props => [amount, currency, description];
+  List<Object?> get props =>
+      [amount, currency, description, addressText, branchId];
 }
 
 class PaymentPayPressed extends PaymentEvent {

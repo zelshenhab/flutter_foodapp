@@ -21,6 +21,8 @@ class PaymentState extends Equatable {
   final double amount;
   final String currency;
   final String? description;
+  final String? addressText;
+  final String? branchId;
 
   const PaymentState({
     this.step = PaymentStep.idle,
@@ -32,6 +34,8 @@ class PaymentState extends Equatable {
     this.amount = 0,
     this.currency = 'RUB',
     this.description,
+    this.addressText,
+    this.branchId,
   });
 
   PaymentState copyWith({
@@ -44,6 +48,8 @@ class PaymentState extends Equatable {
     double? amount,
     String? currency,
     Object? description = _sentinel,
+    Object? addressText = _sentinel,
+    Object? branchId = _sentinel,
   }) {
     return PaymentState(
       step: step ?? this.step,
@@ -57,6 +63,12 @@ class PaymentState extends Equatable {
       description: identical(description, _sentinel)
           ? this.description
           : description as String?,
+      addressText: identical(addressText, _sentinel)
+          ? this.addressText
+          : addressText as String?,
+      branchId: identical(branchId, _sentinel)
+          ? this.branchId
+          : branchId as String?,
     );
   }
 
@@ -71,6 +83,8 @@ class PaymentState extends Equatable {
         amount,
         currency,
         description,
+        addressText,
+        branchId,
       ];
 }
 

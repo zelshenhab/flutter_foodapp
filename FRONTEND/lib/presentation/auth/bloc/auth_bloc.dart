@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
 import 'package:flutter_foodapp/repos/auth_repository.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -69,7 +70,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       _startTimer();
     } catch (_) {
-      emit(state.copyWith(loading: false, error: 'Не удалось отправить код'));
+      emit(state.copyWith(loading: false, error: LocaleCubit.l10n.sendCodeFailed));
     }
   }
 
@@ -119,7 +120,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         state.copyWith(
           loading: false,
           codeSent: false,
-          error: 'Не удалось отправить код',
+          error: LocaleCubit.l10n.sendCodeFailed,
         ),
       );
     }
@@ -129,7 +130,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
     if (!state.canVerify) return;
     if (state.requestId == null || state.requestId!.isEmpty) {
-      emit(state.copyWith(error: 'Нет requestId. Получите код заново.'));
+      emit(state.copyWith(error: LocaleCubit.l10n.noRequestId));
       return;
     }
 
@@ -161,7 +162,7 @@ Future<void> _onVerify(AuthVerifyPressed e, Emitter<AuthState> emit) async {
         ),
       );
     } catch (err) {
-      emit(state.copyWith(loading: false, error: 'Неверный код'));
+      emit(state.copyWith(loading: false, error: LocaleCubit.l10n.invalidCode));
     }
   }
 

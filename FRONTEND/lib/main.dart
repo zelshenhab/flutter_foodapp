@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_foodapp/core/services/vpn_service.dart';
+import 'core/l10n/app_localizations.dart';
+import 'core/l10n/locale_cubit.dart';
+import 'core/l10n/tt_material_fallback.dart';
+import 'core/branches/branch_cubit.dart';
 import 'core/services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'core/api_client.dart';
 import 'presentation/auth/pages/login_info_page.dart';
+import 'presentation/common/widgets/app_toast.dart';
 import 'presentation/root/app_shell.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'presentation/auth/bloc/auth_bloc.dart';
 import 'presentation/auth/bloc/auth_event.dart';
 import 'presentation/auth/data/real_auth_service.dart';
@@ -30,9 +36,21 @@ Future<void> main() async {
   }
   await NotificationService.init();
 
+  final localeCubit = LocaleCubit();
+  await localeCubit.load();
+
+  final branchCubit = BranchCubit();
+  await branchCubit.load();
+
   runApp(
-    BlocProvider(
-      create: (_) => AuthBloc(RealAuthService())..add(AuthStarted()),
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => AuthBloc(RealAuthService())..add(AuthStarted()),
+        ),
+        BlocProvider.value(value: localeCubit),
+        BlocProvider.value(value: branchCubit),
+      ],
       child: const MyApp(),
     ),
   );
@@ -48,48 +66,60 @@ class MyApp extends StatelessWidget {
     const text = Color(0xFFEDEDED);
     const accent = Color.fromARGB(255, 199, 160, 34);
 
-    return MaterialApp(
-      navigatorKey: appNavigatorKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Адам и Ева',
-
-      routes: {
-        '/login': (_) => const LoginInfoPage(),
-        '/home': (_) => const AppShell(),
-      },
-
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: bg,
-        cardColor: const Color(0xFF1A1A1A),
-        colorScheme: const ColorScheme.dark(
-          primary: accent,
-          secondary: accent,
-          surface: surface,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: bg,
-          elevation: 0,
-          titleTextStyle: TextStyle(
-            color: text,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-          iconTheme: IconThemeData(color: text),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: surface,
-          selectedItemColor: accent,
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
-          showUnselectedLabels: false,
-        ),
-        textTheme: ThemeData.dark().textTheme.apply(
-              bodyColor: text,
-              displayColor: text,
+    return BlocBuilder<LocaleCubit, Locale>(
+      builder: (context, locale) {
+        return MaterialApp(
+          navigatorKey: appNavigatorKey,
+          debugShowCheckedModeBanner: false,
+          title: 'Adam & Eve',
+          locale: locale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            TtMaterialLocalizationsDelegate(),
+            TtCupertinoLocalizationsDelegate(),
+            TtWidgetsLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          routes: {
+            '/login': (_) => const LoginInfoPage(),
+            '/home': (_) => const AppShell(),
+          },
+          theme: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: bg,
+            cardColor: const Color(0xFF1A1A1A),
+            colorScheme: const ColorScheme.dark(
+              primary: accent,
+              secondary: accent,
+              surface: surface,
             ),
-      ),
-
-      home: const SplashScreen(),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: bg,
+              elevation: 0,
+              titleTextStyle: TextStyle(
+                color: text,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              iconTheme: IconThemeData(color: text),
+            ),
+            bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+              backgroundColor: surface,
+              selectedItemColor: accent,
+              unselectedItemColor: Colors.grey,
+              type: BottomNavigationBarType.fixed,
+              showUnselectedLabels: false,
+            ),
+            textTheme: ThemeData.dark().textTheme.apply(
+                  bodyColor: text,
+                  displayColor: text,
+                ),
+          ),
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
@@ -115,7 +145,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initialize() async {
     // First, check network status
     final networkStatus = await VpnService.checkNetworkStatus();
-    
+
     if (!mounted) return;
 
     // If no internet or VPN issue, show dialog
@@ -165,39 +195,42 @@ class _SplashScreenState extends State<SplashScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
+        final l10n = context.l10n;
         return AlertDialog(
           title: Row(
-            children: const [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-              SizedBox(width: 12),
-              Text('Требуется VPN'),
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.orange, size: 28),
+              const SizedBox(width: 12),
+              Text(l10n.vpnRequired),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
-                'Для доступа к приложению необходимо включить VPN.',
-                style: TextStyle(fontSize: 15),
+                l10n.vpnRequiredBody,
+                style: const TextStyle(fontSize: 15),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
-                '📍 Убедитесь, что VPN работает, затем нажмите "Проверить снова".',
-                style: TextStyle(
+                l10n.vpnCheckHint,
+                style: const TextStyle(
                   fontSize: 13,
                   color: Colors.grey,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.check_circle_outline, size: 16, color: Colors.grey),
-                  SizedBox(width: 8),
+                  const Icon(Icons.check_circle_outline,
+                      size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Проверьте подключение к интернету',
-                      style: TextStyle(
+                      l10n.vpnCheckInternet,
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Colors.grey,
                       ),
@@ -205,15 +238,16 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.check_circle_outline, size: 16, color: Colors.grey),
-                  SizedBox(width: 8),
+                  const Icon(Icons.check_circle_outline,
+                      size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Включите VPN и перезапустите приложение',
-                      style: TextStyle(
+                      l10n.vpnEnableRestart,
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Colors.grey,
                       ),
@@ -221,15 +255,16 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.check_circle_outline, size: 16, color: Colors.grey),
-                  SizedBox(width: 8),
+                  const Icon(Icons.check_circle_outline,
+                      size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Или попробуйте позже',
-                      style: TextStyle(
+                      l10n.vpnTryLater,
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Colors.grey,
                       ),
@@ -250,21 +285,17 @@ class _SplashScreenState extends State<SplashScreen> {
                 });
                 _initialize();
               },
-              child: const Text('Проверить снова'),
+              child: Text(l10n.checkAgain),
             ),
             ElevatedButton.icon(
               onPressed: () {
                 // Close app
                 Navigator.pop(context);
                 // Optionally show a message before closing
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Пожалуйста, включите VPN и перезапустите приложение'),
-                    duration: Duration(seconds: 3),
-                  ),
-                );
+                AppToast.info(context, l10n.pleaseEnableVpnRestart);
                 // Delay exit to show snackbar
                 Future.delayed(const Duration(seconds: 1), () {
+                  if (!context.mounted) return;
                   // For Android
                   if (Navigator.canPop(context)) {
                     Navigator.pop(context);
@@ -276,64 +307,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 backgroundColor: Colors.red,
               ),
               icon: const Icon(Icons.close),
-              label: const Text('Закрыть приложение'),
+              label: Text(l10n.closeApp),
             ),
           ],
         );
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App logo or name
-            const Text(
-              'Адам и Ева',
-              style: TextStyle(
-                color: Color.fromARGB(255, 199, 160, 34),
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Доставка еды',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 40),
-            
-            if (_isChecking) ...[
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Color.fromARGB(255, 199, 160, 34),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Проверка подключения...',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-            
-            if (_showVpnDialog) ...[
-              // Auto-show dialog when _showVpnDialog is true
-              // We use a callback to show it after build
-            ],
-          ],
-        ),
-      ),
     );
   }
 
@@ -347,5 +325,57 @@ class _SplashScreenState extends State<SplashScreen> {
       });
       _showVpnDialog = false; // Prevent multiple dialogs
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // App logo or name
+            Text(
+              l10n.appName,
+              style: const TextStyle(
+                color: Color.fromARGB(255, 199, 160, 34),
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.foodDelivery,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 40),
+            if (_isChecking) ...[
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Color.fromARGB(255, 199, 160, 34),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.checkingConnection,
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+            if (_showVpnDialog) ...[
+              // Auto-show dialog when _showVpnDialog is true
+              // We use a callback to show it after build
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

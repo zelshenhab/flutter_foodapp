@@ -42,8 +42,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   Widget build(BuildContext context) {
     return BlocBuilder<AnalyticsBloc, AnalyticsState>(
       builder: (context, state) {
-        print("🖥️ UI STATE SUMMARY: ${state.summary}"); // 👈 ADD HERE
-        print("🖥️ UI STATE ORDERS: ${state.ordersByStatus}"); // 👈 ADD HERE
+        debugPrint("🖥️ UI STATE SUMMARY: ${state.summary}"); // 👈 ADD HERE
+        debugPrint("🖥️ UI STATE ORDERS: ${state.ordersByStatus}"); // 👈 ADD HERE
         final summary = state.summary;
         final orders = state.ordersByStatus;
 

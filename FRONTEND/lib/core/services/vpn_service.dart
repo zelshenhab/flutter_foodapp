@@ -2,7 +2,6 @@
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 
 class VpnService {
   static Future<bool> isVpnActive() async {

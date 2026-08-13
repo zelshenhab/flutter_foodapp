@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 
 class MenuSearchBar extends StatelessWidget {
   final ValueChanged<String>? onChanged;
@@ -14,7 +15,7 @@ class MenuSearchBar extends StatelessWidget {
         onChanged: onChanged,
         style: const TextStyle(color: Color(0xFFEDEDED)),
         decoration: InputDecoration(
-          hintText: 'Поиск блюд или категорий',
+          hintText: context.l10n.searchHint,
           hintStyle: const TextStyle(color: Color(0xFFA7A7A7)),
           prefixIcon: const Icon(Icons.search, color: Color(0xFFA7A7A7)),
           filled: true,

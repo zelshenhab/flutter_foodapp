@@ -1,5 +1,5 @@
-// lib/presentation/payments/pages/payment_failed_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 
 class PaymentFailedPage extends StatelessWidget {
   final String? reason;
@@ -11,11 +11,12 @@ class PaymentFailedPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const text = Color(0xFFEDEDED);
     const hint = Color(0xFFA7A7A7);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ошибка оплаты')),
+      appBar: AppBar(title: Text(l10n.paymentError)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -27,15 +28,15 @@ class PaymentFailedPage extends StatelessWidget {
                 height: 86,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.red.withValues(alpha:.12),
+                  color: Colors.red.withValues(alpha: .12),
                 ),
                 child: const Icon(Icons.error_outline,
                     size: 42, color: Colors.redAccent),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Оплата отклонена',
-                style: TextStyle(
+              Text(
+                l10n.paymentDeclined,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: text,
@@ -43,7 +44,7 @@ class PaymentFailedPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                reason ?? 'Попробуйте ещё раз',
+                reason ?? l10n.tryAgain,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: hint),
               ),
@@ -53,7 +54,7 @@ class PaymentFailedPage extends StatelessWidget {
                 height: 48,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Вернуться'),
+                  label: Text(l10n.goBack),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/presentation/orders/bloc/orders_bloc.dart';
+import 'package:flutter_foodapp/presentation/orders/bloc/orders_event.dart';
 import 'package:flutter_foodapp/presentation/orders/models/order_model.dart';
 import 'package:flutter_foodapp/presentation/orders/pages/order_details_page.dart';
 import '../../../data/api/order_api_service.dart';
-
 
 class PaymentSuccessPage extends StatelessWidget {
   final int orderId;
@@ -18,11 +21,12 @@ class PaymentSuccessPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const text = Color(0xFFEDEDED);
     const hint = Color(0xFFA7A7A7);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Оплата')),
+      appBar: AppBar(title: Text(l10n.payment)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -43,9 +47,9 @@ class PaymentSuccessPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Оплата прошла успешно',
-                style: TextStyle(
+              Text(
+                l10n.paymentSuccess,
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: text,
@@ -53,7 +57,7 @@ class PaymentSuccessPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Заказ №$orderId оформлен.\nСумма: ${_money(total)}',
+                l10n.paymentSuccessDetails(orderId, _money(total)),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: hint),
               ),
@@ -75,15 +79,19 @@ class PaymentSuccessPage extends StatelessWidget {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => OrderDetailsPage(order: order),
+                          builder: (_) => BlocProvider(
+                            create: (_) =>
+                                OrdersBloc()..add(OrdersStarted()),
+                            child: OrderDetailsPage(order: order),
+                          ),
                         ),
                       );
                     } catch (e) {
-                      // fallback
+                      if (!context.mounted) return;
                       Navigator.popUntil(context, (r) => r.isFirst);
                     }
                   },
-                  child: const Text('Готово'),
+                  child: Text(l10n.done),
                 ),
               ),
             ],

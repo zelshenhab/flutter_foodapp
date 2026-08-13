@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import 'package:flutter_foodapp/core/utils/payment_launcher.dart';
 import 'package:flutter_foodapp/presentation/cart/bloc/cart_bloc.dart';
 import 'package:flutter_foodapp/presentation/cart/bloc/cart_event.dart';
@@ -17,12 +18,16 @@ class OnlinePaymentPage extends StatefulWidget {
   final double amount;
   final String currency;
   final String? description;
+  final String? addressText;
+  final String? branchId;
 
   const OnlinePaymentPage({
     super.key,
     required this.amount,
     this.currency = 'RUB',
     this.description,
+    this.addressText,
+    this.branchId,
   });
 
   @override
@@ -54,6 +59,8 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
           amount: widget.amount,
           currency: widget.currency,
           description: widget.description,
+          addressText: widget.addressText,
+          branchId: widget.branchId,
         ),
       );
 
@@ -73,8 +80,8 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => const PaymentFailedPage(
-              reason: 'Платёж был отклонён.',
+            builder: (_) => PaymentFailedPage(
+              reason: context.l10n.paymentRejected,
             ),
           ),
         );
@@ -103,6 +110,8 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocProvider.value(
       value: _paymentBloc,
       child: BlocConsumer<PaymentBloc, PaymentState>(
@@ -122,16 +131,22 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const PaymentFailedPage(
-                    reason: 'Не удалось открыть страницу оплаты',
+                  builder: (_) => PaymentFailedPage(
+                    reason: context.l10n.openPaymentPageFailed,
                   ),
                 ),
               );
             }
+            return;
           }
 
           /// SUCCESS PAGE
           if (state.step == PaymentStep.success && state.orderId != null) {
+            CartBloc? cartBloc;
+            try {
+              cartBloc = context.read<CartBloc>();
+            } catch (_) {}
+
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
@@ -142,11 +157,7 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
               ),
             );
 
-            Future.microtask(() {
-              try {
-                context.read<CartBloc>().add(const CartRefreshed());
-              } catch (_) {}
-            });
+            cartBloc?.add(const CartRefreshed());
           }
 
           /// FAILURE PAGE
@@ -167,18 +178,18 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
 
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Онлайн-оплата'),
+              title: Text(l10n.onlinePayment),
             ),
             body: isBusy
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      _restaurantCard(),
+                      _restaurantCard(l10n),
                       const SizedBox(height: 12),
-                      _summaryCard(state),
+                      _summaryCard(l10n, state),
                       const SizedBox(height: 20),
-                      _payButton(context, state),
+                      _payButton(context, l10n, state),
                       if (state.error != null) ...[
                         const SizedBox(height: 12),
                         Text(
@@ -194,7 +205,7 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
     );
   }
 
-  Widget _restaurantCard() {
+  Widget _restaurantCard(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -202,17 +213,17 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFF2A2A2A)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.restaurant,
             color: Color.fromARGB(255, 199, 160, 34),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Адам и Ева — Самовывоз',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              l10n.brandPickup,
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -220,7 +231,7 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
     );
   }
 
-  Widget _summaryCard(PaymentState state) {
+  Widget _summaryCard(AppLocalizations l10n, PaymentState state) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -231,14 +242,14 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'К оплате',
-            style: TextStyle(fontWeight: FontWeight.w800),
+          Text(
+            l10n.amountDue,
+            style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
-              const Expanded(child: Text('Итого')),
+              Expanded(child: Text(l10n.total)),
               Text(
                 _money(state.amount),
                 style: const TextStyle(fontWeight: FontWeight.w800),
@@ -246,22 +257,23 @@ class _OnlinePaymentPageState extends State<OnlinePaymentPage>
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Онлайн-оплата банковской картой',
-            style: TextStyle(color: Color(0xFFA7A7A7)),
+          Text(
+            l10n.onlineCardHint,
+            style: const TextStyle(color: Color(0xFFA7A7A7)),
           ),
         ],
       ),
     );
   }
 
-  Widget _payButton(BuildContext context, PaymentState state) {
+  Widget _payButton(
+      BuildContext context, AppLocalizations l10n, PaymentState state) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton.icon(
         icon: const Icon(Icons.payment),
-        label: const Text('Оплатить заказ'),
+        label: Text(l10n.payOrder),
         onPressed: state.loading
             ? null
             : () {

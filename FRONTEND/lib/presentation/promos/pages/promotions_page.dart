@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
 
 import '../models/promo.dart';
 import '../bloc/promos_bloc.dart';
@@ -12,10 +14,11 @@ class PromotionsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return BlocProvider(
       create: (_) => PromosBloc()..add(PromosStarted()),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Акции и промокоды')),
+        appBar: AppBar(title: Text(l10n.promosTitle)),
         body: BlocBuilder<PromosBloc, PromosState>(
           builder: (context, state) {
             if (state.loading && state.promos.isEmpty) {
@@ -31,14 +34,14 @@ class PromotionsPage extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () =>
                           context.read<PromosBloc>().add(PromosStarted()),
-                      child: const Text('Повторить'),
+                      child: Text(l10n.retry),
                     ),
                   ],
                 ),
               );
             }
             if (state.promos.isEmpty) {
-              return const Center(child: Text('Акций пока нет'));
+              return Center(child: Text(l10n.noPromos));
             }
 
             return RefreshIndicator(
@@ -65,15 +68,18 @@ class _PromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const color = Color(0xFF1A1A1A);
     const border = Color(0xFF2A2A2A);
 
     String subtitle() {
-      final typeText =
-          p.type == PromoType.percent ? '${p.amount.toStringAsFixed(0)}%' : '${p.amount.toStringAsFixed(0)} ₽';
+      final typeText = p.type == PromoType.percent
+          ? '${p.amount.toStringAsFixed(0)}%'
+          : '${p.amount.toStringAsFixed(0)} ₽';
       final until = p.validTo == null
           ? ''
-          : ' · до ${p.validTo!.day}.${p.validTo!.month}.${p.validTo!.year}';
+          : l10n.validUntil(
+              '${p.validTo!.day}.${p.validTo!.month}.${p.validTo!.year}');
       return '$typeText$until';
     }
 
@@ -88,10 +94,9 @@ class _PromoCard extends StatelessWidget {
           children: [
             Text(p.title, style: const TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            Text(p.description, style: const TextStyle(color: Color(0xFFA7A7A7))),
+            Text(p.description,
+                style: const TextStyle(color: Color(0xFFA7A7A7))),
             const SizedBox(height: 8),
-
-            // Wrap بدل Row — يمنع overflow على الشاشات الصغيرة
             Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -102,7 +107,8 @@ class _PromoCard extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1E1E1E),
                         borderRadius: BorderRadius.circular(10),
@@ -113,7 +119,8 @@ class _PromoCard extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    Text(subtitle(), style: const TextStyle(color: Color(0xFFA7A7A7))),
+                    Text(subtitle(),
+                        style: const TextStyle(color: Color(0xFFA7A7A7))),
                   ],
                 ),
                 ConstrainedBox(
@@ -122,18 +129,17 @@ class _PromoCard extends StatelessWidget {
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: p.code));
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Код ${p.code} скопирован')),
-                        );
+                        AppToast.success(context, l10n.codeCopied(p.code));
                       }
                     },
                     icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Копировать'),
+                    label: Text(l10n.copy),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 40),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                      visualDensity:
+                          const VisualDensity(horizontal: -2, vertical: -2),
                     ),
                   ),
                 ),

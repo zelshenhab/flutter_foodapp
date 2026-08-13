@@ -30,11 +30,11 @@ class AuthState extends Equatable {
     this.devCode,
   });
 
-  bool get canGetCode =>
-      name.trim().isNotEmpty &&
-      email.trim().isNotEmpty &&
-      email.contains('@') && // basic validation
-      !loading;
+  bool get hasValidEmail =>
+      email.trim().isNotEmpty && email.contains('@');
+
+  /// Email is enough to request OTP (name is optional for returning users).
+  bool get canGetCode => hasValidEmail && !loading;
 
   bool get canVerify => otp.trim().length >= 6 && !loading;
 

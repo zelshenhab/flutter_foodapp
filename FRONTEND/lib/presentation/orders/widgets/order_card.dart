@@ -1,30 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import 'package:flutter_foodapp/core/utils/money.dart';
-import '../models/order_model.dart'; // make sure the import points to your actual OrderModel file
+import '../models/order_model.dart';
 
-// 🧩 Convert status enum-like string to readable text
-String _statusText(String status) {
-  switch (status) {
-    case 'pending':
-      return 'Ожидает';
-    case 'preparing':
-      return 'Готовится';
-    case 'ready':
-      return 'Готов к выдаче';
-    case 'completed':
-      return 'Завершён';
-    case 'cancelled':
-      return 'Отменён';
-    default:
-      return status;
-  }
-}
-
-// 🧩 Status color helper
 Color _statusColor(String status) {
   switch (status) {
     case 'pending':
-      return Color.fromARGB(255, 199, 160, 34);
+      return const Color.fromARGB(255, 199, 160, 34);
+    case 'preparing':
+      return const Color(0xFFFFB74D);
+    case 'ready':
+      return const Color(0xFF4CAF50);
     case 'completed':
       return Colors.greenAccent;
     case 'cancelled':
@@ -42,6 +28,8 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
@@ -56,11 +44,10 @@ class OrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ===== Header (Order ID + Date)
             Row(
               children: [
                 Text(
-                  'Заказ №${order.id}',
+                  l10n.orderNumber(order.id),
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -74,13 +61,13 @@ class OrderCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-
-            // ===== Status + Payment
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1E1E),
                     borderRadius: BorderRadius.circular(8),
@@ -88,11 +75,14 @@ class OrderCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.circle,
-                          size: 8, color: _statusColor(order.status)),
+                      Icon(
+                        Icons.circle,
+                        size: 8,
+                        color: _statusColor(order.status),
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        _statusText(order.status),
+                        l10n.statusText(order.status),
                         style: const TextStyle(fontSize: 12),
                       ),
                     ],
@@ -109,13 +99,10 @@ class OrderCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-
-            // ===== Address + Promo (optional)
             if (order.addressText.isNotEmpty)
               Row(
                 children: [
-                  const Icon(Icons.location_on,
-                      size: 16, color: Colors.grey),
+                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -131,14 +118,11 @@ class OrderCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Промокод: ${order.promoCode}',
+                  l10n.promoCodeLabel(order.promoCode!),
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
-
             const SizedBox(height: 10),
-
-            // ===== Totals section
             Row(
               children: [
                 Expanded(
@@ -146,15 +130,15 @@ class OrderCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Сумма: ${money(order.subtotal)}',
+                        l10n.sumLabel(money(order.subtotal)),
                         style: const TextStyle(color: Colors.grey),
                       ),
                       Text(
-                        'Скидка: -${money(order.discount)}',
+                        l10n.discountLabel(money(order.discount)),
                         style: const TextStyle(color: Colors.grey),
                       ),
                       Text(
-                        'Сервис: ${money(order.deliveryFee)}',
+                        l10n.serviceLabel(money(order.deliveryFee)),
                         style: const TextStyle(color: Colors.grey),
                       ),
                     ],

@@ -1,6 +1,7 @@
 // lib/presentation/cart/bloc/cart_bloc.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
 
 import '../../../repos/cart_repository.dart';
 import '../../../repos/loyalty_repository.dart';
@@ -41,7 +42,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final menu = MenuItemModel(
         id: idStr,
         serverId: (m['menuItemId'] as num?)?.toInt(),
-        name: (m['title'] ?? m['name'] ?? 'Товар').toString(),
+        name: (m['title'] ?? m['name'] ?? LocaleCubit.l10n.productFallback)
+            .toString(),
         price: ((m['unitPrice'] ?? m['price'] ?? 0) as num).toDouble(),
         image: (m['image'] as String?) ??
             'assets/images/Chicken-Shawarma-8.jpg',
@@ -81,7 +83,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       debugPrint('Error loading cart: $e');
       emit(state.copyWith(
         loading: false,
-        error: 'Не удалось загрузить корзину',
+        error: LocaleCubit.l10n.cartLoadFailed,
       ));
     }
   }
@@ -105,7 +107,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       await repo.addItem(itemId: e.item.serverId!, quantity: e.quantity);
       add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(error: 'Не удалось добавить товар'));
+      emit(state.copyWith(error: LocaleCubit.l10n.addItemFailed));
     }
   }
 
@@ -124,7 +126,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       await repo.removeItem(itemId: item.item.serverId!);
       add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(error: 'Не удалось удалить товар'));
+      emit(state.copyWith(error: LocaleCubit.l10n.removeItemFailed));
     }
   }
 
@@ -157,7 +159,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       await repo.updateQuantity(itemId: item.item.serverId!, quantity: newQty);
       add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(error: 'Не удалось увеличить количество'));
+      emit(state.copyWith(error: LocaleCubit.l10n.qtyIncreaseFailed));
     }
   }
 
@@ -182,7 +184,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       await repo.updateQuantity(itemId: item.item.serverId!, quantity: newQty);
       add(CartRefreshed());
     } catch (_) {
-      emit(state.copyWith(error: 'Не удалось уменьшить количество'));
+      emit(state.copyWith(error: LocaleCubit.l10n.qtyDecreaseFailed));
     }
   }
 
@@ -208,8 +210,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     } catch (e) {
       emit(state.copyWith(
         promoApplying: false,
-        promoError: 'Неверный промокод',
-        error: 'Неверный промокод',
+        promoError: LocaleCubit.l10n.invalidPromo,
+        error: LocaleCubit.l10n.invalidPromo,
       ));
     }
   }
@@ -237,7 +239,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     } catch (e) {
       emit(state.copyWith(
         loading: false,
-        error: 'Не удалось применить бонусы',
+        error: LocaleCubit.l10n.applyBonusesFailed,
       ));
     }
   }
@@ -264,7 +266,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     } catch (e) {
       emit(state.copyWith(
         loading: false,
-        error: 'Не удалось отменить бонусы',
+        error: LocaleCubit.l10n.cancelBonusesFailed,
       ));
     }
   }

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/auth_language_button.dart';
 
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -28,12 +31,24 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
   final _emailCtrl = TextEditingController();
 
   bool _agreed = false;
+  /// Returning users sign in with email only (no name).
+  bool _returningUser = false;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     super.dispose();
+  }
+
+  void _setReturningUser(bool value) {
+    setState(() => _returningUser = value);
+    if (value) {
+      // Name is optional for returning users; clear bloc name so it isn't sent.
+      context.read<AuthBloc>().add(const AuthNameChanged(''));
+    } else if (_nameCtrl.text.trim().isNotEmpty) {
+      context.read<AuthBloc>().add(AuthNameChanged(_nameCtrl.text));
+    }
   }
 
   void _openTerms({required String title, required String content}) {
@@ -45,181 +60,199 @@ class _LoginInfoViewState extends State<_LoginInfoView> {
     );
   }
 
-  /// ⭐ Professional error popup
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
-          'Ошибка',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Ок',
-              style: TextStyle(
-                color: Color.fromARGB(255, 199, 160, 34),
-              ),
-            ),
-          )
-        ],
-      ),
-    );
+  /// Professional error toast from the top
+  void _showError(String message) {
+    AppToast.error(context, message);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listenWhen: (p, c) => p.step != c.step || p.error != c.error,
-        listener: (context, state) {
-          /// ❌ SnackBar removed
-          /// ✅ Dialog used instead
-          if (state.error != null) {
-            _showErrorDialog(state.error!);
-          }
+      body: SafeArea(
+        child: Stack(
+          children: [
+            BlocConsumer<AuthBloc, AuthState>(
+              listenWhen: (p, c) => p.step != c.step || p.error != c.error,
+              listener: (context, state) {
+                if (state.error != null) {
+                  _showError(state.error!);
+                }
 
-          if (state.step == AuthStep.verifyOtp) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => BlocProvider.value(
-                  value: context.read<AuthBloc>(),
-                  child: const LoginOtpPage(),
-                ),
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          final canPress = state.canGetCode && !state.loading && _agreed;
-
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const _BrandTitle(),
-                    const SizedBox(height: 28),
-
-                    const Text(
-                      'Добро пожаловать!',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFEDEDED),
+                if (state.step == AuthStep.verifyOtp) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<AuthBloc>(),
+                        child: const LoginOtpPage(),
                       ),
                     ),
+                  );
+                }
+              },
+              builder: (context, state) {
+                final fieldsOk = _returningUser
+                    ? state.hasValidEmail
+                    : state.hasValidEmail && state.name.trim().isNotEmpty;
+                final canPress = fieldsOk && !state.loading && _agreed;
 
-                    const SizedBox(height: 20),
-
-                    _darkField(
-                      controller: _nameCtrl,
-                      label: 'Имя',
-                      onChanged: (v) =>
-                          context.read<AuthBloc>().add(AuthNameChanged(v)),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    _darkField(
-                      controller: _emailCtrl,
-                      label: 'Email',
-                      keyboardType: TextInputType.emailAddress,
-                      onChanged: (v) =>
-                          context.read<AuthBloc>().add(AuthEmailChanged(v)),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    _TermsConsentRow(
-                      agreed: _agreed,
-                      onAgreedChanged: (v) => setState(() => _agreed = v),
-                      onOpenTerms: () => _openTerms(
-                        title: 'Условия использования',
-                        content: _termsTextRu,
-                      ),
-                      onOpenPrivacy: () => _openTerms(
-                        title: 'Политика конфиденциальности',
-                        content: _privacyTextRu,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 199, 160, 34),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 480),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const _BrandTitle(),
+                          const SizedBox(height: 28),
+                          Text(
+                            _returningUser ? l10n.welcomeBack : l10n.welcome,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFEDEDED),
+                            ),
                           ),
-                        ),
-                        onPressed: canPress
-                            ? () => context
+                          if (_returningUser) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.signInWithEmailHint,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                color: Color(0xFFA7A7A7),
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            alignment: Alignment.topCenter,
+                            child: _returningUser
+                                ? const SizedBox.shrink()
+                                : Padding(
+                                    padding: const EdgeInsets.only(bottom: 14),
+                                    child: _darkField(
+                                      controller: _nameCtrl,
+                                      label: l10n.name,
+                                      onChanged: (v) => context
+                                          .read<AuthBloc>()
+                                          .add(AuthNameChanged(v)),
+                                    ),
+                                  ),
+                          ),
+                          _darkField(
+                            controller: _emailCtrl,
+                            label: l10n.email,
+                            keyboardType: TextInputType.emailAddress,
+                            onChanged: (v) => context
                                 .read<AuthBloc>()
-                                .add(AuthRequestCodePressed())
-                            : null,
-                        child: state.loading
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Получить код'),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/home');
-                      },
-                      child: const Text(
-                        'Продолжить как гость',
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 199, 160, 34),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-
-                    if (!_agreed)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 10),
-                        child: Text(
-                          'Чтобы продолжить, подтвердите согласие с документами.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: Color(0xFFA7A7A7),
+                                .add(AuthEmailChanged(v)),
                           ),
-                        ),
+                          const SizedBox(height: 18),
+                          _TermsConsentRow(
+                            agreed: _agreed,
+                            onAgreedChanged: (v) =>
+                                setState(() => _agreed = v),
+                            onOpenTerms: () => _openTerms(
+                              title: l10n.termsOfUse,
+                              content: l10n.termsText,
+                            ),
+                            onOpenPrivacy: () => _openTerms(
+                              title: l10n.privacyPolicyTitle,
+                              content: l10n.privacyText,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromARGB(255, 199, 160, 34),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: canPress
+                                  ? () => context
+                                      .read<AuthBloc>()
+                                      .add(AuthRequestCodePressed())
+                                  : null,
+                              child: state.loading
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(l10n.getCode),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () =>
+                                _setReturningUser(!_returningUser),
+                            child: Text(
+                              _returningUser
+                                  ? l10n.createNewAccount
+                                  : l10n.alreadyHaveAccount,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFFEDEDED),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(
+                                  context, '/home');
+                            },
+                            child: Text(
+                              l10n.continueAsGuest,
+                              style: const TextStyle(
+                                color: Color.fromARGB(255, 199, 160, 34),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          if (!_agreed)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Text(
+                                l10n.agreeHint,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: Color(0xFFA7A7A7),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
+            const Positioned(
+              top: 8,
+              right: 16,
+              child: AuthLanguageButton(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -266,14 +299,17 @@ class _BrandTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShaderMask(
       shaderCallback: (bounds) => const LinearGradient(
-        colors: [Color.fromARGB(255, 199, 160, 34), Color.fromARGB(255, 116, 94, 20)],
+        colors: [
+          Color.fromARGB(255, 199, 160, 34),
+          Color.fromARGB(255, 116, 94, 20)
+        ],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
       ).createShader(bounds),
-      child: const Text(
-        'Адам и Ева',
+      child: Text(
+        context.l10n.appName,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           fontFamily: 'Montserrat',
           fontSize: 34,
           fontWeight: FontWeight.w900,
@@ -300,6 +336,7 @@ class _TermsConsentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,15 +348,16 @@ class _TermsConsentRow extends StatelessWidget {
         Expanded(
           child: Wrap(
             children: [
-              const Text(
-                'Я принимаю ',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFFA7A7A7)),
+              Text(
+                l10n.iAccept,
+                style: const TextStyle(
+                    fontSize: 12.5, color: Color(0xFFA7A7A7)),
               ),
               GestureDetector(
                 onTap: onOpenTerms,
-                child: const Text(
-                  'Условия использования',
-                  style: TextStyle(
+                child: Text(
+                  l10n.termsOfUse,
+                  style: const TextStyle(
                     fontSize: 12.5,
                     decoration: TextDecoration.underline,
                     color: Color.fromARGB(255, 199, 160, 34),
@@ -327,15 +365,16 @@ class _TermsConsentRow extends StatelessWidget {
                   ),
                 ),
               ),
-              const Text(
-                ' и ',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFFA7A7A7)),
+              Text(
+                l10n.andWord,
+                style: const TextStyle(
+                    fontSize: 12.5, color: Color(0xFFA7A7A7)),
               ),
               GestureDetector(
                 onTap: onOpenPrivacy,
-                child: const Text(
-                  'Политику конфиденциальности',
-                  style: TextStyle(
+                child: Text(
+                  l10n.privacyPolicy,
+                  style: const TextStyle(
                     fontSize: 12.5,
                     decoration: TextDecoration.underline,
                     color: Color.fromARGB(255, 199, 160, 34),
@@ -354,124 +393,3 @@ class _TermsConsentRow extends StatelessWidget {
     );
   }
 }
-
-const String _termsTextRu = '''
-Условия использования приложения «Адам и Ева»
-
-Дата вступления в силу: 01.01.2026
-
-1. Общие положения
-
-Настоящие Условия использования регулируют порядок использования мобильного приложения «Адам и Ева» (далее — «Приложение»).
-
-Используя Приложение, пользователь подтверждает, что ознакомился и согласен с настоящими Условиями.
-
-Если пользователь не согласен с Условиями, он должен прекратить использование Приложения.
-
-2. Регистрация и аккаунт
-
-Для использования некоторых функций Приложения может потребоваться регистрация с указанием имени и адреса электронной почты.
-
-Пользователь обязуется предоставлять достоверную и актуальную информацию.
-
-Пользователь несёт ответственность за сохранность своих данных доступа.
-
-3. Описание сервиса
-
-Приложение предоставляет пользователю возможность:
-
-— Просматривать меню;
-— Оформлять заказы;
-— Управлять корзиной;
-— Просматривать профиль.
-
-Администрация оставляет за собой право изменять функциональность Приложения без предварительного уведомления.
-
-4. Ограничение ответственности
-
-Администрация не несёт ответственности за:
-
-— Перебои в работе сети Интернет;
-— Временную недоступность сервиса;
-— Действия третьих лиц.
-
-Приложение предоставляется «как есть».
-
-5. Интеллектуальная собственность
-
-Все материалы Приложения (дизайн, логотипы, тексты) являются собственностью правообладателя и защищены законодательством.
-
-6. Изменение условий
-
-Администрация вправе изменять настоящие Условия. Актуальная версия всегда доступна в Приложении.
-
-7. Контактная информация
-
-По вопросам, связанным с использованием Приложения, вы можете связаться с нами:
-
-Email: kauroah@gmail.com
-'''
-;
-
-const String _privacyTextRu = '''
-Политика конфиденциальности приложения «Адам и Ева»
-
-Дата вступления в силу: 01.01.2026
-
-1. Общие положения
-
-Настоящая Политика конфиденциальности описывает, какие данные мы собираем, как их используем и как защищаем.
-
-Используя Приложение, пользователь соглашается с настоящей Политикой.
-
-2. Какие данные мы собираем
-
-Мы можем собирать следующие данные:
-
-— Имя пользователя;
-— Адрес электронной почты;
-— Технические данные устройства (тип устройства, версия ОС);
-— Данные о заказах внутри приложения.
-
-Мы НЕ собираем банковские данные пользователей.
-
-3. Цели обработки данных
-
-Персональные данные используются для:
-
-— Создания и управления аккаунтом;
-— Авторизации пользователя;
-— Обработки заказов;
-— Улучшения работы Приложения;
-— Связи с пользователем при необходимости.
-
-4. Хранение и защита данных
-
-Мы принимаем разумные технические и организационные меры для защиты персональных данных от несанкционированного доступа, изменения или уничтожения.
-
-Данные хранятся в защищённых сервисах и не передаются третьим лицам, за исключением случаев, предусмотренных законодательством.
-
-5. Передача третьим лицам
-
-Данные могут передаваться только:
-
-— В рамках требований законодательства;
-— Техническим подрядчикам, обеспечивающим работу сервиса (например, серверные провайдеры).
-
-6. Права пользователя
-
-Пользователь имеет право:
-
-— Запросить информацию о своих данных;
-— Требовать исправления или удаления данных;
-— Отозвать согласие на обработку данных.
-
-Для этого необходимо направить запрос по электронной почте.
-
-7. Контактная информация
-
-По вопросам обработки персональных данных:
-
-Email: kauroah@gmail.com
-'''
-;

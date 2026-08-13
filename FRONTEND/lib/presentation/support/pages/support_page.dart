@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
 import 'package:flutter_foodapp/core/utils/launchers.dart';
 import '../bloc/support_bloc.dart';
 import '../bloc/support_event.dart';
@@ -28,6 +30,26 @@ class _SupportViewState extends State<_SupportView> {
   final _msgCtrl = TextEditingController();
   final _orderCtrl = TextEditingController();
 
+  static const _topicKeys = [
+    'order_issue',
+    'refund',
+    'payment',
+    'other',
+  ];
+
+  String _topicLabel(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'refund':
+        return l10n.topicRefund;
+      case 'payment':
+        return l10n.topicPayment;
+      case 'other':
+        return l10n.topicOther;
+      default:
+        return l10n.topicOrderIssue;
+    }
+  }
+
   @override
   void dispose() {
     _msgCtrl.dispose();
@@ -37,39 +59,35 @@ class _SupportViewState extends State<_SupportView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     const border = Color(0xFF2A2A2A);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Поддержка')),
+      appBar: AppBar(title: Text(l10n.support)),
       body: BlocConsumer<SupportBloc, SupportState>(
         listenWhen: (prev, curr) =>
-            prev.successMessage != curr.successMessage ||
+            prev.successTicketId != curr.successTicketId ||
             prev.error != curr.error,
         listener: (context, state) {
-          if (state.successMessage != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.successMessage!)));
+          if (state.successTicketId != null) {
+            AppToast.success(context, l10n.ticketSent(state.successTicketId!));
             _msgCtrl.clear();
             _orderCtrl.clear();
           }
           if (state.error != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.error!)));
+            AppToast.error(context, l10n.ticketSendFailed);
           }
         },
         builder: (context, state) {
           return ListView(
             children: [
-              // ===== تواصل سريع
               _sectionCard(
-                title: 'Связаться с нами',
+                title: l10n.contactUs,
                 child: Column(
                   children: [
                     _contactTile(
                       icon: Icons.call,
-                      title: 'Позвонить',
+                      title: l10n.callUs,
                       subtitle: '+7 (987) 291-33-66',
                       onTap: () => openTel('+7 (987) 291-33-66'),
                     ),
@@ -80,7 +98,7 @@ class _SupportViewState extends State<_SupportView> {
                       subtitle: '+7 (987) 291-33-66',
                       onTap: () => openWhatsApp(
                         '+7 (987) 291-33-66',
-                        message: 'Здравствуйте!',
+                        message: l10n.whatsappHello,
                       ),
                     ),
                     const Divider(color: border),
@@ -90,114 +108,90 @@ class _SupportViewState extends State<_SupportView> {
                       subtitle: 'adam.nd.evee@gmail.com',
                       onTap: () => openEmail(
                         'adam.nd.evee@gmail.com',
-                        subject: 'Поддержка',
+                        subject: l10n.support,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // ===== FAQ
               _sectionCard(
-                title: 'Частые вопросы',
+                title: l10n.faq,
                 child: Column(
-                  children: const [
-                    _FaqItem(
-                      q: 'Как изменить или отменить заказ?',
-                      a: 'Напишите в поддержку с номером заказа до начала приготовления.',
-                    ),
-                    _FaqItem(
-                      q: 'Какие способы оплаты доступны?',
-                      a: 'Наличными или банковской картой. Онлайн-оплата будет добавлена позже.',
-                    ),
-                    _FaqItem(
-                      q: 'Как работает доставка?',
-                      a: 'Мы готовим 25–35 минут и сразу передаем в доставку. Время зависит от адреса.',
-                    ),
-                    _FaqItem(
-                      q: 'У меня проблема с промокодом',
-                      a: 'Проверьте срок действия и минимальную сумму. Если не сработало — напишите нам.',
-                    ),
+                  children: [
+                    _FaqItem(q: l10n.faqChangeOrderQ, a: l10n.faqChangeOrderA),
+                    _FaqItem(q: l10n.faqPaymentQ, a: l10n.faqPaymentA),
+                    _FaqItem(q: l10n.faqDeliveryQ, a: l10n.faqDeliveryA),
+                    _FaqItem(q: l10n.faqPromoQ, a: l10n.faqPromoA),
                   ],
                 ),
               ),
-
-              // ===== نموذج مراسلة
               _sectionCard(
-                title: 'Написать в поддержку',
+                title: l10n.writeToSupport,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Тема',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                    Text(
+                      l10n.topic,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     _darkDropdown(
-                      value: context.select((SupportBloc b) => b.state.topic),
-                      onChanged: (v) => context.read<SupportBloc>().add(
-                        SupportTopicChanged(v!),
-                      ),
-                      items: const [
-                        'Проблема с заказом',
-                        'Возврат/компенсация',
-                        'Проблема с оплатой',
-                        'Другое',
-                      ],
+                      value: state.topic,
+                      onChanged: (v) => context
+                          .read<SupportBloc>()
+                          .add(SupportTopicChanged(v!)),
+                      items: _topicKeys,
+                      labelOf: (k) => _topicLabel(l10n, k),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'Номер заказа (необязательно)',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                    Text(
+                      l10n.orderNumberOptional,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     _darkField(
                       _orderCtrl,
-                      hint: 'Например: 1027',
-                      onChanged: (v) => context.read<SupportBloc>().add(
-                        SupportOrderChanged(v),
-                      ),
+                      hint: l10n.orderNumberHint,
+                      onChanged: (v) => context
+                          .read<SupportBloc>()
+                          .add(SupportOrderChanged(v)),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'Сообщение',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                    Text(
+                      l10n.message,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     _darkField(
                       _msgCtrl,
-                      hint: 'Опишите проблему...',
+                      hint: l10n.describeProblem,
                       maxLines: 4,
-                      onChanged: (v) => context.read<SupportBloc>().add(
-                        SupportMessageChanged(v),
-                      ),
+                      onChanged: (v) => context
+                          .read<SupportBloc>()
+                          .add(SupportMessageChanged(v)),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 44,
                       child: ElevatedButton(
-                        onPressed:
-                            context.select((SupportBloc b) => b.state.canSubmit)
-                            ? () => context.read<SupportBloc>().add(
-                                SupportSubmitted(),
-                              )
+                        onPressed: state.canSubmit
+                            ? () => context
+                                .read<SupportBloc>()
+                                .add(SupportSubmitted())
                             : null,
-                        child:
-                            context.select((SupportBloc b) => b.state.sending)
+                        child: state.sending
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Text('Отправить'),
+                            : Text(l10n.send),
                       ),
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
             ],
           );
@@ -205,8 +199,6 @@ class _SupportViewState extends State<_SupportView> {
       ),
     );
   }
-
-  // ============ Helpers UI =============
 
   Widget _sectionCard({required String title, required Widget child}) {
     return Card(
@@ -238,7 +230,8 @@ class _SupportViewState extends State<_SupportView> {
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: Color.fromARGB(255, 199, 160, 34)),
+      leading:
+          Icon(icon, color: const Color.fromARGB(255, 199, 160, 34)),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.chevron_right),
@@ -276,7 +269,8 @@ class _SupportViewState extends State<_SupportView> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+          borderSide:
+              BorderSide(color: Theme.of(context).colorScheme.primary),
         ),
       ),
     );
@@ -286,6 +280,7 @@ class _SupportViewState extends State<_SupportView> {
     required String value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    required String Function(String) labelOf,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -300,7 +295,8 @@ class _SupportViewState extends State<_SupportView> {
         underline: const SizedBox(),
         dropdownColor: const Color(0xFF1E1E1E),
         items: items
-            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+            .map((e) =>
+                DropdownMenuItem(value: e, child: Text(labelOf(e))))
             .toList(),
         onChanged: onChanged,
       ),

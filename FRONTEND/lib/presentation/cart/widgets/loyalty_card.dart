@@ -1,6 +1,8 @@
 // lib/presentation/cart/widgets/loyalty_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/app_toast.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
@@ -10,6 +12,8 @@ class LoyaltyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, state) {
         final availablePoints = state.availablePoints ?? 0;
@@ -36,7 +40,7 @@ class LoyaltyCard extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Material(
             elevation: 4,
-            shadowColor: Colors.black.withOpacity(0.3),
+            shadowColor: Colors.black.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(20),
             child: Container(
               decoration: BoxDecoration(
@@ -75,7 +79,7 @@ class LoyaltyCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.amber.withOpacity(0.3),
+                                color: Colors.amber.withValues(alpha: 0.3),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -92,9 +96,9 @@ class LoyaltyCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Бонусный счет',
-                                style: TextStyle(
+                              Text(
+                                l10n.loyaltyAccount,
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                   color: Colors.white70,
@@ -114,9 +118,9 @@ class LoyaltyCard extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  const Text(
-                                    'баллов',
-                                    style: TextStyle(
+                                  Text(
+                                    l10n.points,
+                                    style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.white60,
                                       fontWeight: FontWeight.w500,
@@ -131,14 +135,14 @@ class LoyaltyCard extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '1 балл = 1 ₽',
+                                  l10n.pointEqualsRuble,
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -158,14 +162,15 @@ class LoyaltyCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(30),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.amber.withOpacity(0.4),
+                                  color: Colors.amber.withValues(alpha: 0.4),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
                             child: ElevatedButton(
-                              onPressed: () => _showRedeemDialog(context, usablePoints),
+                              onPressed: () =>
+                                  _showRedeemDialog(context, usablePoints),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -183,7 +188,7 @@ class LoyaltyCard extends StatelessWidget {
                                   fontSize: 13,
                                 ),
                               ),
-                              child: const Text('Использовать'),
+                              child: Text(l10n.usePoints),
                             ),
                           ),
                         if (hasPointsApplied)
@@ -193,10 +198,10 @@ class LoyaltyCard extends StatelessWidget {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.2),
+                              color: Colors.green.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: Colors.green.withOpacity(0.5),
+                                color: Colors.green.withValues(alpha: 0.5),
                               ),
                             ),
                             child: Row(
@@ -209,7 +214,7 @@ class LoyaltyCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Использовано',
+                                  l10n.used,
                                   style: TextStyle(
                                     color: Colors.green[300],
                                     fontWeight: FontWeight.w600,
@@ -233,17 +238,17 @@ class LoyaltyCard extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Доступно для списания',
+                                l10n.availableToRedeem,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: Colors.white.withValues(alpha: 0.6),
                                 ),
                               ),
                               Text(
                                 '${(usablePoints / availablePoints * 100).toInt()}%',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: Colors.white.withValues(alpha: 0.6),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -254,7 +259,8 @@ class LoyaltyCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                             child: LinearProgressIndicator(
                               value: usablePoints / availablePoints,
-                              backgroundColor: Colors.white.withOpacity(0.2),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.2),
                               valueColor: const AlwaysStoppedAnimation<Color>(
                                 Color.fromARGB(255, 255, 215, 0),
                               ),
@@ -266,10 +272,10 @@ class LoyaltyCard extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Максимум к списанию',
+                                l10n.maxToRedeem,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Colors.white.withValues(alpha: 0.5),
                                 ),
                               ),
                               Container(
@@ -278,11 +284,11 @@ class LoyaltyCard extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
+                                  color: Colors.amber.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  '$usablePoints баллов',
+                                  l10n.pointsCount(usablePoints),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.amber[200],
@@ -293,10 +299,10 @@ class LoyaltyCard extends StatelessWidget {
                             ],
                           ),
                           Text(
-                            'Не более 30% от суммы заказа',
+                            l10n.max30Percent,
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.white.withOpacity(0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                             ),
                           ),
                         ],
@@ -312,13 +318,13 @@ class LoyaltyCard extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.green.withOpacity(0.15),
-                              Colors.green.withOpacity(0.05),
+                              Colors.green.withValues(alpha: 0.15),
+                              Colors.green.withValues(alpha: 0.05),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: Colors.green.withOpacity(0.3),
+                            color: Colors.green.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
@@ -326,7 +332,7 @@ class LoyaltyCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.2),
+                                color: Colors.green.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
@@ -341,7 +347,7 @@ class LoyaltyCard extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Списано баллов: ${state.appliedPoints}',
+                                    l10n.pointsRedeemed(state.appliedPoints!),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w600,
@@ -350,7 +356,9 @@ class LoyaltyCard extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Скидка: ${state.pointsDiscount.toStringAsFixed(0)} ₽',
+                                    l10n.discountAmount(
+                                      state.pointsDiscount.toStringAsFixed(0),
+                                    ),
                                     style: TextStyle(
                                       color: Colors.green[300],
                                       fontSize: 12,
@@ -369,7 +377,7 @@ class LoyaltyCard extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
+                                  color: Colors.white.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -394,6 +402,7 @@ class LoyaltyCard extends StatelessWidget {
 
   void _showRedeemDialog(BuildContext context, int maxPoints) {
     final cartBloc = context.read<CartBloc>();
+    final l10n = context.l10n;
 
     final points100 = maxPoints >= 100 ? 100 : null;
     final points200 = maxPoints >= 200 ? 200 : null;
@@ -435,10 +444,10 @@ class LoyaltyCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Использовать баллы',
-                        style: TextStyle(
+                        l10n.usePointsTitle,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -450,7 +459,7 @@ class LoyaltyCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -468,7 +477,7 @@ class LoyaltyCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -477,9 +486,9 @@ class LoyaltyCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Доступно баллов',
-                              style: TextStyle(
+                            Text(
+                              l10n.availablePointsLabel,
+                              style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
                               ),
@@ -499,15 +508,15 @@ class LoyaltyCard extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 40,
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            const Text(
-                              '1 балл =',
-                              style: TextStyle(
+                            Text(
+                              l10n.onePointEquals,
+                              style: const TextStyle(
                                 color: Colors.white60,
                                 fontSize: 12,
                               ),
@@ -530,9 +539,9 @@ class LoyaltyCard extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // Options
-                const Text(
-                  'Выберите сумму списания:',
-                  style: TextStyle(
+                Text(
+                  l10n.chooseRedeemAmount,
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -563,7 +572,7 @@ class LoyaltyCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
+                    color: Colors.amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -576,7 +585,7 @@ class LoyaltyCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Максимум списания: $maxPoints баллов (30% от суммы заказа)',
+                          l10n.maxRedeemHint(maxPoints),
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.amber[300],
@@ -594,57 +603,42 @@ class LoyaltyCard extends StatelessWidget {
     );
   }
 
-Widget _buildOptionButton(
-  BuildContext context,
-  CartBloc bloc,
-  int points, {
-  bool isMax = false,
-}) {
-  return SizedBox(
-    width: 100,
-    child: ElevatedButton(
-      onPressed: () {
-        Navigator.pop(context);
-        bloc.add(CartPointsApplied(points));
+  Widget _buildOptionButton(
+    BuildContext context,
+    CartBloc bloc,
+    int points, {
+    bool isMax = false,
+  }) {
+    final l10n = context.l10n;
+    return SizedBox(
+      width: 100,
+      child: ElevatedButton(
+        onPressed: () {
+          Navigator.pop(context);
+          bloc.add(CartPointsApplied(points));
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text('Списано $points баллов'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+          AppToast.success(context, l10n.redeemedPointsSnack(points));
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isMax
+              ? const Color.fromARGB(255, 255, 215, 0)
+              : const Color(0xFF2A2A2A),
+          foregroundColor: isMax ? Colors.black87 : Colors.white,
+          elevation: isMax ? 2 : 0,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: isMax
+                ? BorderSide.none
+                : BorderSide(color: Colors.white.withValues(alpha: 0.1)),
           ),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isMax
-            ? const Color.fromARGB(255, 255, 215, 0)
-            : const Color(0xFF2A2A2A),
-        foregroundColor: isMax ? Colors.black87 : Colors.white,
-        elevation: isMax ? 2 : 0,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: isMax
-              ? BorderSide.none
-              : BorderSide(color: Colors.white.withOpacity(0.1)),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
         ),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-        ),
+        child: Text(isMax ? l10n.allPoints(points) : points.toString()),
       ),
-      child: Text(isMax ? 'Все ($points)' : points.toString()),
-    ),
-  );
+    );
   }
 }

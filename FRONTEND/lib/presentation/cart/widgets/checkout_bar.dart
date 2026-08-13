@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../auth/pages/login_info_page.dart';
+import 'package:flutter_foodapp/core/auth/auth_session.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
+import 'package:flutter_foodapp/presentation/common/widgets/login_required_dialog.dart';
 
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_state.dart';
@@ -18,7 +19,8 @@ class CheckoutBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = pickup ? 'Оформить самовывоз' : 'Оформить заказ';
+    final l10n = context.l10n;
+    final label = pickup ? l10n.checkoutPickup : l10n.checkoutOrder;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
@@ -36,19 +38,20 @@ class CheckoutBar extends StatelessWidget {
           ),
           builder: (context, vm) {
             return ElevatedButton(
-onPressed: (vm.isEmpty || vm.isLoading)
-    ? null
-    : () async {
-        const storage = FlutterSecureStorage();
-        final token = await storage.read(key: 'auth_token');
+              onPressed: (vm.isEmpty || vm.isLoading)
+                  ? null
+                  : () async {
+                      if (!await AuthSession.isLoggedIn()) {
+                        if (!context.mounted) return;
+                        await showLoginRequiredDialog(
+                          context,
+                          message: context.l10n.loginRequiredCheckout,
+                        );
+                        return;
+                      }
 
-        if (token == null || token.isEmpty) {
-          _showLoginRequiredDialog(context);
-          return;
-        }
-
-        onCheckout();
-      },
+                      onCheckout();
+                    },
               child: vm.isLoading
                   ? const SizedBox(
                       width: 22,
@@ -67,7 +70,6 @@ onPressed: (vm.isEmpty || vm.isLoading)
   }
 }
 
-/// Small immutable view model
 class _CheckoutViewModel {
   final bool isEmpty;
   final bool isLoading;
@@ -86,37 +88,4 @@ class _CheckoutViewModel {
 
   @override
   int get hashCode => Object.hash(isEmpty, isLoading);
-}
-
-void _showLoginRequiredDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (_) {
-      return AlertDialog(
-        title: const Text('Требуется вход'),
-        content: const Text(
-          'Чтобы оформить заказ, пожалуйста войдите в аккаунт.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const LoginInfoPage(),
-                ),
-              );
-            },
-            child: const Text('Войти'),
-          ),
-        ],
-      );
-    },
-  );
 }

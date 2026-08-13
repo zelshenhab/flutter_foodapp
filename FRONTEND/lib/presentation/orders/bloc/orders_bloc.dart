@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foodapp/core/l10n/locale_cubit.dart';
 import '../../../repos/orders_repository.dart';
-import '../models/order_model.dart';
 import 'orders_event.dart';
 import 'orders_state.dart';
 
@@ -25,7 +25,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     } catch (err) {
       emit(state.copyWith(
         loading: false,
-        error: 'Ошибка загрузки заказов: ${err.toString()}',
+        error: LocaleCubit.l10n.ordersLoadError(err.toString()),
       ));
     }
   }
@@ -36,39 +36,22 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       final orders = await repo.getUserOrders();
       emit(state.copyWith(orders: orders, error: null));
     } catch (err) {
-      emit(state.copyWith(error: 'Ошибка обновления заказов'));
+      emit(state.copyWith(error: LocaleCubit.l10n.ordersRefreshError));
     }
   }
 
   /// 🧾 User confirms pickup (ready → completed)
   Future<void> _onPickupConfirmed(
       OrderPickupConfirmed e, Emitter<OrdersState> emit) async {
-    // Update status locally
     final updated = state.orders.map((o) {
       if (o.id == e.orderId) {
-        return OrderModel(
-          id: o.id,
-          userId: o.userId,
-          status: 'completed',
-          paymentMethod: o.paymentMethod,
-          paymentStatus: o.paymentStatus,
-          subtotal: o.subtotal,
-          discount: o.discount,
-          deliveryFee: o.deliveryFee,
-          total: o.total,
-          addressText: o.addressText,
-          promoCode: o.promoCode,
-          notes: o.notes,
-          createdAt: o.createdAt,
-          items: o.items, // ✅ keep items!
-        );
+        return o.copyWith(status: 'completed');
       }
       return o;
     }).toList();
 
     emit(state.copyWith(orders: updated));
 
-    // Optionally sync to backend
     try {
       await repo.confirmPickup(e.orderId);
     } catch (err) {
@@ -80,22 +63,7 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
   void _onStatusPatched(OrderStatusPatched e, Emitter<OrdersState> emit) {
     final updated = state.orders.map((o) {
       if (o.id == e.orderId) {
-        return OrderModel(
-          id: o.id,
-          userId: o.userId,
-          status: e.status,
-          paymentMethod: o.paymentMethod,
-          paymentStatus: o.paymentStatus,
-          subtotal: o.subtotal,
-          discount: o.discount,
-          deliveryFee: o.deliveryFee,
-          total: o.total,
-          addressText: o.addressText,
-          promoCode: o.promoCode,
-          notes: o.notes,
-          createdAt: o.createdAt,
-          items: o.items, // ✅ preserve items
-        );
+        return o.copyWith(status: e.status);
       }
       return o;
     }).toList();

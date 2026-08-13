@@ -1,5 +1,5 @@
-// lib/presentation/payments/pages/payment_history_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_foodapp/core/l10n/app_localizations.dart';
 
 enum PaymentStatus { success, failed, pending }
 
@@ -26,10 +26,11 @@ class PaymentHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = _mockPayments();
+    final l10n = context.l10n;
+    final data = _mockPayments(l10n);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('История оплат')),
+      appBar: AppBar(title: Text(l10n.paymentHistory)),
       body: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: data.length,
@@ -39,15 +40,16 @@ class PaymentHistoryPage extends StatelessWidget {
     );
   }
 
-  List<PaymentRecord> _mockPayments() {
+  List<PaymentRecord> _mockPayments(AppLocalizations l10n) {
     final now = DateTime.now();
+    final method = l10n.paymentOnlineMasked;
     return [
       PaymentRecord(
         id: 'PAY-2025-000127',
         createdAt: now.subtract(const Duration(hours: 3)),
         amount: 949,
         status: PaymentStatus.success,
-        method: 'Онлайн · **** 1234',
+        method: method,
         orderId: '1042',
       ),
       PaymentRecord(
@@ -55,7 +57,7 @@ class PaymentHistoryPage extends StatelessWidget {
         createdAt: now.subtract(const Duration(days: 2, hours: 4)),
         amount: 520,
         status: PaymentStatus.failed,
-        method: 'Онлайн · **** 1234',
+        method: method,
         orderId: '1031',
       ),
       PaymentRecord(
@@ -63,7 +65,7 @@ class PaymentHistoryPage extends StatelessWidget {
         createdAt: now.subtract(const Duration(days: 6)),
         amount: 1299,
         status: PaymentStatus.success,
-        method: 'Онлайн · **** 1234',
+        method: method,
         orderId: '1019',
       ),
     ];
@@ -76,6 +78,7 @@ class _PaymentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final dateStr =
         '${p.createdAt.day.toString().padLeft(2, '0')}.${p.createdAt.month.toString().padLeft(2, '0')}.${p.createdAt.year} '
         '• ${p.createdAt.hour.toString().padLeft(2, '0')}:${p.createdAt.minute.toString().padLeft(2, '0')}';
@@ -102,7 +105,7 @@ class _PaymentTile extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
-                _statusChip(p.status),
+                _statusChip(context, p.status),
               ],
             ),
             const SizedBox(height: 6),
@@ -120,7 +123,7 @@ class _PaymentTile extends StatelessWidget {
             if (p.orderId != null) ...[
               const SizedBox(height: 6),
               Text(
-                'Заказ №${p.orderId}',
+                l10n.orderNumber(p.orderId!),
                 style: const TextStyle(color: Color(0xFFA7A7A7)),
               ),
             ],
@@ -130,21 +133,22 @@ class _PaymentTile extends StatelessWidget {
     );
   }
 
-  Widget _statusChip(PaymentStatus s) {
+  Widget _statusChip(BuildContext context, PaymentStatus s) {
+    final l10n = context.l10n;
     late final Color c;
     late final String text;
     switch (s) {
       case PaymentStatus.success:
-        c = Colors.greenAccent.withValues(alpha:.15);
-        text = 'Успешно';
+        c = Colors.greenAccent.withValues(alpha: .15);
+        text = l10n.paymentSuccessStatus;
         break;
       case PaymentStatus.failed:
-        c = Colors.redAccent.withValues(alpha:.15);
-        text = 'Ошибка';
+        c = Colors.redAccent.withValues(alpha: .15);
+        text = l10n.paymentErrorStatus;
         break;
       case PaymentStatus.pending:
-        c = Color.fromARGB(255, 199, 160, 34).withValues(alpha:.15);
-        text = 'Ожидает';
+        c = const Color.fromARGB(255, 199, 160, 34).withValues(alpha: .15);
+        text = l10n.paymentPendingStatus;
         break;
     }
     return Container(

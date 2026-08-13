@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -11,11 +12,11 @@ class AdminApiClient {
 Future<dynamic> get(String endpoint) async {
   final url = Uri.parse("$baseUrl$endpoint");
 
-  print("🌐 GET REQUEST: $url"); // 👈 ADD HERE
+  debugPrint("🌐 GET REQUEST: $url"); // 👈 ADD HERE
 
   final res = await http.get(url);
 
-  print("📦 RESPONSE (${res.statusCode}): ${res.body}"); // 👈 ADD HERE
+  debugPrint("📦 RESPONSE (${res.statusCode}): ${res.body}"); // 👈 ADD HERE
 
   if (res.statusCode >= 400) {
     throw Exception("GET $endpoint failed: ${res.body}");
